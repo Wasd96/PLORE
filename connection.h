@@ -22,27 +22,36 @@ class Connection : public QObject
 {
     Q_OBJECT
 
-public:
-    Connection();
-
-    void send(int type);
-
-
-
-private slots:
-    void sendData(int type); // запись на порт
-    void readData(); // считывание с порта
-
 private:
 
     QList<connectTable> table;
+    QList<QString> data;
 
     quint16 portRecieve;
     quint16 portMin;
     quint16 portMax;
 
-    QUdpSocket* udpSocketRead;
-    QUdpSocket* udpSocketWrite;
+    QUdpSocket* udpSocket;
+
+
+private slots:
+    void sendData(quint16 _port, int type); // запись на порт
+    void readData(); // считывание с порта
+
+
+public:
+    Connection(int port);
+
+    void send(quint16 port, int type);
+
+    bool hasData() { return (bool)data.size(); }
+
+    QString getData() { return data.takeLast(); }
+    quint16 getPort() { return portRecieve; }
+    connectTable getTable(int pos) { return table.at(pos); }
+    int getTableSize() { return table.size(); }
+
+
 };
 
 #endif // CONNECTION_H

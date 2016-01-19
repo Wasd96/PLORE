@@ -2,12 +2,11 @@
 #define WIDGET_H
 
 #include <QWidget>
-#include "connection.h"
+#include "core.h"
 
 namespace Ui {
 class Widget;
 }
-
 
 
 class Widget : public QWidget
@@ -24,23 +23,22 @@ public:
 
     void disableGUI();
 
+    void timerEvent(QTimerEvent *t);
+
 private slots:
     void on_start_clicked();
 
     void on_pushButton_clicked();
 
+    void on_send_clicked();
+
 private:
     Ui::Widget *ui;
 
-    Connection* connection;
+    Core* core;
 
-    // характеристики
-    int* I;
-    double* D;
-    char* C;
-
-
-
+    int timer; //id таймера
+    int period; // частота таймера
 
     // режим программы
     bool normalProgram;

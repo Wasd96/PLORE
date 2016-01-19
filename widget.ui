@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>757</width>
+    <height>699</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,36 +17,208 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>150</y>
-     <width>201</width>
-     <height>131</height>
+     <y>130</y>
+     <width>200</width>
+     <height>170</height>
     </rect>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="start">
-   <property name="geometry">
-    <rect>
-     <x>200</x>
-     <y>50</y>
-     <width>158</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Start prog</string>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
-     <x>240</x>
-     <y>110</y>
+     <x>270</x>
+     <y>20</y>
      <width>158</width>
      <height>23</height>
     </rect>
    </property>
    <property name="text">
     <string>close</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="send">
+   <property name="geometry">
+    <rect>
+     <x>330</x>
+     <y>60</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>send</string>
+   </property>
+  </widget>
+  <widget class="QTabWidget" name="launcherTab">
+   <property name="geometry">
+    <rect>
+     <x>190</x>
+     <y>330</y>
+     <width>400</width>
+     <height>250</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QWidget {
+	/*background: #0ff000;*/
+}
+
+QTabWidget::pane { /* The tab widget frame */
+    border: 1px solid;
+    /*position: absolute;
+	margin-top: -2px;*/
+}
+
+QTabWidget::tab-bar {
+    alignment: center;
+}
+
+/* Style the tab using the tab sub-control. Note that
+    it reads QTabBar _not_ QTabWidget */
+QTabBar::tab {
+   /* background: #043701;*/
+    /*border: 1px solid #00b300;*/
+    /*border-bottom: 0px; /* same as the pane color */
+   /* border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    width: 100px;
+	margin-right: 46px;
+    padding-top: 3px;
+	padding-bottom: 3px;*/
+
+	/*color: #ffffff;*/
+}
+
+QTabBar::tab:selected, QTabBar::tab:hover {
+	/*color: #1aa314;*/
+}
+
+QTabBar::tab:selected {
+	/* background: #097003;*/
+	/*border: 2px solid #fab700;*/
+   /* border-bottom: 2px #000000; /* same as pane color */
+	/*color: #fab700;*/
+}</string>
+   </property>
+   <property name="tabPosition">
+    <enum>QTabWidget::North</enum>
+   </property>
+   <property name="tabShape">
+    <enum>QTabWidget::Rounded</enum>
+   </property>
+   <property name="currentIndex">
+    <number>0</number>
+   </property>
+   <property name="usesScrollButtons">
+    <bool>false</bool>
+   </property>
+   <property name="documentMode">
+    <bool>false</bool>
+   </property>
+   <property name="tabsClosable">
+    <bool>false</bool>
+   </property>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
+   <widget class="QWidget" name="tab1">
+    <attribute name="title">
+     <string>Симуляция</string>
+    </attribute>
+   </widget>
+   <widget class="QWidget" name="tab2">
+    <attribute name="title">
+     <string>Война</string>
+    </attribute>
+   </widget>
+   <widget class="QWidget" name="tab3">
+    <attribute name="title">
+     <string>ExPlore</string>
+    </attribute>
+   </widget>
+  </widget>
+  <widget class="QPushButton" name="start">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>590</y>
+     <width>101</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Старт</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="myPort">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>100</y>
+     <width>101</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Порт:</string>
+   </property>
+  </widget>
+  <widget class="QPlainTextEdit" name="connections">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>130</y>
+     <width>280</width>
+     <height>170</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="I">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>161</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Доступная память:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="D">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>30</y>
+     <width>161</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Быстродействие:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="C">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>50</y>
+     <width>91</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>C (придумать)</string>
    </property>
   </widget>
  </widget>

@@ -1,42 +1,41 @@
 #include "connection.h"
 
-Connection::Connection()
+Connection::Connection(int port)
 {
     table.clear();
 
-    udpSocketRead = new QUdpSocket(this);
-    udpSocketWrite = new QUdpSocket(this);
+    portRecieve = port;
+    udpSocket = new QUdpSocket(this);
+    udpSocket->bind(portRecieve, QUdpSocket::ShareAddress);
+    qDebug()<<udpSocket;
 
-    udpSocketRead->bind(45454, QUdpSocket::ShareAddress);
-    udpSocketWrite->bind(45455, QUdpSocket::ShareAddress);
-    qDebug()<<udpSocketRead;
     QHostAddress host;
     host.setAddress(QHostAddress::Broadcast);
     qDebug()<<host;
     //0x1ebefb8
     //0x1eb - порт, efb8 - айпи
 
-    connect(udpSocketRead, SIGNAL(readyRead()), this, SLOT(readData()));
+    connect(udpSocket, SIGNAL(readyRead()), this, SLOT(readData()));
 }
 
-void Connection::send(int type)
+void Connection::send(quint16 port, int type)
 {
-    sendData(type);
+    sendData(port, type);
 }
 
-void Connection::sendData(int type)
+void Connection::sendData(quint16 port, int type)
 {
     QString str = "test";
     QByteArray datagram = str.toUtf8();
 
     QHostAddress host;
-    quint16 port = 45454;
     host.setAddress("255.255.255.255");
     QString sen = "Sending \""+str+"\" to host: " +
-                         host.toString() + " to port: " + QString::number(port);
+                   host.toString() + " to port: " +
+                   QString::number(port);
     qDebug() << sen;
 
-    udpSocketWrite->writeDatagram(datagram.data(), datagram.size(),
+    udpSocket->writeDatagram(datagram.data(), datagram.size(),
                              host, port);
     qDebug() << "size: " << datagram.size();
 }
@@ -47,12 +46,13 @@ void Connection::readData() {
 
     QHostAddress host;
     quint16 port;
-    while (udpSocketRead->hasPendingDatagrams()) {
+
+    while (udpSocket->hasPendingDatagrams()) {
         qDebug() << "recieving...";
 
         QByteArray datagram;
-        datagram.resize(udpSocketRead->pendingDatagramSize());
-        udpSocketRead->readDatagram(datagram.data(), datagram.size(), &host, &port);
+        datagram.resize(udpSocket->pendingDatagramSize());
+        udpSocket->readDatagram(datagram.data(), datagram.size(), &host, &port);
 
 
         QString str = datagram.data();
@@ -62,13 +62,48 @@ void Connection::readData() {
                              "   port:   " +
                              QString::number(port)+
                              "\n---------";
+
+        data.append(rec);
         qDebug() << rec;
         qDebug() << datagram.data() << port << host;
         qDebug() << "size: " << datagram.size();
+
+        // проверка наличия такого соединения
+        bool exist = false;
+        for (int i = 0; i < table.size(); i++)
+        {
+            if (table.at(i).port == port)
+            {
+                exist = true;
+                break;
+            }
+        }
+
+        if (exist)
+        {
+            // если было
+            str = "this " + QString::number(port) + " connection already exist!";
+            qDebug() << str;
+            data.append(str);
+        }
+        else // это новое соединение
+        {
+            connectTable newTable;
+            newTable.host = host;
+            newTable.port = port;
+            newTable.closed = false;
+            newTable.relationship = 0;
+            newTable.useful = 0;
+            newTable.prevRelate = 0;
+
+            table.append(newTable);
+
+            sendData(port, 0); // ответное соединение
+
+            str = "New connection created: " + host.toString() + " "+ QString::number(port);
+            qDebug() << str;
+            data.append(str);
+        }
     }
-    // otvet
-    //QByteArray datagram_answer = "Delivered!";
-    //udpSocketWrite->writeDatagram(datagram_answer.data(), datagram_answer.size(), host, port);
-    //
 
 }

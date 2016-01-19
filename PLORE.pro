@@ -14,10 +14,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         widget.cpp \
-    connection.cpp
+    connection.cpp \
+    core.cpp
 
 HEADERS  += widget.h \
-    connection.h
+    connection.h \
+    core.h
 
 FORMS    += widget.ui
 
