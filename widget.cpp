@@ -9,7 +9,7 @@ Widget::Widget(QWidget *parent) :
     ui(new Ui::Widget)
 {
     ui->setupUi(this);
-
+    srand(time(NULL));
 
     // инициализация типов программ
     launcher = false;
@@ -43,8 +43,8 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             for(int i = 0; i < connection->getTableSize(); i++)
             {
                 connectTable table = connection->getTable(i);
-                str = QString::number(table.port) + " " +
-                        QString::number(table.relationship) + " " +
+                str = QString::number(table.port) + " отношение: " +
+                        QString::number(table.relationship) + " польза: " +
                         QString::number(table.useful);
                 ui->connections->appendPlainText(str);
             }
@@ -54,9 +54,16 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
 
         //обновление интерфейса
-        ui->I->setText(QString("Доступная память: " +QString::number(core->getI()) +" УБ"));
-        ui->D->setText(QString("Быстродействие: " +QString::number((double)(10000-core->getD())/1000.0)+" сек."));
-        ui->C->setText(QString("С: " +QString::number(core->getC()) +" ?!"));
+        ui->I->setText(QString("Доступная память: " +
+                               QString::number(core->getI()) +
+                               " УБ"));
+        ui->D->setText(QString("Быстродействие: " +
+                               QString::number((double)(10000-core->getD())/1000.0)+
+                               " сек/оп."));
+        ui->C->setText(QString("Активный ресурс: " +
+                               QString::number(core->getC())+
+                               "/"+
+                               QString::number(200.0/((10000.0-(double)core->getD())/1000.0-0.2)-15)));
 
 
         while(core->hasMessages())
@@ -109,12 +116,12 @@ void Widget::initGUI()
         ui->D->setVisible(1);
         ui->D->setText(QString("Быстродействие: " +
                                QString::number((double)(10000-core->getD())/1000.0) +
-                               " сек."));
+                               " сек/оп."));
         ui->C->setVisible(1);
-        ui->C->setText(QString("С: " +
-                               QString::number(core->getC()) +
-                               " ?!"));
-
+        ui->C->setText(QString("Активный ресурс: " +
+                               QString::number(core->getC())+
+                               "/"+
+                               QString::number(200.0/((10000.0-(double)core->getD())/1000.0-0.2)-15)));
     }
 }
 
@@ -165,7 +172,12 @@ void Widget::setArgs(int argc, char *argv[])
             normalProgram = true;
             setWindowTitle("Я - Программа");
 
-            core = new Core(100, 9000, 0);
+            core = new Core(rand()%50+50,
+                            rand()%7000+2000,
+                            rand()%10+5,
+                            rand()%11-5,
+                            1,
+                            2);
             period = 10000 - core->getD();
             timer = startTimer(period);
         }

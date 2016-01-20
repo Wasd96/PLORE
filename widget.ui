@@ -213,12 +213,12 @@ QTabBar::tab:selected {
     <rect>
      <x>10</x>
      <y>50</y>
-     <width>91</width>
+     <width>161</width>
      <height>16</height>
     </rect>
    </property>
    <property name="text">
-    <string>C (придумать)</string>
+    <string>Активный ресурс:</string>
    </property>
   </widget>
  </widget>

@@ -30,10 +30,10 @@ void Connection::sendData(quint16 port, int type)
 
     QHostAddress host;
     host.setAddress("255.255.255.255");
-    QString sen = "Sending \""+str+"\" to host: " +
+    /*QString sen = "Sending \""+str+"\" to host: " +
                    host.toString() + " to port: " +
                    QString::number(port);
-    qDebug() << sen;
+    qDebug() << sen;*/
 
     udpSocket->writeDatagram(datagram.data(), datagram.size(),
                              host, port);
@@ -52,18 +52,13 @@ void Connection::readData() {
 
         QByteArray datagram;
         datagram.resize(udpSocket->pendingDatagramSize());
-        udpSocket->readDatagram(datagram.data(), datagram.size(), &host, &port);
+        udpSocket->readDatagram(datagram.data(), datagram.size(), &host, &port); // прием
 
 
         QString str = datagram.data();
-        QString rec = str +
-                             "    from IP:   " +
-                             host.toString() +
-                             "   port:   " +
-                             QString::number(port)+
-                             "\n---------";
+        QString rec = QString::number(port)+ " -> " + str;
 
-        data.append(rec);
+        data.append(rec); // сохранение сообщения
         qDebug() << rec;
         qDebug() << datagram.data() << port << host;
         qDebug() << "size: " << datagram.size();

@@ -1,7 +1,9 @@
 #ifndef WIDGET_H
 #define WIDGET_H
 
+#include "time.h"
 #include <QWidget>
+
 #include "core.h"
 
 namespace Ui {

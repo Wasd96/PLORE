@@ -2,7 +2,7 @@
 #define CORE_H
 
 #include "connection.h"
-#include "time.h"
+
 
 class Core
 {
@@ -15,7 +15,11 @@ private:
     double* D;
     char* C;
 
-    int In, Dn, Cn;
+    int In, Dn, Cn; // кол-во параметров каждого типа
+
+    int temper; // настроение, характер, -5 - злой, +5 - добрый
+
+    int Ii, Ci; // прирост памяти и активного ресурса
 
 
 
@@ -23,7 +27,7 @@ private:
 
 public:
     Core();
-    Core(int _I, int _D, int _C);
+    Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci);
 
     void send(quint16 port, int type);
     void update();
