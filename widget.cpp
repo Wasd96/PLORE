@@ -37,17 +37,14 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
         QString str;
         Connection* connection = core->getConnection();
-        if (connection->hasData())
+        ui->connections->clear();
+        for(int i = 0; i < connection->getTableSize(); i++)
         {
-            ui->connections->clear();
-            for(int i = 0; i < connection->getTableSize(); i++)
-            {
-                connectTable table = connection->getTable(i);
-                str = QString::number(table.port) + " отношение: " +
-                        QString::number(table.relationship) + " польза: " +
-                        QString::number(table.useful);
-                ui->connections->appendPlainText(str);
-            }
+            connectTable table = connection->getTable(i);
+            str = QString::number(table.port) + " отношение: " +
+                    QString::number(table.relationship) + " польза: " +
+                    QString::number(table.useful);
+            ui->connections->appendPlainText(str);
         }
 
         core->update();
@@ -61,17 +58,34 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                                QString::number((double)(10000-core->getD())/1000.0)+
                                " сек/оп."));
         ui->C->setText(QString("Активный ресурс: " +
-                               QString::number(core->getC())+
-                               "/"+
-                               QString::number(200.0/((10000.0-(double)core->getD())/1000.0-0.2)-15)));
+                               QString::number(core->getC())));
 
 
         while(core->hasMessages())
         {
-            ui->console->append(core->getMessage());
+            QString str = core->getMessage();
+            if (str.contains("Атака!"))
+                ui->console->setTextColor(QColor(255,0,0));
+            else if (str.contains("Атака ->"))
+                ui->console->setTextColor(QColor(140,210,0));
+            else if (str.contains("Помощь ->"))
+                ui->console->setTextColor(QColor(210,110,0));
+            else if (str.contains("-> Помощь"))
+                ui->console->setTextColor(QColor(0,255,0));
+            else if (str.contains("Поиск"))
+                ui->console->setTextColor(QColor(100,100,100));
+            else if (str.contains(" за "))
+                ui->console->setTextColor(QColor(0,0,255));
+            else
+                ui->console->setTextColor(QColor(0,0,0));
+            ui->console->append(str);
+
         }
 
-
+        if (core->getDead())
+        {
+            close();
+        }
 
         if (period != 10000 - core->getD())
         {
@@ -119,9 +133,10 @@ void Widget::initGUI()
                                " сек/оп."));
         ui->C->setVisible(1);
         ui->C->setText(QString("Активный ресурс: " +
-                               QString::number(core->getC())+
-                               "/"+
-                               QString::number(200.0/((10000.0-(double)core->getD())/1000.0-0.2)-15)));
+                               QString::number(core->getC())));
+
+        ui->temper->setVisible(1);
+        ui->temper->setText(QString("Настроение (заменить): " + QString::number(core->getTemper())));
     }
 }
 
@@ -149,10 +164,12 @@ void Widget::disableGUI()
     ui->I->setVisible(0);
     ui->D->setVisible(0);
     ui->C->setVisible(0);
+    ui->temper->setVisible(0);
 }
 
 void Widget::setArgs(int argc, char *argv[])
 {
+    rand()%10;
     qDebug() << argc;
     ui->console->append(QString("%1").arg(argc));
     for (int i = 0; i < argc; i++)
@@ -172,13 +189,36 @@ void Widget::setArgs(int argc, char *argv[])
             normalProgram = true;
             setWindowTitle("Я - Программа");
 
-            core = new Core(rand()%50+50,
+            int D = rand()%7000+2000;
+            if (D < 4000)
+            {
+                int I = rand()%50+100;
+                int C = rand()%10+10;
+                int temper = rand()%3+3;
+                core = new Core(I, D, C, temper, 2, 3);
+            }
+            else if (D < 6500)
+            {
+                int I = rand()%50+80;
+                int C = rand()%10+7;
+                int temper = rand()%8-2;
+                core = new Core(I, D, C, temper, 2, 2);
+            }
+            else
+            {
+                int I = rand()%50+50;
+                int C = rand()%10+5;
+                int temper = rand()%11-5;
+                core = new Core(I, D, C, temper, 1, 2);
+            }
+            /*core = new Core(rand()%50+50,
                             rand()%7000+2000,
                             rand()%10+5,
                             rand()%11-5,
                             1,
-                            2);
+                            2);*/
             period = 10000 - core->getD();
+            //ui->console->append(QString::number(core->getD()));
             timer = startTimer(period);
         }
     }
@@ -206,6 +246,7 @@ void Widget::on_start_clicked() // старт игры
 
 void Widget::on_pushButton_clicked()
 {
+    delete core;
     close();
 }
 

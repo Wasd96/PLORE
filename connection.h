@@ -11,11 +11,9 @@ class QUdpSocket;
 struct connectTable
 {
     quint16 port; // порт
-    QHostAddress host; // айпи (локал в любом случае, по идее)
-    int relationship; // -100 - злейший враг, 0 - нейтрал, 100 - лучший друг
-    int useful; // 0 - связь бесполезна, 100 - очень полезна
-    bool closed; // закрытый канал
-    int prevRelate; // предрасположенность, -1 - плохая, 1 - хорошая
+    int relationship; // -5 - злейший враг, 0 - нейтрал, 5 - лучший друг
+    int useful; // 0 - связь бесполезна, 10 - очень полезна
+    int lostSignal; // "мертвая" связь
 };
 
 class Connection : public QObject
@@ -24,25 +22,32 @@ class Connection : public QObject
 
 private:
 
-    QList<connectTable> table;
-    QList<QString> data;
+    QList<connectTable> table; // таблица соединений
+    QList<QString> data; // сохраненные отчеты о приемах
 
-    quint16 portRecieve;
-    quint16 portMin;
-    quint16 portMax;
+    quint16 portRecieve; // личный порт приема
+    quint16 portMin; // ???
+    quint16 portMax; // зачем
 
-    QUdpSocket* udpSocket;
+    int temper; // настроение
+
+    QUdpSocket* udpSocket; // сокет
 
 
 private slots:
-    void sendData(quint16 _port, int type); // запись на порт
+
     void readData(); // считывание с порта
 
 
 public:
-    Connection(int port);
+    Connection(int port, int _temper);
 
-    void send(quint16 port, int type);
+    void sendData(quint16 port, int type); // запись на порт
+    void sendData(quint16 port, int type, int amount); // передача данных
+    void deleteTable(int pos) { table.removeAt(pos); }
+    void setLostSignal(int pos, int n) { table[pos].lostSignal = n; }
+    void setRelationship(int pos, int n) { table[pos].relationship = n; }
+    void setUseful(int pos, int n) { table[pos].useful = n; }
 
     bool hasData() { return (bool)data.size(); }
 

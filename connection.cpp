@@ -1,102 +1,174 @@
 #include "connection.h"
 
-Connection::Connection(int port)
+Connection::Connection(int port, int _temper) // создание модуля связи
 {
-    table.clear();
+    table.clear(); // очистка таблицы связей (на всякий случай)
 
-    portRecieve = port;
-    udpSocket = new QUdpSocket(this);
-    udpSocket->bind(portRecieve, QUdpSocket::ShareAddress);
-    qDebug()<<udpSocket;
+    temper = _temper;
+    portRecieve = port; // сохранение личного порта
+    udpSocket = new QUdpSocket(this); // создание сокета
+    udpSocket->bind(portRecieve, QUdpSocket::ShareAddress); //инициализация
 
-    QHostAddress host;
-    host.setAddress(QHostAddress::Broadcast);
-    qDebug()<<host;
-    //0x1ebefb8
-    //0x1eb - порт, efb8 - айпи
-
-    connect(udpSocket, SIGNAL(readyRead()), this, SLOT(readData()));
+    connect(udpSocket, SIGNAL(readyRead()), this, SLOT(readData())); // прием данных
 }
 
-void Connection::send(quint16 port, int type)
+void Connection::sendData(quint16 port, int type) //подготовка и отправка данных
 {
-    sendData(port, type);
+    QString outData;
+    if (type == 0) // установка связи
+    {
+        outData = "0 "+QString::number(temper);
+    }
+    if (type == 1) // проверка связи
+    {
+        outData = "1";
+    }
+    if (type == 2) // подтверждение связи
+    {
+        outData = "2";
+    }
+
+
+    QByteArray datagram = outData.toUtf8();
+    udpSocket->writeDatagram(datagram.data(),
+                             datagram.size(),
+                             QHostAddress::LocalHost,
+                             port);
 }
 
-void Connection::sendData(quint16 port, int type)
+void Connection::sendData(quint16 port, int type, int amount)
 {
-    QString str = "test";
-    QByteArray datagram = str.toUtf8();
+    QString outData;
+    if (type == 3) // атака
+    {
+        outData = "3 "+QString::number(amount);
+    }
+    if (type == 4) // помощь
+    {
+        outData = "4 "+QString::number(amount);
+    }
 
-    QHostAddress host;
-    host.setAddress("255.255.255.255");
-    /*QString sen = "Sending \""+str+"\" to host: " +
-                   host.toString() + " to port: " +
-                   QString::number(port);
-    qDebug() << sen;*/
 
-    udpSocket->writeDatagram(datagram.data(), datagram.size(),
-                             host, port);
-    qDebug() << "size: " << datagram.size();
+    QByteArray datagram = outData.toUtf8();
+    udpSocket->writeDatagram(datagram.data(),
+                             datagram.size(),
+                             QHostAddress::LocalHost,
+                             port);
 }
 
-void Connection::readData() {
 
-    qDebug() << "\nNew message! ";
-
+void Connection::readData() // прием данных
+{
     QHostAddress host;
     quint16 port;
 
     while (udpSocket->hasPendingDatagrams()) {
-        qDebug() << "recieving...";
 
         QByteArray datagram;
         datagram.resize(udpSocket->pendingDatagramSize());
-        udpSocket->readDatagram(datagram.data(), datagram.size(), &host, &port); // прием
-
+        udpSocket->readDatagram(datagram.data(),
+                                datagram.size(),
+                                &host,
+                                &port); // прием
 
         QString str = datagram.data();
-        QString rec = QString::number(port)+ " -> " + str;
+        QStringList strList = str.split(' ');
 
-        data.append(rec); // сохранение сообщения
-        qDebug() << rec;
-        qDebug() << datagram.data() << port << host;
-        qDebug() << "size: " << datagram.size();
+        if (strList.first() != "0" &&
+                strList.first() != "1" &&
+                strList.first() != "2" &&
+                strList.first() != "3" &&
+                strList.first() != "4")
+        {
+            QString rec = QString::number(port)+ " -> " + str; // создание отчета
+            data.append(rec); // сохранение отчета
+        }
+        if (strList.first() == "3" || strList.first() == "4") // передача данных об атаке или помощи в виде отчета
+        {
+            data.append(QString::number(port) + " " + str);
+        }
 
         // проверка наличия такого соединения
         bool exist = false;
         for (int i = 0; i < table.size(); i++)
         {
-            if (table.at(i).port == port)
+            if (table.at(i).port == port) // сравниваем текущий порт с существующими
             {
                 exist = true;
                 break;
             }
         }
 
-        if (exist)
+        if (exist) // если было
         {
-            // если было
-            str = "this " + QString::number(port) + " connection already exist!";
-            qDebug() << str;
-            data.append(str);
+            if (strList.first() == "1") // проверка связи
+            {
+                sendData(port, 2);
+            }
+            if (strList.first() == "2") // подтверждение связи
+            {
+                for (int i = 0; i < table.size(); i++)
+                {
+                    if (table.at(i).port == port) // выбор нужной записи
+                    {
+                        table[i].lostSignal = 0; // обновление тайм-аута
+                        break;
+                    }
+                }
+            }
+
+
+            if (strList.first() == "3") // атака
+            {
+                for (int i = 0; i < table.size(); i++)
+                {
+                    if (table.at(i).port == port) // выбор нужной записи
+                    {
+                        table[i].useful--;
+                        if (table.at(i).useful < 0)  table[i].useful = 0;
+                        table[i].relationship--; // снижение отношений
+                        if (table.at(i).relationship < -5) table[i].relationship = -5;
+                        break;
+                    }
+                }
+            }
+
+            if (strList.first() == "4") // помощь памятью
+            {
+                for (int i = 0; i < table.size(); i++)
+                {
+                    if (table.at(i).port == port) // выбор нужной записи
+                    {
+                        table[i].useful++;
+                        if (table.at(i).useful > 10)  table[i].useful = 10;
+                        table[i].relationship++; // улучшение отношений
+                        if (table.at(i).relationship > 5) table[i].relationship = 5;
+                        break;
+                    }
+                }
+            }
+
+
         }
         else // это новое соединение
         {
             connectTable newTable;
-            newTable.host = host;
-            newTable.port = port;
-            newTable.closed = false;
-            newTable.relationship = 0;
-            newTable.useful = 0;
-            newTable.prevRelate = 0;
 
-            table.append(newTable);
+            if (strList.first() == "0") // установка связи
+            {
+                newTable.relationship = (strList.at(1).toInt() + temper)/2; // отношение
+                newTable.useful = rand()%2;
+                newTable.port = port;
+                newTable.lostSignal = 0;
 
-            sendData(port, 0); // ответное соединение
+                table.append(newTable); // добавление в таблицу
+                sendData(port, 0); // ответное соединение
+                                   //(чтобы отправитель знал о существовании принявшего)
+            }
 
-            str = "New connection created: " + host.toString() + " "+ QString::number(port);
-            qDebug() << str;
+
+
+            str = "Новое соединение: " + QString::number(port);
             data.append(str);
         }
     }

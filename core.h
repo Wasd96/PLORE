@@ -21,7 +21,9 @@ private:
 
     int Ii, Ci; // прирост памяти и активного ресурса
 
+    bool dead; // мертв, пора удалять
 
+    int timeToUpgrade; // желание улучшить параметры (от застоя)
 
     QList<QString> messages;
 
@@ -29,14 +31,17 @@ public:
     Core();
     Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci);
 
-    void send(quint16 port, int type);
     void update();
+    void send(quint16 port, int type);
+    void send(quint16 port, int type, int amount);
     bool hasMessages() { return (bool)messages.size(); }
     Connection* getConnection() { return connection;}
 
     int getI() { return In; }
     int getD() { return Dn; }
     int getC() { return Cn; }
+    int getTemper() { return temper; }
+    bool getDead() { return dead; }
     QString getMessage() { return messages.takeLast(); }
 };
 
