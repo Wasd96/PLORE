@@ -48,8 +48,11 @@ public:
     void setLostSignal(int pos, int n) { table[pos].lostSignal = n; }
     void setRelationship(int pos, int n) { table[pos].relationship = n; }
     void setUseful(int pos, int n) { table[pos].useful = n; }
+    void createTable(connectTable _table);
 
     bool hasData() { return (bool)data.size(); }
+
+    void sortTable();
 
     QString getData() { return data.takeLast(); }
     quint16 getPort() { return portRecieve; }

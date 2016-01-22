@@ -3,11 +3,18 @@
 Connection::Connection(int port, int _temper) // создание модуля связи
 {
     table.clear(); // очистка таблицы связей (на всякий случай)
+    data.clear();
 
     temper = _temper;
-    portRecieve = port; // сохранение личного порта
+
     udpSocket = new QUdpSocket(this); // создание сокета
-    udpSocket->bind(portRecieve, QUdpSocket::ShareAddress); //инициализация
+    while (!udpSocket->bind(port, QUdpSocket::ShareAddress)) //инициализация
+    {
+       port++;
+       if (port >= 50200) port = 50000;
+    }
+    portRecieve = udpSocket->localPort(); // сохранение личного порта
+
 
     connect(udpSocket, SIGNAL(readyRead()), this, SLOT(readData())); // прием данных
 }
@@ -27,6 +34,11 @@ void Connection::sendData(quint16 port, int type) //подготовка и от
     {
         outData = "2";
     }
+    if (type == 6) // подтверждение боевой помощи
+    {
+        outData = "6 ";
+    }
+
 
 
     QByteArray datagram = outData.toUtf8();
@@ -41,11 +53,15 @@ void Connection::sendData(quint16 port, int type, int amount)
     QString outData;
     if (type == 3) // атака
     {
-        outData = "3 "+QString::number(amount);
+        outData = "3 " + QString::number(amount);
     }
-    if (type == 4) // помощь
+    if (type == 4) // помощь (передача памяти)
     {
-        outData = "4 "+QString::number(amount);
+        outData = "4 " + QString::number(amount);
+    }
+    if (type == 5) // просьба о помощи
+    {
+        outData = "5 " + QString::number(amount); // здесь amount = port врага
     }
 
 
@@ -55,6 +71,8 @@ void Connection::sendData(quint16 port, int type, int amount)
                              QHostAddress::LocalHost,
                              port);
 }
+
+
 
 
 void Connection::readData() // прием данных
@@ -78,12 +96,16 @@ void Connection::readData() // прием данных
                 strList.first() != "1" &&
                 strList.first() != "2" &&
                 strList.first() != "3" &&
-                strList.first() != "4")
+                strList.first() != "4" &&
+                strList.first() != "5" &&
+                strList.first() != "6")
         {
             QString rec = QString::number(port)+ " -> " + str; // создание отчета
             data.append(rec); // сохранение отчета
         }
-        if (strList.first() == "3" || strList.first() == "4") // передача данных об атаке или помощи в виде отчета
+        if (strList.first() == "3" ||
+                strList.first() == "4"||
+                strList.first() == "5") // передача данных о сложных сообщениях
         {
             data.append(QString::number(port) + " " + str);
         }
@@ -124,28 +146,39 @@ void Connection::readData() // прием данных
                 {
                     if (table.at(i).port == port) // выбор нужной записи
                     {
-                        table[i].useful--;
-                        if (table.at(i).useful < 0)  table[i].useful = 0;
-                        table[i].relationship--; // снижение отношений
-                        if (table.at(i).relationship < -5) table[i].relationship = -5;
+                        if (table.at(i).useful == 0) // если пользы нет
+                        {
+                            table[i].relationship--; // снижение отношений
+                            if (table.at(i).relationship < -5)
+                                table[i].relationship = -5;
+                        }
+                        else // сначала снижается польза
+                        {
+                            table[i].useful--;
+                            if (table.at(i).useful < 0)
+                                table[i].useful = 0;
+                        }
+
+
                         break;
                     }
                 }
             }
 
-            if (strList.first() == "4") // помощь памятью
+            if (strList.first() == "4" || strList.first() == "6") // помощь (памятью или боевая)
             {
                 for (int i = 0; i < table.size(); i++)
                 {
                     if (table.at(i).port == port) // выбор нужной записи
                     {
-                        table[i].useful++;
+                        table[i].useful += 2; // добро увеличивается ^^
                         if (table.at(i).useful > 10)  table[i].useful = 10;
                         table[i].relationship++; // улучшение отношений
                         if (table.at(i).relationship > 5) table[i].relationship = 5;
                         break;
                     }
                 }
+
             }
 
 
@@ -162,10 +195,10 @@ void Connection::readData() // прием данных
                 newTable.lostSignal = 0;
 
                 table.append(newTable); // добавление в таблицу
+                sortTable();
                 sendData(port, 0); // ответное соединение
                                    //(чтобы отправитель знал о существовании принявшего)
             }
-
 
 
             str = "Новое соединение: " + QString::number(port);
@@ -173,4 +206,39 @@ void Connection::readData() // прием данных
         }
     }
 
+}
+
+
+void Connection::createTable(connectTable _table)
+{
+    table.append(_table);
+    sortTable();
+}
+
+void Connection::sortTable() // сортировка по возрастанию
+{
+    bool change = true;
+    while (change)
+    {
+        change = false;
+        for (int i = 0; i < table.size()-1; i++)
+        {
+            if (table.at(i).relationship > table.at(i+1).relationship)
+            {
+                table.swap(i, i+1);
+                change = true;
+            }
+            else
+            {
+                if (table.at(i).relationship == table.at(i+1).relationship)
+                {
+                    if (table.at(i).useful > table.at(i+1).useful)
+                    {
+                        table.swap(i, i+1);
+                        change = true;
+                    }
+                }
+            }
+        }
+    }
 }

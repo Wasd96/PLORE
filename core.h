@@ -42,7 +42,7 @@ public:
     int getC() { return Cn; }
     int getTemper() { return temper; }
     bool getDead() { return dead; }
-    QString getMessage() { return messages.takeLast(); }
+    QString getMessage() { return messages.takeFirst(); }
 };
 
 #endif // CORE_H

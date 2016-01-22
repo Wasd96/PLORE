@@ -76,6 +76,10 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 ui->console->setTextColor(QColor(100,100,100));
             else if (str.contains(" за "))
                 ui->console->setTextColor(QColor(0,0,255));
+            else if (str.contains("Запрос"))
+                ui->console->setTextColor(QColor(125,225,225));
+            else if (str.contains("просит"))
+                ui->console->setTextColor(QColor(125,225,225));
             else
                 ui->console->setTextColor(QColor(0,0,0));
             ui->console->append(str);
@@ -121,8 +125,7 @@ void Widget::initGUI()
 
 
         ui->myPort->setVisible(1);
-        ui->myPort->setText(QString("Порт: "+
-                                    QString::number(core->getConnection()->getPort())));
+        ui->myPort->setText(QString::number(core->getConnection()->getPort()));
         ui->I->setVisible(1);
         ui->I->setText(QString("Доступная память: " +
                                QString::number(core->getI()) +
@@ -194,14 +197,14 @@ void Widget::setArgs(int argc, char *argv[])
             {
                 int I = rand()%50+100;
                 int C = rand()%10+10;
-                int temper = rand()%3+3;
+                int temper = rand()%6+0;
                 core = new Core(I, D, C, temper, 2, 3);
             }
             else if (D < 6500)
             {
                 int I = rand()%50+80;
                 int C = rand()%10+7;
-                int temper = rand()%8-2;
+                int temper = rand()%9-3;
                 core = new Core(I, D, C, temper, 2, 2);
             }
             else
