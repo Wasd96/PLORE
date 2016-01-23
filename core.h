@@ -37,6 +37,8 @@ public:
     bool hasMessages() { return (bool)messages.size(); }
     Connection* getConnection() { return connection;}
 
+    void attack(quint16 port, int amount);
+
     int getI() { return In; }
     int getD() { return Dn; }
     int getC() { return Cn; }

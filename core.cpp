@@ -49,6 +49,16 @@ void Core::send(quint16 port, int type, int amount)
     connection->sendData(port, type, amount);
 }
 
+void Core::attack(quint16 port, int amount)
+{
+    QString str;
+    send(port, 3, amount);
+    Cn -= amount;
+    str = "Атака -> " +QString::number(port%1000)+
+          " (" + QString::number(amount) + " ресурса).";
+    messages.append(str);
+}
+
 void Core::update()
 {
     connection->sortTable();
@@ -112,13 +122,9 @@ void Core::update()
                 if (In - Ihelp < 100) Ihelp = In - 100;
                 if (Ihelp < 10) break;
                 send(connection->getTable(i).port, 4, Ihelp);
-                /*if (-relate + 1 > 5)
-                    connection->setRelationship(i,5);
-                else
-                    connection->setRelationship(i,-relate+1);*/
 
                 connection->setUseful(i, connection->getTable(i).useful-1);
-                str = "Помощь -> "+ QString::number(connection->getTable(i).port)+ " ("+QString::number(Ihelp) + " памяти).";
+                str = "Помощь -> "+ QString::number(connection->getTable(i).port%1000)+ " ("+QString::number(Ihelp) + " памяти).";
                 messages.append(str);
                 Cn -= Ihelp/10;
                 In -= Ihelp;
@@ -141,56 +147,35 @@ void Core::update()
                 int Cattack = (double)Cn/2.0 + In/200*rand()%(5*abs(relate-6));
                 if (Cattack > Cn) Cattack = Cn;
                 if (Cattack < 5*Ci) break;
-                send(connection->getTable(i).port, 3, Cattack);
-
-                Cn -= Cattack;
+                attack(connection->getTable(i).port, Cattack);
                 op = true;
-                str = "Атака -> " +QString::number(connection->getTable(i).port)+
-                      " (" + QString::number(Cattack) + " ресурса).";
-                messages.append(str);
                 break;
             }
         }
     }
 
-    if (!op && Cn > 20 && timeToUpgrade < (int)(70.0*coeff))
+    if (!op && Cn > 20 && timeToUpgrade < (int)(70.0*coeff)) // запрос боевой помощи
     {
         int enemyIndex = -1;
         int friendIndex = -1;
 
-        for (int i = 0; i < connection->getTableSize()/2; i++)
+        for (int i = 0; i < connection->getTableSize()/2; i++) // выбор врага
         {
-            if (connection->getTable(i).relationship == -5)
+            if (connection->getTable(i).relationship <= -4)
             {
-                if (rand()%4 == 0)
-                {
-                    enemyIndex = i;
-                    break;
-                }
-            }
-            if (connection->getTable(i).relationship == -4)
-            {
-                if (rand()%10 == 0)
-                {
+                if (rand()%(4+6*(5-abs(connection->getTable(i).relationship))) == 0)
+                {        // ^ 4 - если отношение -5, 10 - если отн. -4
                     enemyIndex = i;
                     break;
                 }
             }
         }
-        for (int i = connection->getTableSize()-1; i > connection->getTableSize()/2; i--)
+        for (int i = connection->getTableSize()-1; i > connection->getTableSize()/2; i--) // выбор помощника
         {
-            if (connection->getTable(i).relationship == 5)
+            if (connection->getTable(i).relationship >= 4)
             {
-                if (rand()%4 == 0)
-                {
-                    friendIndex = i;
-                    break;
-                }
-            }
-            if (connection->getTable(i).relationship == 4)
-            {
-                if (rand()%10 == 0)
-                {
+                if (rand()%(4+6*(5-connection->getTable(i).relationship)) == 0)
+                {        // ^ 4 - если отношение 5, 10 - если отн. 4
                     friendIndex = i;
                     break;
                 }
@@ -202,9 +187,9 @@ void Core::update()
             Cn -= 10;
             send(connection->getTable(friendIndex).port,5,connection->getTable(enemyIndex).port);
             str = "Запрос боевой помощи -> "+
-                    QString::number(connection->getTable(friendIndex).port) +
+                    QString::number(connection->getTable(friendIndex).port%1000) +
                     " в борьбе с " +
-                    QString::number(connection->getTable(enemyIndex).port);
+                    QString::number(connection->getTable(enemyIndex).port%1000);
             messages.append(str);
         }
     }
@@ -220,7 +205,7 @@ void Core::update()
             port = rand()%200 + 50000;
         send(port, 0); // отправка поискового сообщения
         Cn -= 1; // стоимость поиска
-        str = "Поиск -> " + QString::number(port); // отчет
+        str = "Поиск -> " + QString::number(port%1000); // отчет
         messages.append(str);
         op = true;
     }
@@ -229,7 +214,7 @@ void Core::update()
     {
         if (connection->getTable(i).lostSignal >= 3) // если три раза не ответил
         {
-            messages.append("Соединение с " + QString::number(connection->getTable(i).port) + " было потеряно.");
+            messages.append("Соединение с " + QString::number(connection->getTable(i).port%1000) + " было потеряно.");
             connection->deleteTable(i); // удаление записи
         }
         else
@@ -258,7 +243,7 @@ void Core::update()
                 double decrease = amount;
                 if (decrease/3.0 > Cn) // если ресурса меньше чем треть атаки
                 {
-                    str = QString::number(port) +
+                    str = QString::number(port%1000) +
                             "-> Атака! (-" +
                             QString::number((int)Cn) +
                             " ресурса, -" +
@@ -269,7 +254,7 @@ void Core::update()
                 }
                 else
                 {
-                    str = QString::number(port) +
+                    str = QString::number(port%1000) +
                             "-> Атака! (-" +
                             QString::number((int)(decrease/3.0)) +
                             " ресурса, -" +
@@ -287,7 +272,7 @@ void Core::update()
 
                 In += amount;
 
-                str = QString::number(port) +
+                str = QString::number(port%1000) +
                         "-> Помощь (+" +
                         QString::number((int)amount) +
                         " памяти).";
@@ -328,19 +313,14 @@ void Core::update()
                         connection->setRelationship(targetIndex, -5);
                         connection->setUseful(targetIndex, 0);
                         connection->setUseful(senderIndex, connection->getTable(senderIndex).useful - 1);
-                        str = QString::number(senderPort) +
+                        str = QString::number(senderPort%1000) +
                               "-> просит помощи в борьбе с " +
-                              QString::number(targetPort);
+                              QString::number(targetPort%1000);
                         messages.append(str);
                         if (Cn > In/10 && In > 50) // если может помочь
                         {
-                            str = "Атака -> " +QString::number(targetPort)+
-                                  " (" + QString::number(Cn/3) + " ресурса).";
-                            messages.append(str);
-
-                            send(targetPort, 3, Cn/3); // атака
+                            attack(targetPort, Cn/3); // атака
                             send(senderPort, 6); // отчет об успешной атаке
-                            Cn -= Cn/3;
                         }
                     }
                 }
@@ -383,8 +363,8 @@ void Core::update()
     }
 
 
-    I = (int*)realloc(I, In*sizeof(int)); //перерасчет
-    D = (double*)(realloc(D, Dn*sizeof(double)));
-    C = (char*)realloc(C, Cn*sizeof(char));
+    I = (int*)realloc(I, In*sizeof(int)); // перевыделение памяти
+    D = (double*)(realloc(D, Dn*sizeof(double))); // по факту незаметна разница
+    C = (char*)realloc(C, Cn*sizeof(char)); // но ради чистоты идеи
 }
 

@@ -15,7 +15,6 @@ Connection::Connection(int port, int _temper) // создание модуля �
     }
     portRecieve = udpSocket->localPort(); // сохранение личного порта
 
-
     connect(udpSocket, SIGNAL(readyRead()), this, SLOT(readData())); // прием данных
 }
 
@@ -110,8 +109,8 @@ void Connection::readData() // прием данных
             data.append(QString::number(port) + " " + str);
         }
 
-        // проверка наличия такого соединения
-        bool exist = false;
+
+        bool exist = false; // проверка наличия такого соединения
         for (int i = 0; i < table.size(); i++)
         {
             if (table.at(i).port == port) // сравниваем текущий порт с существующими
@@ -201,7 +200,7 @@ void Connection::readData() // прием данных
             }
 
 
-            str = "Новое соединение: " + QString::number(port);
+            str = "Новое соединение: " + QString::number(port%1000);
             data.append(str);
         }
     }
@@ -230,13 +229,13 @@ void Connection::sortTable() // сортировка по возрастанию
             }
             else
             {
-                if (table.at(i).relationship == table.at(i+1).relationship)
+                if (table.at(i).relationship == table.at(i+1).relationship) // если отношение одинаковое
                 {
-                    if (table.at(i).useful > table.at(i+1).useful)
+                    if (table.at(i).useful > table.at(i+1).useful) // то сортировка по пользе
                     {
                         table.swap(i, i+1);
                         change = true;
-                    }
+                    } // аттракцион - скатись по горке!
                 }
             }
         }

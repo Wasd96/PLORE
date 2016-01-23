@@ -25,7 +25,6 @@ Widget::Widget(QWidget *parent) :
 
     setFixedSize(400,300);
     move(100,100);
-    //setWindowOpacity(0.9);
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint );
 }
 
@@ -41,13 +40,13 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         for(int i = 0; i < connection->getTableSize(); i++)
         {
             connectTable table = connection->getTable(i);
-            str = QString::number(table.port) + " отношение: " +
+            str = QString::number(table.port%1000) + " отношение: " +
                     QString::number(table.relationship) + " польза: " +
                     QString::number(table.useful);
-            ui->connections->appendPlainText(str);
+            ui->connections->addItem(str);
         }
 
-        core->update();
+        core->update(); // обновление всех процессов
 
 
         //обновление интерфейса
@@ -63,8 +62,8 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
         while(core->hasMessages())
         {
-            QString str = core->getMessage();
-            if (str.contains("Атака!"))
+            QString str = core->getMessage(); // подсветка сообщений разного типа
+            if (str.contains("Атака!"))       // по ключевым словам
                 ui->console->setTextColor(QColor(255,0,0));
             else if (str.contains("Атака ->"))
                 ui->console->setTextColor(QColor(140,210,0));
@@ -91,11 +90,11 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             close();
         }
 
-        if (period != 10000 - core->getD())
+        if (period != 10000 - core->getD()) // если скорость обновления изменилась
         {
-            period = 10000 - core->getD();
+            period = 10000 - core->getD(); // запоминаем новую
             killTimer(timer);
-            timer = startTimer(period);
+            timer = startTimer(period); // запускаем ее
         }
     }
 }
@@ -104,9 +103,16 @@ void Widget::initGUI()
 {
     if (launcher) // установка gui лаунчера
     {
+        //qDebug() << ui->listWidget->currentRow();
+
+
         ui->start->setVisible(1);
         ui->start->setEnabled(1);
         ui->start->move(10,260);
+
+        ui->Choose->setVisible(1);
+        ui->Choose->setEnabled(1);
+        ui->Choose->move(290, 260);
 
         ui->launcherTab->setVisible(1);
         ui->launcherTab->setEnabled(1);
@@ -114,18 +120,21 @@ void Widget::initGUI()
         setWindowFlags(Qt::Window);
 
     }
-    if (normalProgram) // установка gui нормальной программы
+    if (normalProgram || userProgram) // установка gui нормальной программы
     {
+
         setFixedSize(500, 300);
 
         ui->console->setVisible(1);
         ui->console->setEnabled(1);
         ui->connections->setEnabled(1);
         ui->connections->setVisible(1);
+        //ui->connections->setSelectionRectVisible(0);
+        ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
 
 
         ui->myPort->setVisible(1);
-        ui->myPort->setText(QString::number(core->getConnection()->getPort()));
+        ui->myPort->setText(QString::number(core->getConnection()->getPort()%1000));
         ui->I->setVisible(1);
         ui->I->setText(QString("Доступная память: " +
                                QString::number(core->getI()) +
@@ -140,11 +149,57 @@ void Widget::initGUI()
 
         ui->temper->setVisible(1);
         ui->temper->setText(QString("Настроение (заменить): " + QString::number(core->getTemper())));
+
+
+        if (normalProgram)
+        {
+            ui->console->move(220, 10);
+        }
+        if (userProgram)
+        {
+            setFixedSize(760,300);
+            ui->connections->setSelectionMode(QAbstractItemView::SingleSelection);
+
+            ui->attack->setVisible(1);
+            ui->attack->setEnabled(1);
+            ui->attack_count->setVisible(1);
+            ui->attack_count->setVisible(1);
+
+            ui->help->setVisible(1);
+            ui->help->setEnabled(1);
+            ui->help_count->setVisible(1);
+            ui->help_count->setVisible(1);
+
+            ui->request->setVisible(1);
+            ui->request->setEnabled(1);
+            ui->request_number->setVisible(1);
+            ui->request_number->setVisible(1);
+
+            ui->up_i->setVisible(1);
+            ui->up_i->setEnabled(1);
+            ui->bar_i->setVisible(1);
+
+            ui->up_c->setVisible(1);
+            ui->up_c->setEnabled(1);
+            ui->bar_c->setVisible(1);
+
+            ui->up_d->setVisible(1);
+            ui->up_d->setEnabled(1);
+            ui->bar_d->setVisible(1);
+
+            ui->find_state->setEnabled(1);
+            ui->find_state->setVisible(1);
+
+            ui->label_help->setVisible(1);
+            ui->label_help_2->setVisible(1);
+            ui->label_help_3->setVisible(1);
+        }
     }
 }
 
 void Widget::disableGUI()
 {
+
     ui->console->setEnabled(0);
     ui->console->setVisible(0);
 
@@ -153,6 +208,9 @@ void Widget::disableGUI()
 
     ui->start->setEnabled(0);
     ui->start->setVisible(0);
+
+    ui->Choose->setEnabled(0);
+    ui->Choose->setVisible(0);
 
     ui->launcherTab->setVisible(0);
     ui->launcherTab->setEnabled(0);
@@ -168,11 +226,45 @@ void Widget::disableGUI()
     ui->D->setVisible(0);
     ui->C->setVisible(0);
     ui->temper->setVisible(0);
+
+    ui->attack->setVisible(0);
+    ui->attack->setEnabled(0);
+    ui->attack_count->setVisible(0);
+    ui->attack_count->setVisible(0);
+
+    ui->help->setVisible(0);
+    ui->help->setEnabled(0);
+    ui->help_count->setVisible(0);
+    ui->help_count->setVisible(0);
+
+    ui->request->setVisible(0);
+    ui->request->setEnabled(0);
+    ui->request_number->setVisible(0);
+    ui->request_number->setVisible(0);
+
+    ui->up_i->setVisible(0);
+    ui->up_i->setEnabled(0);
+    ui->bar_i->setVisible(0);
+
+    ui->up_c->setVisible(0);
+    ui->up_c->setEnabled(0);
+    ui->bar_c->setVisible(0);
+
+    ui->up_d->setVisible(0);
+    ui->up_d->setEnabled(0);
+    ui->bar_d->setVisible(0);
+
+    ui->find_state->setEnabled(0);
+    ui->find_state->setVisible(0);
+
+    ui->label_help->setVisible(0);
+    ui->label_help_2->setVisible(0);
+    ui->label_help_3->setVisible(0);
 }
 
 void Widget::setArgs(int argc, char *argv[])
 {
-    rand()%10;
+    rand()%10; // костыль для рандома...
     qDebug() << argc;
     ui->console->append(QString("%1").arg(argc));
     for (int i = 0; i < argc; i++)
@@ -192,8 +284,8 @@ void Widget::setArgs(int argc, char *argv[])
             normalProgram = true;
             setWindowTitle("Я - Программа");
 
-            int D = rand()%7000+2000;
-            if (D < 4000)
+            int D = rand()%2000+7000;
+            if (D < 4000) // в зависимости от скорости даются бонусы
             {
                 int I = rand()%50+100;
                 int C = rand()%10+10;
@@ -224,6 +316,45 @@ void Widget::setArgs(int argc, char *argv[])
             //ui->console->append(QString::number(core->getD()));
             timer = startTimer(period);
         }
+
+        if ((QString)argv[1] == "u") // пользователь!
+        {
+            userProgram = true;
+            setWindowTitle("Я - Человек");
+
+            int D = rand()%2000+7000;
+            if (D < 4000) // в зависимости от скорости даются бонусы
+            {
+                int I = rand()%50+100;
+                int C = rand()%10+10;
+                int temper = rand()%6+0;
+                core = new Core(I, D, C, temper, 2, 3);
+            }
+            else if (D < 6500)
+            {
+                int I = rand()%50+80;
+                int C = rand()%10+7;
+                int temper = rand()%9-3;
+                core = new Core(I, D, C, temper, 2, 2);
+            }
+            else
+            {
+                int I = rand()%50+50;
+                int C = rand()%10+5;
+                int temper = rand()%11-5;
+                core = new Core(I, D, C, temper, 1, 2);
+            }
+            /*core = new Core(rand()%50+50,
+                            rand()%7000+2000,
+                            rand()%10+5,
+                            rand()%11-5,
+                            1,
+                            2);*/
+
+            period = 10000 - core->getD();
+            //ui->console->append(QString::number(core->getD()));
+            timer = startTimer(period);
+        }
     }
 
 
@@ -240,20 +371,43 @@ Widget::~Widget()
 void Widget::on_start_clicked() // старт игры
 {
     QStringList arguments;
+
     if (ui->launcherTab->currentIndex() == 0)
     {
-        arguments << "n";
+        if (ui->Choose->currentText() == "норм")
+        {
+            arguments << "n";
+        }
+        if (ui->Choose->currentText() == "юзер")
+        {
+            arguments << "u";
+        }
     }
+
     qDebug() << QProcess::startDetached("PLORE.exe", arguments);
 }
 
 void Widget::on_pushButton_clicked()
 {
-    delete core;
+    //delete core;
     close();
 }
 
 void Widget::on_send_clicked()
 {
     core->send(45454, 0);
+}
+
+void Widget::on_attack_clicked() // атака пользователя на выбранный порт
+{
+    int index = ui->connections->currentRow();
+    if (index > -1) //если выбрано
+    {
+        int c = ui->attack_count->text().toInt();
+        if (c >= core->getC()) // если достаточно
+        {
+            core->attack(core->getConnection()->getTable(index).port, c);
+
+        }
+    }
 }

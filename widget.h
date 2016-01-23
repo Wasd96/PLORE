@@ -23,7 +23,7 @@ public:
 
     void initGUI();
 
-    void disableGUI();
+    void disableGUI(); // сокрытие всех элементов интерфейса
 
     void timerEvent(QTimerEvent *t);
 
@@ -33,6 +33,8 @@ private slots:
     void on_pushButton_clicked();
 
     void on_send_clicked();
+
+    void on_attack_clicked();
 
 private:
     Ui::Widget *ui;
@@ -44,6 +46,7 @@ private:
 
     // режим программы
     bool normalProgram;
+    bool userProgram;
     bool invisProgram;
     bool clanProgram;
     bool exploreProgram;
