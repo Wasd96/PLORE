@@ -13,6 +13,7 @@ Widget::Widget(QWidget *parent) :
 
     // инициализация типов программ
     launcher = false;
+    userProgram = false;
     normalProgram = false;
     invisProgram = false;
     clanProgram = false;
@@ -36,17 +37,24 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
         QString str;
         Connection* connection = core->getConnection();
-        ui->connections->clear();
+        ui->connections->clear(); // заполнение таблицы связей
         for(int i = 0; i < connection->getTableSize(); i++)
         {
             connectTable table = connection->getTable(i);
-            str = QString::number(table.port%1000) + " отношение: " +
+            str = QString::number(i+1) + ") " +
+                    QString::number(table.port%1000) + " отношение: " +
                     QString::number(table.relationship) + " польза: " +
-                    QString::number(table.useful);
+                    QString::number(table.useful) + " юзер: "  +
+                    QString::number(table.type);
             ui->connections->addItem(str);
         }
+        //выделяем предыдущее значение
+        ui->connections->setCurrentRow(core->getConnection()->getSelectedConnection());
 
-        core->update(); // обновление всех процессов
+        if (userProgram)
+            core->updateUser();
+        else
+            core->update(); // обновление всех процессов
 
 
         //обновление интерфейса
@@ -90,6 +98,27 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             close();
         }
 
+        if (userProgram)
+        {
+            ui->bar_i->setMaximum(core->getINextRequire() + 5); // 100% возможность улучшения
+            if (core->getC() >= core->getINextRequire()+5)
+                ui->bar_i->setValue(core->getINextRequire()+5);
+            else
+                ui->bar_i->setValue(core->getC());
+
+            ui->bar_d->setMaximum(core->getDNextRequire()); // 100% возможность улучшения
+            if (core->getC() >= core->getDNextRequire())
+                ui->bar_d->setValue(core->getDNextRequire());
+            else
+                ui->bar_d->setValue(core->getC());
+
+            ui->bar_c->setMaximum(core->getCNextRequire() + 5); // 100% возможность улучшения
+            if (core->getC() >= core->getCNextRequire()+5)
+                ui->bar_c->setValue(core->getCNextRequire()+5);
+            else
+                ui->bar_c->setValue(core->getC());
+        }
+
         if (period != 10000 - core->getD()) // если скорость обновления изменилась
         {
             period = 10000 - core->getD(); // запоминаем новую
@@ -101,9 +130,9 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
 void Widget::initGUI()
 {
+
     if (launcher) // установка gui лаунчера
     {
-        //qDebug() << ui->listWidget->currentRow();
 
 
         ui->start->setVisible(1);
@@ -122,14 +151,12 @@ void Widget::initGUI()
     }
     if (normalProgram || userProgram) // установка gui нормальной программы
     {
-
-        setFixedSize(500, 300);
+        setFixedSize(510, 310);
 
         ui->console->setVisible(1);
         ui->console->setEnabled(1);
         ui->connections->setEnabled(1);
         ui->connections->setVisible(1);
-        //ui->connections->setSelectionRectVisible(0);
         ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
 
 
@@ -157,7 +184,17 @@ void Widget::initGUI()
         }
         if (userProgram)
         {
-            setFixedSize(760,300);
+            ui->bar_i->setMinimum(0);
+            ui->bar_i->setMaximum(core->getINextRequire() + 5); // 100% возможность улучшения
+            ui->bar_i->setValue(core->getC());
+
+            ui->bar_d->setMaximum(core->getDNextRequire()); // 100% возможность улучшения
+            ui->bar_d->setValue(core->getC());
+
+            ui->bar_c->setMaximum(core->getCNextRequire() + 5); // 100% возможность улучшения
+            ui->bar_c->setValue(core->getC());
+
+            setFixedSize(760,310);
             ui->connections->setSelectionMode(QAbstractItemView::SingleSelection);
 
             ui->attack->setVisible(1);
@@ -195,6 +232,7 @@ void Widget::initGUI()
             ui->label_help_3->setVisible(1);
         }
     }
+
 }
 
 void Widget::disableGUI()
@@ -272,10 +310,12 @@ void Widget::setArgs(int argc, char *argv[])
         qDebug() << argv[i];
         ui->console->append(argv[i]);
     }
+
     if (argc <= 1) //всегда минимум один аргумент - место запуска
     {
         launcher = true; // значит это лаунчер
         setWindowTitle("Лаунчер");
+
     }
     else
     {
@@ -290,21 +330,21 @@ void Widget::setArgs(int argc, char *argv[])
                 int I = rand()%50+100;
                 int C = rand()%10+10;
                 int temper = rand()%6+0;
-                core = new Core(I, D, C, temper, 2, 3);
+                core = new Core(I, D, C, temper, 2, 3, 0);
             }
             else if (D < 6500)
             {
                 int I = rand()%50+80;
                 int C = rand()%10+7;
                 int temper = rand()%9-3;
-                core = new Core(I, D, C, temper, 2, 2);
+                core = new Core(I, D, C, temper, 2, 2, 0);
             }
             else
             {
                 int I = rand()%50+50;
                 int C = rand()%10+5;
                 int temper = rand()%11-5;
-                core = new Core(I, D, C, temper, 1, 2);
+                core = new Core(I, D, C, temper, 1, 2, 0);
             }
             /*core = new Core(rand()%50+50,
                             rand()%7000+2000,
@@ -328,21 +368,21 @@ void Widget::setArgs(int argc, char *argv[])
                 int I = rand()%50+100;
                 int C = rand()%10+10;
                 int temper = rand()%6+0;
-                core = new Core(I, D, C, temper, 2, 3);
+                core = new Core(I, D, C, temper, 2, 3, 1);
             }
             else if (D < 6500)
             {
                 int I = rand()%50+80;
                 int C = rand()%10+7;
                 int temper = rand()%9-3;
-                core = new Core(I, D, C, temper, 2, 2);
+                core = new Core(I, D, C, temper, 2, 2, 1);
             }
             else
             {
                 int I = rand()%50+50;
                 int C = rand()%10+5;
                 int temper = rand()%11-5;
-                core = new Core(I, D, C, temper, 1, 2);
+                core = new Core(I, D, C, temper, 1, 2, 1);
             }
             /*core = new Core(rand()%50+50,
                             rand()%7000+2000,
@@ -370,6 +410,7 @@ Widget::~Widget()
 
 void Widget::on_start_clicked() // старт игры
 {
+    setHidden(true);
     QStringList arguments;
 
     if (ui->launcherTab->currentIndex() == 0)
@@ -401,13 +442,125 @@ void Widget::on_send_clicked()
 void Widget::on_attack_clicked() // атака пользователя на выбранный порт
 {
     int index = ui->connections->currentRow();
+
     if (index > -1) //если выбрано
     {
         int c = ui->attack_count->text().toInt();
-        if (c >= core->getC()) // если достаточно
+        if (core->getC() >= c) // если достаточно
         {
             core->attack(core->getConnection()->getTable(index).port, c);
 
         }
+        else
+        {
+            ui->console->setTextColor(QColor(0,0,0));
+            ui->console->append("Недостаточно ресурсов.");
+        }
+    }
+}
+
+void Widget::on_help_clicked() // помощь пользователя выбранному порту
+{
+    int index = ui->connections->currentRow();
+    if (index > -1) //если выбрано
+    {
+        int i = ui->help_count->text().toInt();
+        if (core->getI() >= i && core->getConnection()->getTable(index).useful > 0) // если достаточно
+        {
+            core->help(core->getConnection()->getTable(index).port, i);
+        }
+        else
+        {
+            ui->console->setTextColor(QColor(0,0,0));
+            ui->console->append("Недостаточно ресурсов или пользы.");
+        }
+
+    }
+}
+
+void Widget::on_request_clicked()
+{
+    int index = ui->connections->currentRow(); // противник
+
+    if (index > -1) //если выбрано
+    {
+        int helper = ui->request_number->text().toInt() - 1; // помощник
+        if (helper < core->getConnection()->getTableSize() && helper >= 0) // если в пределах таблицы
+        {
+            if (core->getConnection()->getTable(helper).relationship >= 4) // если достаточно
+            {
+                if (core->getC() >= 10)
+                {
+                    core->request(core->getConnection()->getTable(helper).port,
+                                  core->getConnection()->getTable(index).port);
+                }
+                else
+                {
+                    ui->console->setTextColor(QColor(0,0,0));
+                    ui->console->append("Недостаточно ресурсов.");
+                }
+            }
+            else
+            {
+                ui->console->setTextColor(QColor(0,0,0));
+                ui->console->append("Слишком низкое отношение с "+QString::number(helper));
+            }
+        }
+    }
+}
+
+
+void Widget::on_connections_itemSelectionChanged() // выбран другой элемент
+{
+    if (core != NULL) // если класс Core создан
+    {
+        // запоминаем новое выделение
+        core->getConnection()->setSelectedConnection(ui->connections->currentRow());
+    }
+}
+
+
+
+void Widget::on_find_state_toggled(bool checked) // отключен автопоиск (пользователь)
+{
+    core->setSearch(checked);
+}
+
+void Widget::on_up_c_clicked()
+{
+    if ((double)ui->bar_c->value()/(double)ui->bar_c->maximum() == 1)
+    {
+        core->upgradeC();
+    }
+    else
+    {
+        ui->console->setTextColor(QColor(0,0,0));
+        ui->console->append("Недостаточно ресурсов");
+    }
+}
+
+void Widget::on_up_d_clicked()
+{
+    if ((double)ui->bar_d->value()/(double)ui->bar_d->maximum() == 1)
+    {
+        core->upgradeD();
+    }
+    else
+    {
+        ui->console->setTextColor(QColor(0,0,0));
+        ui->console->append("Недостаточно ресурсов");
+    }
+}
+
+void Widget::on_up_i_clicked()
+{
+    if ((double)ui->bar_i->value()/(double)ui->bar_i->maximum() == 1)
+    {
+        core->upgradeI();
+    }
+    else
+    {
+        ui->console->setTextColor(QColor(0,0,0));
+        ui->console->append("Недостаточно ресурсов");
     }
 }

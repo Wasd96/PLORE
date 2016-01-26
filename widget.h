@@ -36,6 +36,20 @@ private slots:
 
     void on_attack_clicked();
 
+    void on_help_clicked();
+
+    void on_connections_itemSelectionChanged();
+
+    void on_request_clicked();
+
+    void on_find_state_toggled(bool checked);
+
+    void on_up_c_clicked();
+
+    void on_up_d_clicked();
+
+    void on_up_i_clicked();
+
 private:
     Ui::Widget *ui;
 

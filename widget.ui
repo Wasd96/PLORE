@@ -132,15 +132,30 @@ QTabBar::tab:selected {
    </property>
    <widget class="QWidget" name="tab1">
     <attribute name="title">
-     <string>Симуляция</string>
+     <string>На равных</string>
     </attribute>
    </widget>
    <widget class="QWidget" name="tab2">
     <attribute name="title">
-     <string>Война</string>
+     <string>Сильнейший</string>
     </attribute>
    </widget>
    <widget class="QWidget" name="tab3">
+    <attribute name="title">
+     <string>Страница</string>
+    </attribute>
+   </widget>
+   <widget class="QWidget" name="tab4">
+    <attribute name="title">
+     <string>отряд (?)</string>
+    </attribute>
+   </widget>
+   <widget class="QWidget" name="tab5">
+    <attribute name="title">
+     <string>Охота</string>
+    </attribute>
+   </widget>
+   <widget class="QWidget" name="tab6">
     <attribute name="title">
      <string>ExPlore</string>
     </attribute>

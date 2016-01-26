@@ -1,39 +1,43 @@
 #include "connection.h"
 
-Connection::Connection(int port, int _temper) // создание модуля связи
+Connection::Connection(int port, int _temper, int _type) // создание модуля связи
 {
     table.clear(); // очистка таблицы связей (на всякий случай)
     data.clear();
 
     temper = _temper;
+    type = _type;
 
     udpSocket = new QUdpSocket(this); // создание сокета
     while (!udpSocket->bind(port, QUdpSocket::ShareAddress)) //инициализация
     {
        port++;
        if (port >= 50200) port = 50000;
+       // при alpha 0.3.2. было замечено странное поведение
+       // на другом компе. Возможно, с этими портами что то не так
+       // заняты, например, хотя ShareAddress...
     }
     portRecieve = udpSocket->localPort(); // сохранение личного порта
 
     connect(udpSocket, SIGNAL(readyRead()), this, SLOT(readData())); // прием данных
 }
 
-void Connection::sendData(quint16 port, int type) //подготовка и отправка данных
+void Connection::sendData(quint16 port, int Mtype) //подготовка и отправка данных
 {
     QString outData;
-    if (type == 0) // установка связи
+    if (Mtype == 0) // установка связи
     {
-        outData = "0 "+QString::number(temper);
+        outData = "0 "+QString::number(temper)+" "+QString::number(type);
     }
-    if (type == 1) // проверка связи
+    if (Mtype == 1) // проверка связи
     {
-        outData = "1";
+        outData = "1 ";
     }
-    if (type == 2) // подтверждение связи
+    if (Mtype == 2) // подтверждение связи
     {
-        outData = "2";
+        outData = "2 ";
     }
-    if (type == 6) // подтверждение боевой помощи
+    if (Mtype == 6) // подтверждение боевой помощи
     {
         outData = "6 ";
     }
@@ -47,20 +51,30 @@ void Connection::sendData(quint16 port, int type) //подготовка и от
                              port);
 }
 
-void Connection::sendData(quint16 port, int type, int amount)
+void Connection::sendData(quint16 port, int Mtype, int amount)
 {
     QString outData;
-    if (type == 3) // атака
+    if (Mtype == 3) // атака
     {
         outData = "3 " + QString::number(amount);
     }
-    if (type == 4) // помощь (передача памяти)
+    if (Mtype == 4) // помощь (передача памяти)
     {
         outData = "4 " + QString::number(amount);
     }
-    if (type == 5) // просьба о помощи
+    if (Mtype == 5) // просьба о помощи
     {
-        outData = "5 " + QString::number(amount); // здесь amount = port врага
+        // здесь amount = port врага
+        int index;
+        for (int i = 0; i < table.size(); i++)
+        {
+            if (table.at(i).port == amount) // сравниваем текущий порт с существующими
+            {
+                index = i;
+                break;
+            }
+        }
+        outData = "5 " + QString::number(amount) + " " + QString::number(table.at(index).type);
     }
 
 
@@ -189,6 +203,7 @@ void Connection::readData() // прием данных
             if (strList.first() == "0") // установка связи
             {
                 newTable.relationship = (strList.at(1).toInt() + temper)/2; // отношение
+                newTable.type = (strList.at(2).toInt()); // тип проги
                 newTable.useful = rand()%2;
                 newTable.port = port;
                 newTable.lostSignal = 0;
@@ -224,6 +239,8 @@ void Connection::sortTable() // сортировка по возрастанию
         {
             if (table.at(i).relationship > table.at(i+1).relationship)
             {
+                if (selectedConnection == i) selectedConnection = i+1;
+                else if (selectedConnection == i+1) selectedConnection = i; //так же сдвигаем и выбранную строку
                 table.swap(i, i+1);
                 change = true;
             }
@@ -233,6 +250,8 @@ void Connection::sortTable() // сортировка по возрастанию
                 {
                     if (table.at(i).useful > table.at(i+1).useful) // то сортировка по пользе
                     {
+                        if (selectedConnection == i) selectedConnection = i+1;
+                        else if (selectedConnection == i+1) selectedConnection = i;
                         table.swap(i, i+1);
                         change = true;
                     } // аттракцион - скатись по горке!
