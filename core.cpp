@@ -141,6 +141,33 @@ void Core::upgradeC()
     timeToUpgrade = 0;
 }
 
+void Core::deathRecountRealloc()
+{
+    if (In <= 0)
+    {
+        dead = true; // смерть
+        free(I);
+        free(D);
+        free(C);
+        if (type == 1)
+            send(45454, 1); // сообщение лаунчеру о смерти юзера
+        else
+            send(45454, 2); // сообщение лаунчеру о смерти бота
+        free(connection);
+
+        return;
+    }
+
+    In += Ii; // прирост памяти
+    if (Cn < In) // предел ресурса
+        Cn += Ci; // ресурса
+
+
+    I = (int*)realloc(I, In*sizeof(int)); // перевыделение памяти
+    D = (double*)(realloc(D, Dn*sizeof(double))); // по факту незаметна разница
+    C = (char*)realloc(C, Cn*sizeof(char)); // но ради чистоты идеи
+}
+
 int Core::getINextRequire()
 {
     return (int)pow((Ii+2),3) + pow(3, Ii+1);
@@ -422,17 +449,6 @@ void Core::update()
     operateDataFromConnection();
 
 
-    if (In <= 0)
-    {
-        dead = true; // смерть
-        free(I);
-        free(D);
-        free(C);
-        free(connection);
-        return;
-    }
-
-
     if (timeToUpgrade == (int)(50.0*coeff))
         messages.append("Желательна оптимизация: атака неактивна.");
     if (timeToUpgrade == (int)(70.0*coeff))
@@ -441,16 +457,8 @@ void Core::update()
         messages.append("Необходима оптимизация: поиск портов отключен.");
     timeToUpgrade++;
 
-    In += Ii; // прирост памяти
-    if (Cn < In) // предел ресурса
-    {
-        Cn += Ci; // ресурса
-    }
 
-
-    I = (int*)realloc(I, In*sizeof(int)); // перевыделение памяти
-    D = (double*)(realloc(D, Dn*sizeof(double))); // по факту незаметна разница
-    C = (char*)realloc(C, Cn*sizeof(char)); // но ради чистоты идеи
+    deathRecountRealloc(); // обработка смерти, подсчетов, перевыделений
 }
 
 void Core::updateUser() // пользовательский апдейт
@@ -478,24 +486,7 @@ void Core::updateUser() // пользовательский апдейт
     operateDataFromConnection(); // обработка сообщений
 
 
-    if (In <= 0)
-    {
-        dead = true; // смерть
-        free(I);
-        free(D);
-        free(C);
-        free(connection);
-        return;
-    }
-
-    In += Ii; // прирост памяти
-    if (Cn < In) // предел ресурса
-        Cn += Ci; // ресурса
-
-
-    I = (int*)realloc(I, In*sizeof(int)); // перевыделение памяти
-    D = (double*)(realloc(D, Dn*sizeof(double))); // по факту незаметна разница
-    C = (char*)realloc(C, Cn*sizeof(char)); // но ради чистоты идеи
+    deathRecountRealloc(); // обработка смерти, подсчетов, перевыделений
 }
 
 

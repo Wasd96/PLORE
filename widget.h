@@ -28,11 +28,9 @@ public:
     void timerEvent(QTimerEvent *t);
 
 private slots:
+    void died(int type); // прием лаунчера о смерти
+
     void on_start_clicked();
-
-    void on_pushButton_clicked();
-
-    void on_send_clicked();
 
     void on_attack_clicked();
 
@@ -50,10 +48,13 @@ private slots:
 
     void on_up_i_clicked();
 
+    void on_launcherTab_currentChanged(int index);
+
 private:
     Ui::Widget *ui;
 
     Core* core;
+    Connection *connection;
 
     int timer; //id таймера
     int period; // частота таймера
@@ -65,6 +66,10 @@ private:
     bool clanProgram;
     bool exploreProgram;
     bool launcher;
+
+
+    int botAlive; // живые боты
+    int userAlive; // живые юзеры
 };
 
 #endif // WIDGET_H

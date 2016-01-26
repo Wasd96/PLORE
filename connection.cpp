@@ -41,7 +41,10 @@ void Connection::sendData(quint16 port, int Mtype) //подготовка и о�
     {
         outData = "6 ";
     }
-
+    if (Mtype == 88) // код самоубийства для процесса
+    {
+        outData = "88 ";
+    }
 
 
     QByteArray datagram = outData.toUtf8();
@@ -111,7 +114,8 @@ void Connection::readData() // прием данных
                 strList.first() != "3" &&
                 strList.first() != "4" &&
                 strList.first() != "5" &&
-                strList.first() != "6")
+                strList.first() != "6" &&
+                strList.first() != "88")
         {
             QString rec = QString::number(port)+ " -> " + str; // создание отчета
             data.append(rec); // сохранение отчета
@@ -196,12 +200,11 @@ void Connection::readData() // прием данных
 
 
         }
-        else // это новое соединение
+        else // такого соединения нет
         {
-            connectTable newTable;
-
             if (strList.first() == "0") // установка связи
             {
+                connectTable newTable;
                 newTable.relationship = (strList.at(1).toInt() + temper)/2; // отношение
                 newTable.type = (strList.at(2).toInt()); // тип проги
                 newTable.useful = rand()%2;
@@ -212,11 +215,27 @@ void Connection::readData() // прием данных
                 sortTable();
                 sendData(port, 0); // ответное соединение
                                    //(чтобы отправитель знал о существовании принявшего)
+
+                str = "Новое соединение: " + QString::number(port%1000);
+                data.append(str);
             }
 
+            if (strList.first() == "1") // сообщение лаунчеру о смерти юзера
+            {
+                emit died(1);
+            }
 
-            str = "Новое соединение: " + QString::number(port%1000);
-            data.append(str);
+            if (strList.first() == "2") // сообщение лаунчеру о смерти бота
+            {
+                emit died(2);
+            }
+
+            if (strList.first() == "88") // лаунчер сообщает, что пора умирать
+            {
+                data.append(strList.first());
+                emit died(0);
+            }
+
         }
     }
 

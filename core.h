@@ -53,6 +53,8 @@ public:
     void upgradeD();
     void upgradeC();
 
+    void deathRecountRealloc();
+
     int getI() { return In; }
     int getD() { return Dn; }
     int getC() { return Cn; }

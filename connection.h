@@ -14,7 +14,7 @@ struct connectTable
     int relationship; // -5 - злейший враг, 0 - нейтрал, 5 - лучший друг
     int useful; // 0 - связь бесполезна, 10 - очень полезна
     int lostSignal; // "мертвая" связь
-    int type; // 0 - бот, 1 - юзер
+    int type; // -1 - лаунчер, 0 - бот, 1 - юзер
 };
 
 class Connection : public QObject
@@ -66,6 +66,8 @@ public:
     int getSelectedConnection() { return selectedConnection; }
     int getType() { return type; }
 
+signals:
+    void died(int type);
 
 };
 

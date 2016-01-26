@@ -23,38 +23,12 @@
     </rect>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton">
-   <property name="geometry">
-    <rect>
-     <x>490</x>
-     <y>460</y>
-     <width>158</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>close</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="send">
-   <property name="geometry">
-    <rect>
-     <x>530</x>
-     <y>500</y>
-     <width>75</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>send</string>
-   </property>
-  </widget>
   <widget class="QTabWidget" name="launcherTab">
    <property name="geometry">
     <rect>
      <x>30</x>
      <y>330</y>
-     <width>400</width>
+     <width>501</width>
      <height>250</height>
     </rect>
    </property>
@@ -142,12 +116,12 @@ QTabBar::tab:selected {
    </widget>
    <widget class="QWidget" name="tab3">
     <attribute name="title">
-     <string>Страница</string>
+     <string>Стенка на стенку</string>
     </attribute>
    </widget>
    <widget class="QWidget" name="tab4">
     <attribute name="title">
-     <string>отряд (?)</string>
+     <string>Защита сервера</string>
     </attribute>
    </widget>
    <widget class="QWidget" name="tab5">
@@ -252,26 +226,6 @@ QTabBar::tab:selected {
    <property name="text">
     <string>Настроение (придумать)</string>
    </property>
-  </widget>
-  <widget class="QComboBox" name="Choose">
-   <property name="geometry">
-    <rect>
-     <x>320</x>
-     <y>590</y>
-     <width>100</width>
-     <height>30</height>
-    </rect>
-   </property>
-   <item>
-    <property name="text">
-     <string>норм</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>юзер</string>
-    </property>
-   </item>
   </widget>
   <widget class="QListWidget" name="connections">
    <property name="geometry">

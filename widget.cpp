@@ -1,6 +1,7 @@
 #include "widget.h"
 #include "ui_widget.h"
 #include <QProcess>
+#include <QDesktopWidget>
 #include <QDebug>
 
 
@@ -9,7 +10,8 @@ Widget::Widget(QWidget *parent) :
     ui(new Ui::Widget)
 {
     ui->setupUi(this);
-    srand(time(NULL));
+    srand(time(NULL)*(int)(ui)); // зависимость зерна от адреса GUI,
+                                 // т.к. процессы запускаются практически одновременно
 
     // инициализация типов программ
     launcher = false;
@@ -24,8 +26,8 @@ Widget::Widget(QWidget *parent) :
     disableGUI();
 
 
-    setFixedSize(400,300);
-    move(100,100);
+    setFixedSize(501,300);
+    move(200,200);
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint );
 }
 
@@ -100,6 +102,13 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
         if (userProgram)
         {
+            ui->up_i->setEnabled(true);
+            ui->up_d->setEnabled(true);
+            ui->up_c->setEnabled(true);
+            ui->attack->setEnabled(true);
+            ui->help->setEnabled(true);
+            ui->request->setEnabled(true);
+
             ui->bar_i->setMaximum(core->getINextRequire() + 5); // 100% возможность улучшения
             if (core->getC() >= core->getINextRequire()+5)
                 ui->bar_i->setValue(core->getINextRequire()+5);
@@ -128,29 +137,64 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
     }
 }
 
+void Widget::died(int type)
+{
+    if (launcher)
+    {
+        if (type == 1)
+            userAlive--;
+        if (type == 2)
+            botAlive--;
+
+        if (userAlive == 0 || botAlive == 0)
+        {
+            if (userAlive == 0)
+                qDebug() << "Game Over";
+            else
+                qDebug() << "You win";
+
+            for (int i = 0; i < 200; i++)
+            {
+                connection->sendData(50000+i, 88);
+            }
+            setHidden(false);
+            raise();
+        }
+    }
+    else
+    {
+        //delete Core;
+        close();
+    }
+}
+
 void Widget::initGUI()
 {
 
     if (launcher) // установка gui лаунчера
     {
-
-
         ui->start->setVisible(1);
         ui->start->setEnabled(1);
         ui->start->move(10,260);
-
-        ui->Choose->setVisible(1);
-        ui->Choose->setEnabled(1);
-        ui->Choose->move(290, 260);
 
         ui->launcherTab->setVisible(1);
         ui->launcherTab->setEnabled(1);
         ui->launcherTab->move(0,0);
         setWindowFlags(Qt::Window);
 
+        ui->console->setVisible(1);
+        ui->console->setEnabled(1);
+        ui->console->resize(480, 210);
+        ui->console->move(10, 30);
+
     }
     if (normalProgram || userProgram) // установка gui нормальной программы
     {
+        QDesktopWidget qdw; // получение размером экрана
+        int cur_w = qdw.width();
+        int cur_h = qdw.height();
+
+        move(rand()%(cur_w-500), rand()%(cur_h-300));
         setFixedSize(510, 310);
 
         ui->console->setVisible(1);
@@ -180,10 +224,13 @@ void Widget::initGUI()
 
         if (normalProgram)
         {
+            ui->console->resize(280, 290);
             ui->console->move(220, 10);
         }
         if (userProgram)
         {
+            ui->console->resize(280, 290);
+            ui->console->move(470, 10);
             ui->bar_i->setMinimum(0);
             ui->bar_i->setMaximum(core->getINextRequire() + 5); // 100% возможность улучшения
             ui->bar_i->setValue(core->getC());
@@ -247,17 +294,8 @@ void Widget::disableGUI()
     ui->start->setEnabled(0);
     ui->start->setVisible(0);
 
-    ui->Choose->setEnabled(0);
-    ui->Choose->setVisible(0);
-
     ui->launcherTab->setVisible(0);
     ui->launcherTab->setEnabled(0);
-
-    ui->pushButton->setVisible(0);
-    ui->pushButton->setEnabled(0);
-
-    ui->send->setVisible(0);
-    ui->send->setEnabled(0);
 
     ui->myPort->setVisible(0);
     ui->I->setVisible(0);
@@ -315,85 +353,65 @@ void Widget::setArgs(int argc, char *argv[])
     {
         launcher = true; // значит это лаунчер
         setWindowTitle("Лаунчер");
-
+        connection = new Connection(45454, 0, -1); // личный порт лаунчера
+        connect(connection,
+                SIGNAL(died(int)),
+                this,
+                SLOT(died(int)));
     }
     else
     {
-        if ((QString)argv[1] == "n") // обычная программа
+        if ((QString)argv[1] == "n" || (QString)argv[1] == "u") // обычная программа
         {
-            normalProgram = true;
-            setWindowTitle("Я - Программа");
+            int power = QString(argv[2]).toInt();
 
-            int D = rand()%2000+7000;
+            int D = rand()%(2000-power*1000)+7500+power*1000;
+            int I, C, temper, Ii, Ci;
             if (D < 4000) // в зависимости от скорости даются бонусы
             {
-                int I = rand()%50+100;
-                int C = rand()%10+10;
-                int temper = rand()%6+0;
-                core = new Core(I, D, C, temper, 2, 3, 0);
+                I = rand()%50+100+power*50;
+                C = rand()%10+10+power*50;
+                temper = rand()%6+0;
+                Ii = 2+power;
+                Ci = 3+power;
             }
             else if (D < 6500)
             {
-                int I = rand()%50+80;
-                int C = rand()%10+7;
-                int temper = rand()%9-3;
-                core = new Core(I, D, C, temper, 2, 2, 0);
+                I = rand()%50+80+power*50;
+                C = rand()%10+7+power*50;
+                temper = rand()%9-3;
+                Ii = 2+power;
+                Ci = 2+power;
             }
             else
             {
-                int I = rand()%50+50;
-                int C = rand()%10+5;
-                int temper = rand()%11-5;
-                core = new Core(I, D, C, temper, 1, 2, 0);
+                I = rand()%50+50+power*50;
+                C = rand()%10+5+power*50;
+                temper = rand()%11-5;
+                Ii = 1+power;
+                Ci = 3+power;
             }
-            /*core = new Core(rand()%50+50,
-                            rand()%7000+2000,
-                            rand()%10+5,
-                            rand()%11-5,
-                            1,
-                            2);*/
+            int type = 0;
+            if ((QString)argv[1] == "n")
+            {
+                normalProgram = true;
+                setWindowTitle("Я - Программа");
+                type = 0;
+            }
+            if ((QString)argv[1] == "u") // пользователь!
+            {
+                userProgram = true;
+                setWindowTitle("Я - Человек");
+                type = 1;
+            }
+            core = new Core(I, D, C, temper, Ii, Ci, type);
             period = 10000 - core->getD();
-            //ui->console->append(QString::number(core->getD()));
             timer = startTimer(period);
-        }
 
-        if ((QString)argv[1] == "u") // пользователь!
-        {
-            userProgram = true;
-            setWindowTitle("Я - Человек");
-
-            int D = rand()%2000+7000;
-            if (D < 4000) // в зависимости от скорости даются бонусы
-            {
-                int I = rand()%50+100;
-                int C = rand()%10+10;
-                int temper = rand()%6+0;
-                core = new Core(I, D, C, temper, 2, 3, 1);
-            }
-            else if (D < 6500)
-            {
-                int I = rand()%50+80;
-                int C = rand()%10+7;
-                int temper = rand()%9-3;
-                core = new Core(I, D, C, temper, 2, 2, 1);
-            }
-            else
-            {
-                int I = rand()%50+50;
-                int C = rand()%10+5;
-                int temper = rand()%11-5;
-                core = new Core(I, D, C, temper, 1, 2, 1);
-            }
-            /*core = new Core(rand()%50+50,
-                            rand()%7000+2000,
-                            rand()%10+5,
-                            rand()%11-5,
-                            1,
-                            2);*/
-
-            period = 10000 - core->getD();
-            //ui->console->append(QString::number(core->getD()));
-            timer = startTimer(period);
+            connect(core->getConnection(),
+                    SIGNAL(died(int)),
+                    this,
+                    SLOT(died(int)));
         }
     }
 
@@ -410,33 +428,62 @@ Widget::~Widget()
 
 void Widget::on_start_clicked() // старт игры
 {
-    setHidden(true);
+
     QStringList arguments;
 
-    if (ui->launcherTab->currentIndex() == 0)
+    if (ui->launcherTab->currentIndex() == 0) // на равных
     {
-        if (ui->Choose->currentText() == "норм")
+
+        for (int i = 0; i < 3; i++) // старт трех ботов
         {
-            arguments << "n";
+            arguments << "n" << "0";
+
+            QProcess::startDetached("PLORE.exe", arguments);
+            arguments.clear();
         }
-        if (ui->Choose->currentText() == "юзер")
-        {
-            arguments << "u";
-        }
+        arguments << "u" << "0"; // старт юзера
+        QProcess::startDetached("PLORE.exe", arguments);
+        arguments.clear();
+
+        botAlive = 3;
+        userAlive = 1;
     }
 
-    qDebug() << QProcess::startDetached("PLORE.exe", arguments);
-}
+    if (ui->launcherTab->currentIndex() == 1) // сильнейший
+    {
 
-void Widget::on_pushButton_clicked()
-{
-    //delete core;
-    close();
-}
+        for (int i = 0; i < 9; i++) // старт девяти ботов
+        {
+            arguments << "n" << "0";
 
-void Widget::on_send_clicked()
-{
-    core->send(45454, 0);
+            QProcess::startDetached("PLORE.exe", arguments);
+            arguments.clear();
+        }
+        arguments << "u" << "0"; // старт юзера
+        QProcess::startDetached("PLORE.exe", arguments);
+        arguments.clear();
+    }
+
+    if (ui->launcherTab->currentIndex() == 2) // стенка на стенку
+    {
+
+        for (int i = 0; i < 5; i++) // старт пяти ботов (+1)
+        {
+            arguments << "n" << "1";
+            QProcess::startDetached("PLORE.exe", arguments);
+            arguments.clear();
+        }
+        for (int i = 0; i < 3; i++) // старт 3 юзеров
+        {
+            arguments << "u" << "0";
+            QProcess::startDetached("PLORE.exe", arguments);
+            arguments.clear();
+        }
+
+    }
+
+    setHidden(true);
+    //qDebug() << QProcess::startDetached("PLORE.exe", arguments);
 }
 
 void Widget::on_attack_clicked() // атака пользователя на выбранный порт
@@ -446,7 +493,7 @@ void Widget::on_attack_clicked() // атака пользователя на в�
     if (index > -1) //если выбрано
     {
         int c = ui->attack_count->text().toInt();
-        if (core->getC() >= c) // если достаточно
+        if (core->getC() >= c && c > 0) // если достаточно
         {
             core->attack(core->getConnection()->getTable(index).port, c);
 
@@ -457,6 +504,7 @@ void Widget::on_attack_clicked() // атака пользователя на в�
             ui->console->append("Недостаточно ресурсов.");
         }
     }
+    ui->attack->setEnabled(0);
 }
 
 void Widget::on_help_clicked() // помощь пользователя выбранному порту
@@ -465,7 +513,9 @@ void Widget::on_help_clicked() // помощь пользователя выбр
     if (index > -1) //если выбрано
     {
         int i = ui->help_count->text().toInt();
-        if (core->getI() >= i && core->getConnection()->getTable(index).useful > 0) // если достаточно
+        if (core->getI() >= i &&
+                core->getConnection()->getTable(index).useful > 0 &&
+                i > 0) // если достаточно
         {
             core->help(core->getConnection()->getTable(index).port, i);
         }
@@ -476,6 +526,7 @@ void Widget::on_help_clicked() // помощь пользователя выбр
         }
 
     }
+    ui->help->setEnabled(0);
 }
 
 void Widget::on_request_clicked()
@@ -507,6 +558,7 @@ void Widget::on_request_clicked()
             }
         }
     }
+    ui->request->setEnabled(0);
 }
 
 
@@ -516,6 +568,7 @@ void Widget::on_connections_itemSelectionChanged() // выбран другой 
     {
         // запоминаем новое выделение
         core->getConnection()->setSelectedConnection(ui->connections->currentRow());
+        // не работает как надо! на alpha 0.3.6 по прежнему не понимаю
     }
 }
 
@@ -528,7 +581,8 @@ void Widget::on_find_state_toggled(bool checked) // отключен автоп�
 
 void Widget::on_up_c_clicked()
 {
-    if ((double)ui->bar_c->value()/(double)ui->bar_c->maximum() == 1)
+
+    if ((double)core->getC()/(double)ui->bar_c->maximum() >= 1)
     {
         core->upgradeC();
     }
@@ -537,11 +591,12 @@ void Widget::on_up_c_clicked()
         ui->console->setTextColor(QColor(0,0,0));
         ui->console->append("Недостаточно ресурсов");
     }
+    ui->up_c->setEnabled(false);
 }
 
 void Widget::on_up_d_clicked()
 {
-    if ((double)ui->bar_d->value()/(double)ui->bar_d->maximum() == 1)
+    if ((double)core->getC()/(double)ui->bar_d->maximum() >= 1)
     {
         core->upgradeD();
     }
@@ -550,11 +605,12 @@ void Widget::on_up_d_clicked()
         ui->console->setTextColor(QColor(0,0,0));
         ui->console->append("Недостаточно ресурсов");
     }
+    ui->up_d->setEnabled(false);
 }
 
 void Widget::on_up_i_clicked()
 {
-    if ((double)ui->bar_i->value()/(double)ui->bar_i->maximum() == 1)
+    if ((double)core->getC()/(double)ui->bar_i->maximum() >= 1)
     {
         core->upgradeI();
     }
@@ -562,5 +618,22 @@ void Widget::on_up_i_clicked()
     {
         ui->console->setTextColor(QColor(0,0,0));
         ui->console->append("Недостаточно ресурсов");
+    }
+    ui->up_i->setEnabled(false);
+}
+
+void Widget::on_launcherTab_currentChanged(int index)
+{
+    if (index == 0)
+    {
+        ui->console->setText("Ознакомительный режим. Осмотритесь,\
+                             познакомьтесь с управлением и оповещениями.\
+                             \nПамять - это состояние программы, насколько стабильно она\
+                             функционирует в операционной системе.\n\
+                             Быстройдействие - показатель, сколько секунд требуется программе\
+                             на выполнение одной операции.\n\
+                             Ресурс - способность программы выполнять операции - \
+                             взламывать другие, передавать им память\
+                             или посылать запросы о поддержке.\n");
     }
 }
