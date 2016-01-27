@@ -45,6 +45,10 @@ void Connection::sendData(quint16 port, int Mtype) //подготовка и о�
     {
         outData = "88 ";
     }
+    if (Mtype == 90) // Закончен первый уровень
+    {
+        outData = "90 ";
+    }
 
 
     QByteArray datagram = outData.toUtf8();
@@ -220,25 +224,24 @@ void Connection::readData() // прием данных
                 data.append(str);
             }
 
-            if (strList.first() == "1") // сообщение лаунчеру о смерти юзера
+            if (strList.first() != "0") // сообщение о смерти
             {
-                emit died(1);
-            }
+                if (strList.first() == "88") // лаунчер сообщает, что пора умирать
+                {
+                    emit died(0);
+                    break;
+                }
+                if (strList.first() == "90")
+                {
+                    emit died(90);
+                    break;
+                }
 
-            if (strList.first() == "2") // сообщение лаунчеру о смерти бота
-            {
-                emit died(2);
-            }
+                emit died(strList.first().toInt()); // 1 - юзер, 2 -бот
 
-            if (strList.first() == "88") // лаунчер сообщает, что пора умирать
-            {
-                data.append(strList.first());
-                emit died(0);
             }
-
         }
     }
-
 }
 
 

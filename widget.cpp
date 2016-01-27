@@ -21,12 +21,14 @@ Widget::Widget(QWidget *parent) :
     clanProgram = false;
     exploreProgram = false;
 
+    level = 0;
+    maxLevel = 2;
 
     //инициализация GUI
     disableGUI();
 
 
-    setFixedSize(501,300);
+    setFixedSize(200,100);
     move(200,200);
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint );
 }
@@ -97,6 +99,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
         if (core->getDead())
         {
+            delete core;
             close();
         }
 
@@ -141,24 +144,56 @@ void Widget::died(int type)
 {
     if (launcher)
     {
-        if (type == 1)
+        if (type == 1) // умер юзер
+        {
             userAlive--;
-        if (type == 2)
+            qDebug() << userAlive << botAlive;
+        }
+        if (type == 2) // умер бот
+        {
             botAlive--;
+            qDebug() << userAlive << botAlive;
+        }
+        if (type == 90) // конец уровня
+        {
+            for (int i = 0; i < 200; i++)
+            {
+                connection->sendData(50000+i, 88); // всем умереть
+            }
+            if (maxLevel == 0)
+                maxLevel = 1;
+            ui->launcherTab->setCurrentIndex(maxLevel);
+            setHidden(false);
+            raise();
+
+            for(int i = 0; i <= maxLevel; i++)
+                ui->launcherTab->setTabEnabled(i,1);
+        }
 
         if (userAlive == 0 || botAlive == 0)
         {
             if (userAlive == 0)
-                qDebug() << "Game Over";
-            else
-                qDebug() << "You win";
-
-            for (int i = 0; i < 200; i++)
             {
-                connection->sendData(50000+i, 88);
+                qDebug() << "Game Over";
+
+                userAlive = -1;
+                botAlive = -1;
             }
-            setHidden(false);
-            raise();
+            else
+            {
+                if (maxLevel > 0)
+                {
+                    if (maxLevel < 5)
+                        maxLevel++;
+                    QStringList args;
+                    args << "win";
+                    QProcess::startDetached("PLORE.exe", args);
+                    qDebug() << "You win";
+                }
+
+                userAlive = -1;
+                botAlive = -1;
+            }
         }
     }
     else
@@ -173,6 +208,9 @@ void Widget::initGUI()
 
     if (launcher) // установка gui лаунчера
     {
+        setWindowFlags(Qt::Window);
+        setFixedSize(501, 300);
+
         ui->start->setVisible(1);
         ui->start->setEnabled(1);
         ui->start->move(10,260);
@@ -180,12 +218,17 @@ void Widget::initGUI()
         ui->launcherTab->setVisible(1);
         ui->launcherTab->setEnabled(1);
         ui->launcherTab->move(0,0);
-        setWindowFlags(Qt::Window);
+        ui->launcherTab->setCurrentIndex(1);
+        ui->launcherTab->setCurrentIndex(0);
+
+        for(int i = 0; i <= maxLevel; i++)
+            ui->launcherTab->setTabEnabled(i,1);
 
         ui->console->setVisible(1);
         ui->console->setEnabled(1);
         ui->console->resize(480, 210);
         ui->console->move(10, 30);
+
 
     }
     if (normalProgram || userProgram) // установка gui нормальной программы
@@ -219,7 +262,7 @@ void Widget::initGUI()
                                QString::number(core->getC())));
 
         ui->temper->setVisible(1);
-        ui->temper->setText(QString("Настроение (заменить): " + QString::number(core->getTemper())));
+        ui->temper->setText(QString("Дружелюбность: " + QString::number(core->getTemper())));
 
 
         if (normalProgram)
@@ -296,6 +339,8 @@ void Widget::disableGUI()
 
     ui->launcherTab->setVisible(0);
     ui->launcherTab->setEnabled(0);
+    for(int i = 0; i < 6; i++)
+        ui->launcherTab->setTabEnabled(i,0);
 
     ui->myPort->setVisible(0);
     ui->I->setVisible(0);
@@ -413,6 +458,35 @@ void Widget::setArgs(int argc, char *argv[])
                     this,
                     SLOT(died(int)));
         }
+
+
+        if ((QString)argv[1] == "h") // help для первого уровня
+        {
+            setFixedSize(200, 100);
+            ui->up_c->setEnabled(true);
+            ui->up_c->setVisible(true);
+            ui->up_c->resize(180,80); // взята эта кнопка
+            ui->up_c->move(10, 10); // чтобы не плодить лишних интерфейсов
+            ui->up_c->setText("Все понятно, продолжим!"); // улучшения тут нет
+
+            setWindowTitle("Разобрались?");
+            connection = new Connection(45455, 0, -1); // порт хелпера
+
+        }
+
+        if ((QString)argv[1] == "win") // окно победы
+        {
+            setFixedSize(200, 100);
+            ui->up_c->setEnabled(true);
+            ui->up_c->setVisible(true);
+            ui->up_c->resize(180,80); // аналогично с предыдущим
+            ui->up_c->move(10, 10);
+            ui->up_c->setText("Открыт следующий уровень.");
+
+            setWindowTitle("Победа!");
+            connection = new Connection(45455, 0, -1); // порт окна победы (в принципе, такой же у хелпа)
+                                                       // роли это не играет - принимать ничего не надо
+        }
     }
 
 
@@ -430,6 +504,7 @@ void Widget::on_start_clicked() // старт игры
 {
 
     QStringList arguments;
+    level = ui->launcherTab->currentIndex();
 
     if (ui->launcherTab->currentIndex() == 0) // на равных
     {
@@ -442,6 +517,10 @@ void Widget::on_start_clicked() // старт игры
             arguments.clear();
         }
         arguments << "u" << "0"; // старт юзера
+        QProcess::startDetached("PLORE.exe", arguments);
+        arguments.clear();
+
+        arguments << "h"; // старт "кнопки ОК" для обучения
         QProcess::startDetached("PLORE.exe", arguments);
         arguments.clear();
 
@@ -462,12 +541,15 @@ void Widget::on_start_clicked() // старт игры
         arguments << "u" << "0"; // старт юзера
         QProcess::startDetached("PLORE.exe", arguments);
         arguments.clear();
+
+        botAlive = 9;
+        userAlive = 1;
     }
 
     if (ui->launcherTab->currentIndex() == 2) // стенка на стенку
     {
 
-        for (int i = 0; i < 5; i++) // старт пяти ботов (+1)
+        for (int i = 0; i < 3; i++) // старт трех ботов (+1)
         {
             arguments << "n" << "1";
             QProcess::startDetached("PLORE.exe", arguments);
@@ -479,11 +561,12 @@ void Widget::on_start_clicked() // старт игры
             QProcess::startDetached("PLORE.exe", arguments);
             arguments.clear();
         }
+        botAlive = 3;
+        userAlive = 3;
 
     }
 
     setHidden(true);
-    //qDebug() << QProcess::startDetached("PLORE.exe", arguments);
 }
 
 void Widget::on_attack_clicked() // атака пользователя на выбранный порт
@@ -582,16 +665,24 @@ void Widget::on_find_state_toggled(bool checked) // отключен автоп�
 void Widget::on_up_c_clicked()
 {
 
-    if ((double)core->getC()/(double)ui->bar_c->maximum() >= 1)
+    if (size().height() == 100) // если это кнопка конца уровня
     {
-        core->upgradeC();
+        connection->sendData(45454, 90); // конец уровня
+        close();
     }
     else
     {
-        ui->console->setTextColor(QColor(0,0,0));
-        ui->console->append("Недостаточно ресурсов");
+        if ((double)core->getC()/(double)ui->bar_c->maximum() >= 1)
+        {
+            core->upgradeC();
+        }
+        else
+        {
+            ui->console->setTextColor(QColor(0,0,0));
+            ui->console->append("Недостаточно ресурсов");
+        }
+        ui->up_c->setEnabled(false);
     }
-    ui->up_c->setEnabled(false);
 }
 
 void Widget::on_up_d_clicked()
@@ -624,16 +715,37 @@ void Widget::on_up_i_clicked()
 
 void Widget::on_launcherTab_currentChanged(int index)
 {
-    if (index == 0)
+    if (launcher)
     {
-        ui->console->setText("Ознакомительный режим. Осмотритесь,\
-                             познакомьтесь с управлением и оповещениями.\
-                             \nПамять - это состояние программы, насколько стабильно она\
-                             функционирует в операционной системе.\n\
-                             Быстройдействие - показатель, сколько секунд требуется программе\
-                             на выполнение одной операции.\n\
-                             Ресурс - способность программы выполнять операции - \
-                             взламывать другие, передавать им память\
-                             или посылать запросы о поддержке.\n");
+        if (index == 0)
+        {
+        ui->console->setText("Ознакомительный режим. Осмотритесь, \
+познакомьтесь с управлением и оповещениями.\n\n\
+1) Память - это состояние программы, насколько стабильно она \
+функционирует в операционной системе.\n\
+2) Быстройдействие - показатель, сколько секунд требуется программе \
+на выполнение одной операции.\n\
+3) Ресурс - способность программы выполнять операции - \
+взламывать другие, передавать им память \
+или посылать запросы о поддержке.\n\n\
+Программа завершается после того, как у нее заканчивается \
+доступная память. Атаки на программу удаляют часть памяти, \
+помощь же в свою очередь передает память от одной программы \
+к другой.\nДружелюбность показывает как программа должна \
+взаимодействовать с другими - атаковать, помогать или все вместе. \
+В зависимости от действий  ее отношения с другими может меняться.");
+        }
+        if (index == 1)
+        {
+            ui->console->setText("Хех дерись! 9 на одного.");
+        }
+        if (index == 2)
+        {
+            ui->console->setText("Слабо тремя управлять? Враг сильнее на старте.");
+        }
+        if (index == 3)
+        {
+            ui->console->setText("Рано еще, не нажимай.");
+        }
     }
 }

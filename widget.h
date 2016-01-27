@@ -67,9 +67,11 @@ private:
     bool exploreProgram;
     bool launcher;
 
-
     int botAlive; // живые боты
     int userAlive; // живые юзеры
+
+    int level; // текущий уровень
+    int maxLevel; // максимальный доступный уровень
 };
 
 #endif // WIDGET_H
