@@ -2,6 +2,7 @@
 #include "ui_widget.h"
 #include <QProcess>
 #include <QDesktopWidget>
+#include <QMessageBox>
 #include <QDebug>
 
 
@@ -22,7 +23,11 @@ Widget::Widget(QWidget *parent) :
     exploreProgram = false;
 
     level = 0;
-    maxLevel = 2;
+    maxLevel = 0;
+
+    userAlive = 0;
+    botAlive = 0;
+    normAlive = 0;
 
     //инициализация GUI
     disableGUI();
@@ -144,6 +149,11 @@ void Widget::died(int type)
 {
     if (launcher)
     {
+        if (type == 0) // умер норм прог
+        {
+            normAlive--;
+            qDebug() << userAlive << botAlive;
+        }
         if (type == 1) // умер юзер
         {
             userAlive--;
@@ -168,9 +178,26 @@ void Widget::died(int type)
 
             for(int i = 0; i <= maxLevel; i++)
                 ui->launcherTab->setTabEnabled(i,1);
+
+            QFile file("save"); // файл сохранения
+            if (file.open(QIODevice::WriteOnly | QIODevice::Text)) // попытка открыть
+            {
+                char save = maxLevel;
+                file.write(&save, 1); // считывание макс. уровня
+            }
+            else
+            {
+                file.open(QIODevice::WriteOnly); // создаем файл, если его не было
+            }
+            file.close();
+
+            userAlive = 0;
+            botAlive = 0;
+            normAlive = 0;
+            return;
         }
 
-        if (userAlive == 0 || botAlive == 0)
+        if (userAlive == 0 || botAlive == 0 || normAlive == 0)
         {
             if (userAlive == 0)
             {
@@ -178,9 +205,25 @@ void Widget::died(int type)
 
                 userAlive = -1;
                 botAlive = -1;
+                normAlive = -1;
             }
             else
             {
+                if (level == 3)
+                {
+                    if (normAlive == 0 && botAlive == -2) // первый этап
+                    {
+                        QMessageBox::information(this, "Тандем", "Готовьтесь отбить нападение двух хацкеров!");
+                        on_start_clicked();
+                        return;
+                    }
+                    else if (botAlive == 0)
+                    {
+                        QMessageBox::information(this, "Босс", "Босса убить нада!");
+                        on_start_clicked();
+                        return;
+                    }
+                }
                 if (maxLevel > 0)
                 {
                     if (maxLevel < 5)
@@ -193,6 +236,7 @@ void Widget::died(int type)
 
                 userAlive = -1;
                 botAlive = -1;
+                normAlive = -1;
             }
         }
     }
@@ -403,14 +447,30 @@ void Widget::setArgs(int argc, char *argv[])
                 SIGNAL(died(int)),
                 this,
                 SLOT(died(int)));
+
+        QFile file("save"); // файл сохранения
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) // попытка открыть
+        {
+            char save = 0;
+            file.read(&save, 1); // считывание макс. уровня
+            maxLevel = save;
+        }
+        else
+        {
+            file.open(QIODevice::WriteOnly); // создаем файл, если его не было
+        }
+        file.close();
+
     }
     else
     {
-        if ((QString)argv[1] == "n" || (QString)argv[1] == "u") // обычная программа
+        if ((QString)argv[1] == "normal" ||
+                (QString)argv[1] == "user" ||
+                (QString)argv[1] == "bot") // обычная программа
         {
             int power = QString(argv[2]).toInt();
 
-            int D = rand()%(2000-power*1000)+7500+power*1000;
+            int D = rand()%(7000-power*1000)+2500+power*1000;
             int I, C, temper, Ii, Ci;
             if (D < 4000) // в зависимости от скорости даются бонусы
             {
@@ -437,17 +497,23 @@ void Widget::setArgs(int argc, char *argv[])
                 Ci = 3+power;
             }
             int type = 0;
-            if ((QString)argv[1] == "n")
+            if ((QString)argv[1] == "normal") // обычная прога
             {
                 normalProgram = true;
                 setWindowTitle("Я - Программа");
                 type = 0;
             }
-            if ((QString)argv[1] == "u") // пользователь!
+            if ((QString)argv[1] == "user") // пользователь!
             {
                 userProgram = true;
                 setWindowTitle("Я - Человек");
                 type = 1;
+            }
+            if ((QString)argv[1] == "bot") // бот не бьет своих
+            {
+                normalProgram = true;
+                setWindowTitle("Я - Бот");
+                type = 2;
             }
             core = new Core(I, D, C, temper, Ii, Ci, type);
             period = 10000 - core->getD();
@@ -460,7 +526,7 @@ void Widget::setArgs(int argc, char *argv[])
         }
 
 
-        if ((QString)argv[1] == "h") // help для первого уровня
+        if ((QString)argv[1] == "help") // help для первого уровня
         {
             setFixedSize(200, 100);
             ui->up_c->setEnabled(true);
@@ -509,41 +575,43 @@ void Widget::on_start_clicked() // старт игры
     if (ui->launcherTab->currentIndex() == 0) // на равных
     {
 
-        for (int i = 0; i < 3; i++) // старт трех ботов
+        for (int i = 0; i < 3; i++) // старт трех программ
         {
-            arguments << "n" << "0";
+            arguments << "normal" << "0";
 
             QProcess::startDetached("PLORE.exe", arguments);
             arguments.clear();
         }
-        arguments << "u" << "0"; // старт юзера
+        arguments << "user" << "0"; // старт юзера
         QProcess::startDetached("PLORE.exe", arguments);
         arguments.clear();
 
-        arguments << "h"; // старт "кнопки ОК" для обучения
+        arguments << "help"; // старт "кнопки ОК" для обучения
         QProcess::startDetached("PLORE.exe", arguments);
         arguments.clear();
 
-        botAlive = 3;
+        normAlive = 3;
         userAlive = 1;
+        botAlive = -1;
     }
 
     if (ui->launcherTab->currentIndex() == 1) // сильнейший
     {
 
-        for (int i = 0; i < 9; i++) // старт девяти ботов
+        for (int i = 0; i < 9; i++) // старт девяти программ
         {
-            arguments << "n" << "0";
+            arguments << "normal" << "0";
 
             QProcess::startDetached("PLORE.exe", arguments);
             arguments.clear();
         }
-        arguments << "u" << "0"; // старт юзера
+        arguments << "user" << "0"; // старт юзера
         QProcess::startDetached("PLORE.exe", arguments);
         arguments.clear();
 
         botAlive = 9;
         userAlive = 1;
+        botAlive = -1;
     }
 
     if (ui->launcherTab->currentIndex() == 2) // стенка на стенку
@@ -551,19 +619,56 @@ void Widget::on_start_clicked() // старт игры
 
         for (int i = 0; i < 3; i++) // старт трех ботов (+1)
         {
-            arguments << "n" << "1";
+            arguments << "bot" << "1";
             QProcess::startDetached("PLORE.exe", arguments);
             arguments.clear();
         }
         for (int i = 0; i < 3; i++) // старт 3 юзеров
         {
-            arguments << "u" << "0";
+            arguments << "user" << "0";
             QProcess::startDetached("PLORE.exe", arguments);
             arguments.clear();
         }
         botAlive = 3;
         userAlive = 3;
+        normAlive = -1;
+    }
+    if (ui->launcherTab->currentIndex() == 3) // защита сервера
+    {
+        if (userAlive == 0)
+        {
+            for (int i = 0; i < 5; i++) // старт пяти прог
+            {
+                arguments << "normal" << "0";
+                QProcess::startDetached("PLORE.exe", arguments);
+                arguments.clear();
+            }
+            arguments << "user" << "1"; // юзер (+1)
+            QProcess::startDetached("PLORE.exe", arguments);
+            arguments.clear();
 
+            botAlive = -2;
+            userAlive = 1;
+            normAlive = 5;
+        }
+        else if (normAlive == 0)
+        {
+            for (int i = 0; i < 2; i++) // старт двух ботов (+2)
+            {
+                arguments << "bot" << "2";
+                QProcess::startDetached("PLORE.exe", arguments);
+                arguments.clear();
+            }
+
+            botAlive = 2;
+        }
+        else if (botAlive == 0)
+        {
+            arguments << "normal" << "5";
+            QProcess::startDetached("PLORE.exe", arguments);
+            arguments.clear();
+            normAlive = 1;
+        }
     }
 
     setHidden(true);
@@ -723,7 +828,7 @@ void Widget::on_launcherTab_currentChanged(int index)
 познакомьтесь с управлением и оповещениями.\n\n\
 1) Память - это состояние программы, насколько стабильно она \
 функционирует в операционной системе.\n\
-2) Быстройдействие - показатель, сколько секунд требуется программе \
+2) Быстродействие - показатель, сколько секунд требуется программе \
 на выполнение одной операции.\n\
 3) Ресурс - способность программы выполнять операции - \
 взламывать другие, передавать им память \

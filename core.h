@@ -23,7 +23,7 @@ private:
 
     bool dead; // мертв, пора удалять
     bool search; // флаг автопоиск
-    bool type; // тип проги 0 - бот 1 - юзер
+    int type; // тип проги 0 - норм 1 - юзер 2 - бот
 
     int timeToUpgrade; // желание улучшить параметры (от застоя)
 
@@ -38,10 +38,9 @@ public:
     void connectionSupport();
     void operateDataFromConnection();
 
-    void send(quint16 port, int type);
-    void send(quint16 port, int type, int amount);
+    void send(quint16 port, int _type);
+    void send(quint16 port, int _type, int amount);
     void setSearch(bool _search) { search = _search; }
-    void setType(bool _type) { type = _type; }
     bool hasMessages() { return (bool)messages.size(); }
     Connection* getConnection() { return connection;}
 
@@ -58,6 +57,7 @@ public:
     int getI() { return In; }
     int getD() { return Dn; }
     int getC() { return Cn; }
+    int getType() { return type; }
     int getTemper() { return temper; }
     bool getDead() { return dead; }
     int getINextRequire();

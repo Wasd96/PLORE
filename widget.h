@@ -67,8 +67,10 @@ private:
     bool exploreProgram;
     bool launcher;
 
+    int normAlive; // живые норм проги
     int botAlive; // живые боты
     int userAlive; // живые юзеры
+
 
     int level; // текущий уровень
     int maxLevel; // максимальный доступный уровень

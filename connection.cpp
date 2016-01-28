@@ -45,7 +45,7 @@ void Connection::sendData(quint16 port, int Mtype) //подготовка и о�
     {
         outData = "88 ";
     }
-    if (Mtype == 90) // Закончен первый уровень
+    if (Mtype == 90) // Закончен уровень (посылка лаунчеру)
     {
         outData = "90 ";
     }
@@ -61,6 +61,10 @@ void Connection::sendData(quint16 port, int Mtype) //подготовка и о�
 void Connection::sendData(quint16 port, int Mtype, int amount)
 {
     QString outData;
+    if (Mtype == 1) // сообщение о смерти
+    {
+        outData = "1 " + QString::number(amount);
+    }
     if (Mtype == 3) // атака
     {
         outData = "3 " + QString::number(amount);
@@ -237,7 +241,7 @@ void Connection::readData() // прием данных
                     break;
                 }
 
-                emit died(strList.first().toInt()); // 1 - юзер, 2 -бот
+                emit died(strList.at(1).toInt()); // 0 - прога, 1 - юзер, 2 - бот
 
             }
         }

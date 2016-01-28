@@ -43,14 +43,14 @@ Core::Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type)
     search = true;
 }
 
-void Core::send(quint16 port, int type)
+void Core::send(quint16 port, int _type)
 {
-    connection->sendData(port, type);
+    connection->sendData(port, _type);
 }
 
-void Core::send(quint16 port, int type, int amount)
+void Core::send(quint16 port, int _type, int amount)
 {
-    connection->sendData(port, type, amount);
+    connection->sendData(port, _type, amount);
 }
 
 void Core::attack(quint16 port, int amount)
@@ -145,17 +145,18 @@ void Core::deathRecountRealloc()
 {
     if (In <= 0)
     {
-        dead = true; // смерть
-        free(I);
-        free(D);
-        free(C);
-        if (type == 1)
-            send(45454, 1); // сообщение лаунчеру о смерти юзера
+        if (dead)
+            return;
         else
-            send(45454, 2); // сообщение лаунчеру о смерти бота
-        free(connection);
-
-        return;
+        {
+            dead = true; // смерть
+            free(I);
+            free(D);
+            free(C);
+            send(45454, 1, type); // сообщение лаунчеру о своей смерти
+            free(connection);
+            return;
+        }
     }
 
     In += Ii; // прирост памяти
@@ -215,36 +216,32 @@ void Core::operateDataFromConnection()
         {
             if (strList.at(1) == "3") // если это атака
             {
-                //str = "на момент атаки: C" + QString::number(Cn) +" I" +QString::number(In);
-                //messages.append(str);
                 quint16 port = strList.at(0).toInt(); //порт атакующего
                 double amount = strList.at(2).toInt(); // сколько пришло ресурса
-                //double decrease = (amount/(double)(amount+Cn))*amount; // кажется, делает бои вечными
-                double decrease = amount;
-                if (decrease/3.0 > Cn) // если ресурса меньше чем треть атаки
+
+                int decreaseI = 0;
+                int decreaseC = 0;
+                if (amount/3.0 > Cn) // если ресурса меньше чем треть атаки
                 {
-                    str = QString::number(port%1000) +
-                            "-> Атака! (-" +
-                            QString::number((int)Cn) +
-                            " ресурса, -" +
-                            QString::number((int)(decrease - Cn)) +
-                            " памяти).";
-                    In -= decrease - Cn; // то память получает остаток урона
-                    Cn = 0;
+                    decreaseC = Cn;
+                    decreaseI = amount - decreaseC; // то память получает остаток урона
                 }
                 else
-                {
-                    str = QString::number(port%1000) +
-                            "-> Атака! (-" +
-                            QString::number((int)(decrease/3.0)) +
-                            " ресурса, -" +
-                            QString::number((int)(decrease*2.0/3.0)) +
-                            " памяти).";
-                    Cn -= decrease/3.0;
-                    In -= decrease*2.0/3.0;
+                {     
+                    decreaseC = amount/3.0;
+                    decreaseI = amount*2.0/3.0;
                 }
+                Cn -= decreaseC;
+                In -= decreaseI;
+                str = QString::number(port%1000) +
+                        "-> Атака! (-" +
+                        QString::number(decreaseC) +
+                        " ресурса, -" +
+                        QString::number(decreaseI) +
+                        " памяти).";
                 messages.append(str);
             }
+
             else if (strList.at(1) == "4") // если это помощь
             {
                 quint16 port = strList.at(0).toInt(); //порт помощника
@@ -258,6 +255,7 @@ void Core::operateDataFromConnection()
                         " памяти).";
                 messages.append(str);
             }
+
             else if (strList.at(1) == "5") // если это помощь в бою
             {
                 quint16 senderPort = strList.at(0).toInt(); //порт просящего
@@ -275,8 +273,8 @@ void Core::operateDataFromConnection()
                 if (targetIndex == -1) // это новая связь
                 {
                     connectTable table = {targetPort, -5, 0, 0, targetType};
-                    connection->createTable(table);
-                    send(targetPort, 0);
+                    connection->createTable(table); // создание такой связь
+                    send(targetPort, 0); // добавление себя в список цели
                     for (int i = 0; i < connection->getTableSize(); i++)
                     {
                         if (connection->getTable(i).port == targetPort)
@@ -288,32 +286,44 @@ void Core::operateDataFromConnection()
                 }
                 if (targetIndex != -1) // если такая связь есть
                 {
-                    if (connection->getTable(senderIndex).relationship > connection->getTable(targetIndex).relationship
-                            && connection->getTable(senderIndex).useful > 0)
+
+                    if (type != 1) // если это бот
                     {
-                        if (type != 1) // если это бот
+                        str = QString::number(senderPort%1000) +
+                              "-> просит помощи в борьбе с " +
+                              QString::number(targetPort%1000);
+                        messages.append(str);
+
+                        if (connection->getTable(senderIndex).relationship > connection->getTable(targetIndex).relationship
+                                && connection->getTable(senderIndex).useful > 0)
                         {
                             connection->setRelationship(targetIndex, -5);
                             connection->setUseful(targetIndex, 0);
                             connection->setUseful(senderIndex, connection->getTable(senderIndex).useful - 1);
-                            str = QString::number(senderPort%1000) +
-                                  "-> просит помощи в борьбе с " +
-                                  QString::number(targetPort%1000);
-                            messages.append(str);
+
                             if (Cn > In/10 && In > 50) // если может помочь
                             {
                                 attack(targetPort, Cn/3); // атака
                                 send(senderPort, 6); // отчет об успешной атаке
                             }
+                            else
+                            {
+                                messages.append("Запрос отклонен - Недостаточно ресурсов для атаки.");
+                            }
                         }
-                        else // если человек
+                        else
                         {
-                            str = QString::number(senderPort%1000) +
-                                  "-> просит помощи в борьбе с " +
-                                  QString::number(targetPort%1000);
-                            messages.append(str);
+                            messages.append("Запрос отклонен - низкое отношение с отправителем.");
                         }
                     }
+                    else // если человек
+                    {
+                        str = QString::number(senderPort%1000) +
+                              "-> просит помощи в борьбе с " +
+                              QString::number(targetPort%1000);
+                        messages.append(str);
+                    }
+
                 }
             }
             else
@@ -374,19 +384,25 @@ void Core::update()
         }
     }
 
-    if (!op && Cn > In/(5+In/500) && In > 50 && timeToUpgrade < (int)(50.0*coeff)) // атака
+    if (!op && Cn > In/(5+In/500)
+            && In > 50
+            && timeToUpgrade < (int)(50.0*coeff)) // атака
     {
         for (int i = 0; i < connection->getTableSize(); i++)
         {
             int relate = connection->getTable(i).relationship;
-            if (rand()%(relate+10+connection->getTable(i).useful) == 0)
+            if ((type == 2 && connection->getTable(i).type == 1)  // если это бот (не бьет своих) и цель - юзер
+                    || type == 0) // или обычная прога
             {
-                int Cattack = (double)Cn/2.0 + In/200*rand()%(5*abs(relate-6));
-                if (Cattack > Cn) Cattack = Cn;
-                if (Cattack < 5*Ci) break;
-                attack(connection->getTable(i).port, Cattack);
-                op = true;
-                break;
+                if (rand()%(relate+10+connection->getTable(i).useful) == 0)
+                {
+                    int Cattack = (double)Cn/2.0 + In/200*rand()%(5*abs(relate-6));
+                    if (Cattack > Cn) Cattack = Cn;
+                    if (Cattack < 5*Ci) break;
+                    attack(connection->getTable(i).port, Cattack);
+                    op = true;
+                    break;
+                }
             }
         }
     }
@@ -446,7 +462,7 @@ void Core::update()
     connectionSupport(); // поддержка связи
 
 
-    operateDataFromConnection();
+    operateDataFromConnection(); // обработка сообщений
 
 
     if (timeToUpgrade == (int)(50.0*coeff))
