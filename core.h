@@ -35,6 +35,7 @@ public:
 
     void update();
     void updateUser();
+    void updateWorm();
     void connectionSupport();
     void operateDataFromConnection();
 
@@ -53,6 +54,7 @@ public:
     void upgradeC();
 
     void deathRecountRealloc();
+    void findConnections();
 
     int getI() { return In; }
     int getD() { return Dn; }

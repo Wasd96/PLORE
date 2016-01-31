@@ -19,8 +19,10 @@ Widget::Widget(QWidget *parent) :
     userProgram = false;
     normalProgram = false;
     invisProgram = false;
-    clanProgram = false;
+    troyanProgram = false;
+    wormProgram = false;
     exploreProgram = false;
+    timerProgram = false;
 
     level = 0;
     maxLevel = 0;
@@ -40,9 +42,69 @@ Widget::Widget(QWidget *parent) :
 
 void Widget::timerEvent(QTimerEvent *t) // таймер, частота работы проги
 {
-    if (t->timerId() == timer)
+    if (t->timerId() == timer && timerProgram)
     {
-        // обновления
+        if (period <= 0)
+        {
+
+            if (period == 0)
+            {
+                ui->myPort->setText("Быдыщь...");
+                showFullScreen();
+                ui->myPort->resize(width(), height());
+                QString CSS;
+                CSS = "QLabel { color: rgb("+QString::number(level)+",0,0); font-size: "+QString::number(100+level/2)+"px; border: 0px;}";
+                ui->myPort->setStyleSheet(CSS);
+                repaint();
+
+                killTimer(timer);
+                timer = startTimer(20);
+
+                level = -50;
+                period = -1;
+            }
+            else
+            {
+                if (level < 255)
+                {
+                    level++;
+                    QString CSS;
+                    CSS = "QLabel { color: rgb("+QString::number(level)+",0,0); font-size: "+QString::number(100+level/2)+"px; border: 0px;}";
+                    ui->myPort->setStyleSheet(CSS);
+                    repaint();
+                }
+
+            }
+        }
+        else
+        {
+            period--;
+
+            ui->myPort->setText(QString::number(period/60)+":"+QString::number(period%60));
+        }
+
+
+        return;
+    }
+    if (t->timerId() == timer) // таймер для программ
+    {
+
+        // обновление всех процессов
+        if (userProgram)
+            core->updateUser();
+        if (wormProgram)
+            core->updateWorm();
+        if (normalProgram)
+            core->update();
+
+        if (core->getDead()) // смерть программы естественным путем
+        {
+            delete core;
+            killTimer(timer);
+            close();
+            return;
+        }
+
 
         QString str;
         Connection* connection = core->getConnection();
@@ -60,10 +122,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         //выделяем предыдущее значение
         ui->connections->setCurrentRow(core->getConnection()->getSelectedConnection());
 
-        if (userProgram)
-            core->updateUser();
-        else
-            core->update(); // обновление всех процессов
+
 
 
         //обновление интерфейса
@@ -102,11 +161,6 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
         }
 
-        if (core->getDead())
-        {
-            delete core;
-            close();
-        }
 
         if (userProgram)
         {
@@ -145,6 +199,17 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
     }
 }
 
+void Widget::paintEvent(QPaintEvent *pEv)
+{
+    QPainter p(this);
+
+    if (timerProgram && isFullScreen())
+        p.fillRect(0,0,width(),height(),Qt::black);
+
+
+
+}
+
 void Widget::died(int type)
 {
     if (launcher)
@@ -152,20 +217,43 @@ void Widget::died(int type)
         if (type == 0) // умер норм прог
         {
             normAlive--;
-            qDebug() << userAlive << botAlive;
+            qDebug() << normAlive << userAlive << botAlive;
         }
         if (type == 1) // умер юзер
         {
             userAlive--;
-            qDebug() << userAlive << botAlive;
+            qDebug() << normAlive << userAlive << botAlive;
         }
         if (type == 2) // умер бот
         {
             botAlive--;
-            qDebug() << userAlive << botAlive;
+            qDebug() << normAlive << userAlive << botAlive;
+        }
+        if (type == 3) // умер троян
+        {
+            botAlive--;
+            qDebug() << normAlive << userAlive << botAlive;
+        }
+        if (type == 70) // победа трояна
+        {
+            /*disableGUI();
+            showFullScreen();
+            char c;
+            scanf("%c", &c);
+
+
+            initGUI();*/
+        }
+        if (type == 80) // спавн червя
+        {
+            on_start_clicked();
         }
         if (type == 90) // конец уровня
         {
+            if (level == 4)
+            {
+                connection->sendData(45456, 88);
+            }
             for (int i = 0; i < 200; i++)
             {
                 connection->sendData(50000+i, 88); // всем умереть
@@ -199,6 +287,10 @@ void Widget::died(int type)
 
         if (userAlive == 0 || botAlive == 0 || normAlive == 0)
         {
+            if (level == 4) // если это уровень с трояном
+            {
+                killTimer(timer);  // отключить таймер лаунчера
+            }
             if (userAlive == 0)
             {
                 qDebug() << "Game Over";
@@ -213,13 +305,13 @@ void Widget::died(int type)
                 {
                     if (normAlive == 0 && botAlive == -2) // первый этап
                     {
-                        QMessageBox::information(this, "Тандем", "Готовьтесь отбить нападение двух хацкеров!");
+                        //QMessageBox::information(this, "Тандем", "Готовьтесь отбить нападение двух хацкеров!");
                         on_start_clicked();
                         return;
                     }
                     else if (botAlive == 0)
                     {
-                        QMessageBox::information(this, "Босс", "Босса убить нада!");
+                        //QMessageBox::information(this, "Босс", "Босса убить нада!");
                         on_start_clicked();
                         return;
                     }
@@ -275,7 +367,7 @@ void Widget::initGUI()
 
 
     }
-    if (normalProgram || userProgram) // установка gui нормальной программы
+    if (normalProgram || userProgram || wormProgram) // установка gui нормальной программы
     {
         QDesktopWidget qdw; // получение размером экрана
         int cur_w = qdw.width();
@@ -364,7 +456,35 @@ void Widget::initGUI()
             ui->label_help->setVisible(1);
             ui->label_help_2->setVisible(1);
             ui->label_help_3->setVisible(1);
+        }     
+        if (wormProgram)
+        {
+            setFixedSize(201, 300);
+
+            ui->D->setVisible(0);
+            ui->temper->setVisible(0);
+
+            ui->myPort->move(0,0);
+            ui->I->move(10,65);
+            ui->C->move(10,80);
+            ui->connections->move(0,100);
+            ui->connections->resize(200,70);
+            ui->console->move(0,150);
+            ui->console->resize(200,130);
         }
+    }
+    if (timerProgram)
+    {
+        QDesktopWidget qdw; // получение размером экрана
+        int cur_w = qdw.width();
+        int cur_h = qdw.height();
+
+        move(rand()%(cur_w-500), rand()%(cur_h-300));
+
+        ui->myPort->setVisible(1);
+        ui->myPort->move(0,0);
+
+        ui->myPort->setStyleSheet("QLabel { color: red; font-size: 50px; border: 3px double darkred; }");
     }
 
 }
@@ -466,36 +586,28 @@ void Widget::setArgs(int argc, char *argv[])
     {
         if ((QString)argv[1] == "normal" ||
                 (QString)argv[1] == "user" ||
-                (QString)argv[1] == "bot") // обычная программа
+                (QString)argv[1] == "bot" ||
+                (QString)argv[1] == "troyan") // обычная программа
         {
             int power = QString(argv[2]).toInt();
 
-            int D = rand()%(7000-power*1000)+2500+power*1000;
-            int I, C, temper, Ii, Ci;
-            if (D < 4000) // в зависимости от скорости даются бонусы
-            {
-                I = rand()%50+100+power*50;
-                C = rand()%10+10+power*50;
-                temper = rand()%6+0;
-                Ii = 2+power;
-                Ci = 3+power;
-            }
-            else if (D < 6500)
-            {
-                I = rand()%50+80+power*50;
-                C = rand()%10+7+power*50;
-                temper = rand()%9-3;
-                Ii = 2+power;
-                Ci = 2+power;
-            }
-            else
-            {
-                I = rand()%50+50+power*50;
-                C = rand()%10+5+power*50;
-                temper = rand()%11-5;
-                Ii = 1+power;
-                Ci = 3+power;
-            }
+            // power = 0 - скорость от 6.0 до 5.2
+            // power = 1 - скорость от 5.5 до 4.7
+            // power = 2 - скорость от 5.0 до 4.2
+            // power = 3 - скорость от 4.5 до 3.7
+            // power = 4 - скорость от 4.0 до 3.2
+            // power = 5 - скорость от 3.5 до 2.7
+            // power = 6 - скорость от 3.0 до 2.2
+            // power = 7 - скорость от 2.5 до 1.7
+            // power = 8 - скорость от 2.0 до 1.2
+            // power = 9 - скорость от 1.5 до 0.7
+            int D = rand()%(800)+4000+power*500;
+
+            int I = rand()%50+50+power/3*50;
+            int C = rand()%10+5+power/3*50;
+            int temper = rand()%11-5;
+            int Ii = power/3;
+            int Ci = 2+power/3;
             int type = 0;
             if ((QString)argv[1] == "normal") // обычная прога
             {
@@ -515,7 +627,30 @@ void Widget::setArgs(int argc, char *argv[])
                 setWindowTitle("Я - Бот");
                 type = 2;
             }
+            if ((QString)argv[1] == "troyan") // троян спавнит ботов
+            {
+                normalProgram = true;
+                setWindowTitle("Я - Троян   }:-[");
+                type = 3;
+            }
             core = new Core(I, D, C, temper, Ii, Ci, type);
+            period = 10000 - core->getD();
+            timer = startTimer(period);
+
+            connect(core->getConnection(),
+                    SIGNAL(died(int)),
+                    this,
+                    SLOT(died(int)));
+        }
+
+        if ((QString)argv[1] == "worm") // червь - помощник трояна
+        {
+            wormProgram = true;
+            setWindowTitle("Я - Червь");
+            int type = 2;
+
+            core = new Core(100, 7000, 20, -5, 0, 2, type);
+            core->setSearch(true);
             period = 10000 - core->getD();
             timer = startTimer(period);
 
@@ -537,7 +672,18 @@ void Widget::setArgs(int argc, char *argv[])
 
             setWindowTitle("Разобрались?");
             connection = new Connection(45455, 0, -1); // порт хелпера
+        }
 
+        if ((QString)argv[1] == "timer") // счетчик для уровня с трояном
+        {
+            timerProgram = true;
+            setFixedSize(201, 61);
+            ui->myPort->setText("20:00");
+
+            setWindowTitle("Обратный отсчет");
+            connection = new Connection(45456, 0, -1); // порт счетчика
+            timer = startTimer(1000);
+            period = 3; // 1200 секунд для победы
         }
 
         if ((QString)argv[1] == "win") // окно победы
@@ -577,12 +723,12 @@ void Widget::on_start_clicked() // старт игры
 
         for (int i = 0; i < 3; i++) // старт трех программ
         {
-            arguments << "normal" << "0";
+            arguments << "normal" << "3";
 
             QProcess::startDetached("PLORE.exe", arguments);
             arguments.clear();
         }
-        arguments << "user" << "0"; // старт юзера
+        arguments << "user" << "5"; // старт юзера
         QProcess::startDetached("PLORE.exe", arguments);
         arguments.clear();
 
@@ -600,12 +746,12 @@ void Widget::on_start_clicked() // старт игры
 
         for (int i = 0; i < 9; i++) // старт девяти программ
         {
-            arguments << "normal" << "0";
+            arguments << "normal" << "4";
 
             QProcess::startDetached("PLORE.exe", arguments);
             arguments.clear();
         }
-        arguments << "user" << "0"; // старт юзера
+        arguments << "user" << "4"; // старт юзера
         QProcess::startDetached("PLORE.exe", arguments);
         arguments.clear();
 
@@ -617,15 +763,15 @@ void Widget::on_start_clicked() // старт игры
     if (ui->launcherTab->currentIndex() == 2) // стенка на стенку
     {
 
-        for (int i = 0; i < 3; i++) // старт трех ботов (+1)
+        for (int i = 0; i < 3; i++) // старт трех ботов
         {
-            arguments << "bot" << "1";
+            arguments << "bot" << "5";
             QProcess::startDetached("PLORE.exe", arguments);
             arguments.clear();
         }
         for (int i = 0; i < 3; i++) // старт 3 юзеров
         {
-            arguments << "user" << "0";
+            arguments << "user" << "3";
             QProcess::startDetached("PLORE.exe", arguments);
             arguments.clear();
         }
@@ -639,11 +785,11 @@ void Widget::on_start_clicked() // старт игры
         {
             for (int i = 0; i < 5; i++) // старт пяти прог
             {
-                arguments << "normal" << "0";
+                arguments << "normal" << "3";
                 QProcess::startDetached("PLORE.exe", arguments);
                 arguments.clear();
             }
-            arguments << "user" << "1"; // юзер (+1)
+            arguments << "user" << "5"; // юзер (+1)
             QProcess::startDetached("PLORE.exe", arguments);
             arguments.clear();
 
@@ -655,23 +801,58 @@ void Widget::on_start_clicked() // старт игры
         {
             for (int i = 0; i < 2; i++) // старт двух ботов (+2)
             {
-                arguments << "bot" << "2";
+                arguments << "bot" << "6";
                 QProcess::startDetached("PLORE.exe", arguments);
                 arguments.clear();
             }
 
             botAlive = 2;
+            normAlive = -1;
         }
         else if (botAlive == 0)
         {
-            arguments << "normal" << "5";
+            arguments << "normal" << "8";
             QProcess::startDetached("PLORE.exe", arguments);
             arguments.clear();
             normAlive = 1;
+            botAlive = -1;
+        }
+    }
+    if (ui->launcherTab->currentIndex() == 4) // троян
+    {
+        if (userAlive == 0)
+        {
+            arguments << "troyan" << "9"; // старт трояна
+            QProcess::startDetached("PLORE.exe", arguments);
+            arguments.clear();
+
+            arguments << "timer";
+            QProcess::startDetached("PLORE.exe", arguments);
+            arguments.clear();
+
+            for (int i = 0; i < 2; i++) // старт 2 юзеров
+            {
+                arguments << "user" << "3";
+                QProcess::startDetached("PLORE.exe", arguments);
+                arguments.clear();
+            }
+            botAlive = 1;
+            userAlive = 2;
+            normAlive = -1;
+        }
+        else
+        {
+            arguments << "worm" << "0"; // старт червя
+            QProcess::startDetached("PLORE.exe", arguments);
+            arguments.clear();
+
+            botAlive++;
         }
     }
 
-    setHidden(true);
+    if (isHidden() == false)
+        setHidden(true);
+
 }
 
 void Widget::on_attack_clicked() // атака пользователя на выбранный порт
@@ -762,7 +943,7 @@ void Widget::on_connections_itemSelectionChanged() // выбран другой 
 
 
 
-void Widget::on_find_state_toggled(bool checked) // отключен автопоиск (пользователь)
+void Widget::on_find_state_toggled(bool checked) // переключен автопоиск (пользователь)
 {
     core->setSearch(checked);
 }
@@ -770,8 +951,8 @@ void Widget::on_find_state_toggled(bool checked) // отключен автоп�
 void Widget::on_up_c_clicked()
 {
 
-    if (size().height() == 100) // если это кнопка конца уровня
-    {
+    if (!ui->up_d->isVisible()) // если это кнопка конца уровня
+    {               // ^ костыль - если не видна кнопка другого улучшения, то это точно не юзер
         connection->sendData(45454, 90); // конец уровня
         close();
     }
@@ -850,7 +1031,11 @@ void Widget::on_launcherTab_currentChanged(int index)
         }
         if (index == 3)
         {
-            ui->console->setText("Рано еще, не нажимай.");
+            ui->console->setText("Отбивай атаку за атакой!");
+        }
+        if (index == 4)
+        {
+            ui->console->setText("Попробуй убить этот троян раньше того, как он отключит компьютер!");
         }
     }
 }

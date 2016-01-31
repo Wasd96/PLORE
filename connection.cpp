@@ -13,9 +13,6 @@ Connection::Connection(int port, int _temper, int _type) // создание м�
     {
        port++;
        if (port >= 50200) port = 50000;
-       // при alpha 0.3.2. было замечено странное поведение
-       // на другом компе. Возможно, с этими портами что то не так
-       // заняты, например, хотя ShareAddress...
     }
     portRecieve = udpSocket->localPort(); // сохранение личного порта
 
@@ -41,6 +38,14 @@ void Connection::sendData(quint16 port, int Mtype) //подготовка и о�
     {
         outData = "6 ";
     }
+    if (Mtype == 70) // спавн бота (лаунчеру)
+    {
+        outData = "70 ";
+    }
+    if (Mtype == 80) // спавн бота (лаунчеру)
+    {
+        outData = "80 ";
+    }
     if (Mtype == 88) // код самоубийства для процесса
     {
         outData = "88 ";
@@ -54,7 +59,7 @@ void Connection::sendData(quint16 port, int Mtype) //подготовка и о�
     QByteArray datagram = outData.toUtf8();
     udpSocket->writeDatagram(datagram.data(),
                              datagram.size(),
-                             QHostAddress::LocalHost,
+                             QHostAddress::Broadcast, // важно - не везде localhost работает как надо
                              port);
 }
 
@@ -92,7 +97,7 @@ void Connection::sendData(quint16 port, int Mtype, int amount)
     QByteArray datagram = outData.toUtf8();
     udpSocket->writeDatagram(datagram.data(),
                              datagram.size(),
-                             QHostAddress::LocalHost,
+                             QHostAddress::Broadcast,
                              port);
 }
 
@@ -123,7 +128,8 @@ void Connection::readData() // прием данных
                 strList.first() != "4" &&
                 strList.first() != "5" &&
                 strList.first() != "6" &&
-                strList.first() != "88")
+                strList.first() != "88" &&
+                strList.first() != "80")
         {
             QString rec = QString::number(port)+ " -> " + str; // создание отчета
             data.append(rec); // сохранение отчета
@@ -235,13 +241,23 @@ void Connection::readData() // прием данных
                     emit died(0);
                     break;
                 }
-                if (strList.first() == "90")
+                if (strList.first() == "70") // победа трояна
+                {
+                    emit died(70);
+                    break;
+                }
+                if (strList.first() == "80") // спавн червя
+                {
+                    emit died(80);
+                    break;
+                }
+                if (strList.first() == "90") // конец уровня
                 {
                     emit died(90);
                     break;
                 }
 
-                emit died(strList.at(1).toInt()); // 0 - прога, 1 - юзер, 2 - бот
+                emit died(strList.at(1).toInt()); // 0 - прога, 1 - юзер, 2 - бот, 3 - троян
 
             }
         }

@@ -20,6 +20,8 @@ Core::Core()
 
     dead = false;
     search = true;
+
+    timeToUpgrade = 0;
 }
 
 Core::Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type)
@@ -41,6 +43,8 @@ Core::Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type)
 
     dead = false;
     search = true;
+
+    timeToUpgrade = 0;
 }
 
 void Core::send(quint16 port, int _type)
@@ -145,6 +149,7 @@ void Core::deathRecountRealloc()
 {
     if (In <= 0)
     {
+        messages.append("gonna die");
         if (dead)
             return;
         else
@@ -155,6 +160,7 @@ void Core::deathRecountRealloc()
             free(C);
             send(45454, 1, type); // сообщение лаунчеру о своей смерти
             free(connection);
+            messages.append("died");
             return;
         }
     }
@@ -167,6 +173,18 @@ void Core::deathRecountRealloc()
     I = (int*)realloc(I, In*sizeof(int)); // перевыделение памяти
     D = (double*)(realloc(D, Dn*sizeof(double))); // по факту незаметна разница
     C = (char*)realloc(C, Cn*sizeof(char)); // но ради чистоты идеи
+}
+
+void Core::findConnections()
+{
+    QString str;
+    quint16 port = rand()%200 + 50000;
+    while (port == connection->getPort()) // нет смысла себе писать
+        port = rand()%200 + 50000;
+    send(port, 0); // отправка поискового сообщения
+    Cn -= 1; // стоимость поиска
+    str = "Поиск -> " + QString::number(port%1000); // отчет
+    messages.append(str);
 }
 
 int Core::getINextRequire()
@@ -362,13 +380,18 @@ void Core::update()
         op = true;
     }
 
-    if (!op && Cn > In/4 && In > 100 && timeToUpgrade < (int)(70.0*coeff)) // помощь
+    if (!op && Cn > In/4
+            && In > 100
+            && timeToUpgrade < (int)(70.0*coeff)) // помощь
     {
         for (int i = 0; i < connection->getTableSize(); i++)
         {
             int relate = -connection->getTable(i).relationship;
 
-            if (rand()%(relate+10) == 0 && connection->getTable(i).useful > 0)
+            if (rand()%(relate+10) == 0 &&
+                    connection->getTable(i).useful > 0 &&
+                    ((type == 2 && connection->getTable(i).type == 2) || type != 2) &&
+                    type != 3)
             {
                 int Ihelp = (double)In/10 + rand()%(1*(In/10));
                 if (In - Ihelp < 100) Ihelp = In - 100;
@@ -391,8 +414,9 @@ void Core::update()
         for (int i = 0; i < connection->getTableSize(); i++)
         {
             int relate = connection->getTable(i).relationship;
-            if ((type == 2 && connection->getTable(i).type == 1)  // если это бот (не бьет своих) и цель - юзер
-                    || type == 0) // или обычная прога
+            int targetType = connection->getTable(i).type;
+            if (((type == 2 && targetType == 1 && targetType != 3) || type != 2) &&
+                    (type == 3 && targetType != 2 && targetType != 3) || type != 3)
             {
                 if (rand()%(relate+10+connection->getTable(i).useful) == 0)
                 {
@@ -407,33 +431,26 @@ void Core::update()
         }
     }
 
-    if (!op && Cn > 20 && timeToUpgrade < (int)(70.0*coeff)) // запрос боевой помощи
+    if (!op && Cn > 20
+            && timeToUpgrade < (int)(70.0*coeff)) // запрос боевой помощи
     {
         int enemyIndex = -1;
         int friendIndex = -1;
 
         for (int i = 0; i < connection->getTableSize()/2; i++) // выбор врага
-        {
             if (connection->getTable(i).relationship <= -4)
-            {
                 if (rand()%(4+6*(5-abs(connection->getTable(i).relationship))) == 0)
                 {        // ^ 4 - если отношение -5, 10 - если отн. -4
                     enemyIndex = i;
                     break;
                 }
-            }
-        }
         for (int i = connection->getTableSize()-1; i > connection->getTableSize()/2; i--) // выбор помощника
-        {
             if (connection->getTable(i).relationship >= 4)
-            {
                 if (rand()%(4+6*(5-connection->getTable(i).relationship)) == 0)
                 {        // ^ 4 - если отношение 5, 10 - если отн. 4
                     friendIndex = i;
                     break;
                 }
-            }
-        }
 
         if (friendIndex > -1 && enemyIndex > -1) // найдены враг и друг
         {
@@ -448,16 +465,18 @@ void Core::update()
     if (!op && Cn >= connection->getTableSize()*10+10
             && timeToUpgrade < (int)(90.0*coeff))    // поиск связей
     {
-        quint16 port = rand()%200 + 50000;
-        while (port == connection->getPort()) // нет смысла себе писать
-            port = rand()%200 + 50000;
-        send(port, 0); // отправка поискового сообщения
-        Cn -= 1; // стоимость поиска
-        str = "Поиск -> " + QString::number(port%1000); // отчет
-        messages.append(str);
+        findConnections();
         op = true;
     }
 
+    if (type == 3) // троян
+    {
+        if (rand()%60 == 0)
+        {
+            send(45454, 80);
+            messages.append("Скомпилирован новый червь!");
+        }
+    }
 
     connectionSupport(); // поддержка связи
 
@@ -483,18 +502,11 @@ void Core::updateUser() // пользовательский апдейт
     QString str; // сообщения в "консоль"
 
 
+
     if (search && Cn > 1) // поиск
     {
-        quint16 port = rand()%200 + 50000;
-        while (port == connection->getPort()) // нет смысла себе писать
-            port = rand()%200 + 50000;
-        send(port, 0); // отправка поискового сообщения
-        Cn -= 1; // стоимость поиска
-        str = "Поиск -> " + QString::number(port%1000); // отчет
-        messages.append(str);
+        findConnections();
     }
-
-
 
 
     connectionSupport(); // поддержка связи
@@ -505,5 +517,68 @@ void Core::updateUser() // пользовательский апдейт
     deathRecountRealloc(); // обработка смерти, подсчетов, перевыделений
 }
 
+void Core::updateWorm()
+{
+    connection->sortTable();
+    QString str; // сообщения в "консоль"
+    bool op = false;
 
 
+    if (!op) // помощь
+    {
+        for (int i = 0; i < connection->getTableSize(); i++)
+        {
+            int relate = -connection->getTable(i).relationship;
+
+            if (rand()%(relate+10) == 0 &&
+                    connection->getTable(i).useful > 0 &&
+                    (type == 2 && (connection->getTable(i).type == 2 || connection->getTable(i).type == 3) || type != 2) &&
+                    type != 3)
+            {
+                int Ihelp = (double)In/10 + rand()%(1*(In/10));
+                if (In - Ihelp < 100) Ihelp = In - 100;
+                if (Ihelp < 10) break;
+
+                help(connection->getTable(i).port, Ihelp);
+
+                op = true;
+                break;
+            }
+            if (rand()%20 == 0 && connection->getTable(i).useful == 0) // случайное повышене пользы
+                connection->setUseful(i, connection->getTable(i).useful + 1);
+        }
+    }
+
+    if (!op && Cn > 10) // атака
+    {
+        for (int i = 0; i < connection->getTableSize(); i++)
+        {
+            int relate = connection->getTable(i).relationship;
+            int targetType = connection->getTable(i).type;
+            if (((type == 2 && targetType == 1 && targetType != 3) || type != 2) &&
+                    (type == 3 && targetType != 2 && targetType != 3) || type != 3)
+            {
+                if (rand()%(relate+10+connection->getTable(i).useful) == 0)
+                {
+                    int Cattack = Cn/2;
+
+                    attack(connection->getTable(i).port, Cattack);
+                    op = true;
+                    break;
+                }
+            }
+        }
+    }
+
+
+    if (Cn > 1) // поиск
+    {
+        findConnections();
+    }
+
+    connectionSupport(); // поддержка связи
+
+    operateDataFromConnection(); // обработка сообщений
+
+    deathRecountRealloc(); // обработка смерти, подсчетов, перевыделений
+}

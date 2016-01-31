@@ -3,6 +3,8 @@
 
 #include "time.h"
 #include <QWidget>
+#include <QPaintEvent>
+#include <QPainter>
 
 #include "core.h"
 
@@ -26,6 +28,8 @@ public:
     void disableGUI(); // сокрытие всех элементов интерфейса
 
     void timerEvent(QTimerEvent *t);
+
+    void paintEvent(QPaintEvent *pEv);
 
 private slots:
     void died(int type); // прием лаунчера о смерти
@@ -63,9 +67,11 @@ private:
     bool normalProgram;
     bool userProgram;
     bool invisProgram;
-    bool clanProgram;
+    bool troyanProgram;
+    bool wormProgram;
     bool exploreProgram;
     bool launcher;
+    bool timerProgram;
 
     int normAlive; // живые норм проги
     int botAlive; // живые боты
