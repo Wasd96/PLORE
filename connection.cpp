@@ -38,10 +38,6 @@ void Connection::sendData(quint16 port, int Mtype) //подготовка и о�
     {
         outData = "6 ";
     }
-    if (Mtype == 70) // спавн бота (лаунчеру)
-    {
-        outData = "70 ";
-    }
     if (Mtype == 80) // спавн бота (лаунчеру)
     {
         outData = "80 ";
@@ -239,11 +235,6 @@ void Connection::readData() // прием данных
                 if (strList.first() == "88") // лаунчер сообщает, что пора умирать
                 {
                     emit died(0);
-                    break;
-                }
-                if (strList.first() == "70") // победа трояна
-                {
-                    emit died(70);
                     break;
                 }
                 if (strList.first() == "80") // спавн червя

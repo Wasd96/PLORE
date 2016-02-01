@@ -104,7 +104,7 @@ void Core::upgradeI()
     int decrease = rand()%5 + getINextRequire();
     Cn -= decrease;
     Ii++;
-    str = "Убраны утечки памяти (прирост памяти +1) за " + QString::number(decrease);
+    str = "Убраны утечки памяти (прирост памяти +1) за " + QString::number(decrease) +" ресурса";
     messages.append(str);
     if (timeToUpgrade >= (int)(50.0*coeff))
         messages.append("Все системы в норме.");
@@ -138,7 +138,7 @@ void Core::upgradeC()
     int decrease = rand()%5 + getCNextRequire();
     Cn -= decrease;
     Ci++;
-    str = "Улучшены алгоритмы (прирост ресурса +1) за " + QString::number(decrease);
+    str = "Улучшены алгоритмы (прирост ресурса +1) за " + QString::number(decrease) +" ресурса";
     messages.append(str);
     if (timeToUpgrade >= (int)(50.0*coeff))
         messages.append("Все системы в норме.");
@@ -432,7 +432,8 @@ void Core::update()
     }
 
     if (!op && Cn > 20
-            && timeToUpgrade < (int)(70.0*coeff)) // запрос боевой помощи
+            && timeToUpgrade < (int)(70.0*coeff)
+            && type != 3) // запрос боевой помощи
     {
         int enemyIndex = -1;
         int friendIndex = -1;
@@ -471,10 +472,12 @@ void Core::update()
 
     if (type == 3) // троян
     {
-        if (rand()%60 == 0)
+        if (rand()%60 == 0 && In > 25 && Cn > 50)
         {
+            In -= 25;
+            Cn -= 50;
             send(45454, 80);
-            messages.append("Скомпилирован новый червь!");
+            messages.append("Скомпилирован новый червь! (-25 памяти, -50 ресурса)");
         }
     }
 
@@ -528,24 +531,15 @@ void Core::updateWorm()
     {
         for (int i = 0; i < connection->getTableSize(); i++)
         {
-            int relate = -connection->getTable(i).relationship;
-
-            if (rand()%(relate+10) == 0 &&
-                    connection->getTable(i).useful > 0 &&
-                    (type == 2 && (connection->getTable(i).type == 2 || connection->getTable(i).type == 3) || type != 2) &&
-                    type != 3)
+            if (rand()%5 == 0 && connection->getTable(i).type == 3 && In > 20)
             {
-                int Ihelp = (double)In/10 + rand()%(1*(In/10));
-                if (In - Ihelp < 100) Ihelp = In - 100;
-                if (Ihelp < 10) break;
-
+                int Ihelp = 10 + rand()%10;
+                connection->setUseful(i, 2);
                 help(connection->getTable(i).port, Ihelp);
 
                 op = true;
                 break;
             }
-            if (rand()%20 == 0 && connection->getTable(i).useful == 0) // случайное повышене пользы
-                connection->setUseful(i, connection->getTable(i).useful + 1);
         }
     }
 
@@ -553,19 +547,13 @@ void Core::updateWorm()
     {
         for (int i = 0; i < connection->getTableSize(); i++)
         {
-            int relate = connection->getTable(i).relationship;
             int targetType = connection->getTable(i).type;
-            if (((type == 2 && targetType == 1 && targetType != 3) || type != 2) &&
-                    (type == 3 && targetType != 2 && targetType != 3) || type != 3)
-            {
-                if (rand()%(relate+10+connection->getTable(i).useful) == 0)
-                {
-                    int Cattack = Cn/2;
 
-                    attack(connection->getTable(i).port, Cattack);
-                    op = true;
-                    break;
-                }
+            if (rand()%8 == 0 && targetType != 2 && targetType != 3)
+            {
+                attack(connection->getTable(i).port, Cn/2);
+                op = true;
+                break;
             }
         }
     }
