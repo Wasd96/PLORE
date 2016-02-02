@@ -60,6 +60,8 @@ private:
     Core* core;
     Connection *connection;
 
+    QString name; // имя программы, запуск именно такой проги, а не PLORE.exe
+
     int timer; //id таймера
     int period; // частота таймера
 

@@ -114,11 +114,11 @@ void Core::upgradeI()
 void Core::upgradeD()
 {
     QString str;
-    double coeff = ((double)(Ii+Ci))/((10000.0-(double)Dn)/1000.0+1.0);
-    double x = (10000.0-(double)Dn)/1000.0; // х от 9 до 0.5
+    double coeff = ((double)(Ii+Ci))/((10000.0-(double)Dn)/1000.0+1.0); // для обновлений
+    double x = (10000.0-(double)Dn)/1000.0; // х от 4 до 0.2
     int rndInc = ((0.3*x*x+0.5*x-0.33)/6.0)*100; // случайная надбавка
     if (rndInc < 3) rndInc = 3;
-    int increase = rand()%rndInc + ((0.3*x*x+0.5*x-0.33)/6.0)*900;  // идея кв. ур-ния - спасибо Полине
+    int increase = rand()%rndInc + ((x*x+0.5*x+0.5)/6.0)*500;  // идея кв. ур-ния - спасибо Полине
     if (increase == 0) increase = 1;
     int decrease = getDNextRequire(); // стоимость
     Cn -= decrease;
@@ -194,7 +194,7 @@ int Core::getINextRequire()
 
 int Core::getDNextRequire()
 {
-    return 200.0/((10000.0-(double)Dn)/1000.0-0.2)-15;
+    return 500.0/((10000.0-(double)Dn)/1000.0)-90;
 }
 
 int Core::getCNextRequire()
@@ -415,7 +415,7 @@ void Core::update()
         {
             int relate = connection->getTable(i).relationship;
             int targetType = connection->getTable(i).type;
-            if (((type == 2 && targetType == 1 && targetType != 3) || type != 2) &&
+            if (((type == 2 && targetType != 2 && targetType != 3) || type != 2) &&
                     (type == 3 && targetType != 2 && targetType != 3) || type != 3)
             {
                 if (rand()%(relate+10+connection->getTable(i).useful) == 0)

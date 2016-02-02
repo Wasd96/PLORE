@@ -137,7 +137,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                         {
                             QStringList args;
                             args << "lose";
-                            QProcess::startDetached("PLORE.exe", args);
+                            QProcess::startDetached(name, args);
 
                             close();
                         }
@@ -176,7 +176,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             core->updateUser();
         if (wormProgram)
             core->updateWorm();
-        if (normalProgram)
+        if (normalProgram || troyanProgram)
             core->update();
 
         if (core->getDead()) // смерть программы естественным путем
@@ -238,7 +238,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             else if (str.contains("просит"))
                 ui->console->setTextColor(QColor(125,225,225));
             else if (str.contains("Скомпилирован"))
-                ui->console->setTextColor(QColor(126,58,105));
+                ui->console->setTextColor(QColor(100,80,80));
             else
                 ui->console->setTextColor(QColor(0,0,0));
             ui->console->append(str);
@@ -295,6 +295,33 @@ void Widget::paintEvent(QPaintEvent *pEv)
             p.fillRect(0,0,width(),height(),Qt::black);
     }
 
+    if (userProgram)
+    {
+        p.fillRect(0,0,width(),height(),qRgb(200,255,200));
+
+        ui->console->setStyleSheet("QTextEdit { background: rgb(225, 255, 225);}");
+    }
+
+    if (wormProgram)
+    {
+        p.fillRect(0,0,width(),height(),qRgb(100,80,80));
+    }
+
+    if (troyanProgram)
+    {
+        p.fillRect(0,0,width(),height(),qRgb(200,80,80));
+        ui->console->setStyleSheet("QTextEdit { background: rgb(255, 180, 180);}");
+    }
+
+    if (normalProgram && core->getType() == 2)
+    {
+        p.fillRect(0,0,width(),height(),qRgb(250,200,200));
+    }
+    if (normalProgram && core->getType() == 0)
+    {
+        p.fillRect(0,0,width(),height(),qRgb(200,200,250));
+    }
+
 
 
 }
@@ -307,22 +334,28 @@ void Widget::died(int type)
         {
             normAlive--;
             qDebug() << normAlive << userAlive << botAlive;
+
+            ui->console->append("died normal, remain "+QString::number(normAlive));
         }
         if (type == 1) // умер юзер
         {
             userAlive--;
             qDebug() << normAlive << userAlive << botAlive;
+            ui->console->append("died user, remain "+QString::number(userAlive));
         }
         if (type == 2) // умер бот
         {
             botAlive--;
             qDebug() << normAlive << userAlive << botAlive;
+            ui->console->append("died bot, remain "+QString::number(botAlive));
         }
         if (type == 3) // умер троян
         {
             botAlive--;
             qDebug() << normAlive << userAlive << botAlive;
+            ui->console->append("died troyan, remain (with bots) "+QString::number(botAlive));
         }
+
         if (type == 80) // спавн червя
         {
             on_start_clicked();
@@ -372,17 +405,21 @@ void Widget::died(int type)
 
         if (userAlive == 0 || botAlive == 0 || normAlive == 0)
         {
-            if (level == 4 && userAlive != 0) // если это уровень с трояном
+
+            if (level == 4) // если это уровень с трояном
             {
                 connection->sendData(45456, 88);
             }
+
             if (userAlive == 0)
             {
+
                 qDebug() << "Game Over";
+                ui->console->append("Game over");
 
                 QStringList args;
                 args << "lose";
-                QProcess::startDetached("PLORE.exe", args);
+                QProcess::startDetached(name, args);
 
                 userAlive = -1;
                 botAlive = -1;
@@ -411,8 +448,9 @@ void Widget::died(int type)
                         maxLevel++;
                     QStringList args;
                     args << "win";
-                    QProcess::startDetached("PLORE.exe", args);
+                    QProcess::startDetached(name, args);
                     qDebug() << "You win";
+                    ui->console->append("win");
                 }
 
                 userAlive = -1;
@@ -456,7 +494,10 @@ void Widget::initGUI()
 
 
     }
-    if (normalProgram || userProgram || wormProgram) // установка gui нормальной программы
+    if (normalProgram ||
+            userProgram ||
+            wormProgram ||
+            troyanProgram) // установка gui нормальной программы
     {
         QDesktopWidget qdw; // получение размером экрана
         int cur_w = qdw.width();
@@ -490,7 +531,7 @@ void Widget::initGUI()
         ui->temper->setText(QString("Дружелюбность: " + QString::number(core->getTemper())));
 
 
-        if (normalProgram)
+        if (normalProgram || troyanProgram)
         {
             ui->console->resize(280, 290);
             ui->console->move(220, 10);
@@ -559,7 +600,7 @@ void Widget::initGUI()
             ui->connections->move(0,100);
             ui->connections->resize(200,70);
             ui->console->move(0,150);
-            ui->console->resize(200,130);
+            ui->console->resize(200,150);
         }
     }
     if (timerProgram)
@@ -642,6 +683,7 @@ void Widget::setArgs(int argc, char *argv[])
         ui->console->append(argv[i]);
     }
 
+    name = QString(argv[0]); // сохранение расположения (имени) программы
     if (argc <= 1) //всегда минимум один аргумент - место запуска
     {
         launcher = true; // значит это лаунчер
@@ -675,23 +717,21 @@ void Widget::setArgs(int argc, char *argv[])
         {
             int power = QString(argv[2]).toInt();
 
-            // power = 0 - скорость от 6.0 до 5.2
-            // power = 1 - скорость от 5.5 до 4.7
-            // power = 2 - скорость от 5.0 до 4.2
-            // power = 3 - скорость от 4.5 до 3.7
-            // power = 4 - скорость от 4.0 до 3.2
-            // power = 5 - скорость от 3.5 до 2.7
-            // power = 6 - скорость от 3.0 до 2.2
-            // power = 7 - скорость от 2.5 до 1.7
-            // power = 8 - скорость от 2.0 до 1.2
-            // power = 9 - скорость от 1.5 до 0.7
-            int D = rand()%(800)+4000+power*500;
+            // power = 0 - скорость от 4.0 до 3.5
+            // power = 1 - скорость от 3.5 до 3.0
+            // power = 2 - скорость от 3.0 до 2.5
+            // power = 3 - скорость от 2.5 до 2.0
+            // power = 4 - скорость от 2.0 до 1.5
+            // power = 5 - скорость от 1.5 до 1.0
+            // power = 6 - скорость от 1.0 до 0.5
+
+            int D = rand()%(500)+6000+power*500;
 
             int I = rand()%50+50+power/3*50;
             int C = rand()%10+5+power/3*50;
             int temper = rand()%11-5;
-            int Ii = power/3;
-            int Ci = 2+power/3;
+            int Ii = power/2;
+            int Ci = 2+(double)power/1.5;
             int type = 0;
             if ((QString)argv[1] == "normal") // обычная прога
             {
@@ -711,9 +751,9 @@ void Widget::setArgs(int argc, char *argv[])
                 setWindowTitle("Я - Бот");
                 type = 2;
             }
-            if ((QString)argv[1] == "troyan") // троян спавнит ботов
+            if ((QString)argv[1] == "troyan") // троян спавнит червей
             {
-                normalProgram = true;
+                troyanProgram = true;
                 setWindowTitle("Я - Троян   }:-[");
                 type = 3;
                 temper = -5;
@@ -825,17 +865,17 @@ void Widget::on_start_clicked() // старт игры
 
         for (int i = 0; i < 3; i++) // старт трех программ
         {
-            arguments << "normal" << "3";
+            arguments << "normal" << "2";
 
-            QProcess::startDetached("PLORE.exe", arguments);
+            QProcess::startDetached(name, arguments);
             arguments.clear();
         }
         arguments << "user" << "5"; // старт юзера
-        QProcess::startDetached("PLORE.exe", arguments);
+        QProcess::startDetached(name, arguments);
         arguments.clear();
 
         arguments << "help"; // старт "кнопки ОК" для обучения
-        QProcess::startDetached("PLORE.exe", arguments);
+        QProcess::startDetached(name, arguments);
         arguments.clear();
 
         normAlive = 3;
@@ -848,18 +888,18 @@ void Widget::on_start_clicked() // старт игры
 
         for (int i = 0; i < 9; i++) // старт девяти программ
         {
-            arguments << "normal" << "4";
+            arguments << "normal" << "3";
 
-            QProcess::startDetached("PLORE.exe", arguments);
+            QProcess::startDetached(name, arguments);
             arguments.clear();
         }
-        arguments << "user" << "4"; // старт юзера
-        QProcess::startDetached("PLORE.exe", arguments);
+        arguments << "user" << "3"; // старт юзера
+        QProcess::startDetached(name, arguments);
         arguments.clear();
 
-        botAlive = 9;
-        userAlive = 1;
         botAlive = -1;
+        userAlive = 1;
+        normAlive = 9;
     }
 
     if (ui->launcherTab->currentIndex() == 2) // стенка на стенку
@@ -867,14 +907,14 @@ void Widget::on_start_clicked() // старт игры
 
         for (int i = 0; i < 3; i++) // старт трех ботов
         {
-            arguments << "bot" << "5";
-            QProcess::startDetached("PLORE.exe", arguments);
+            arguments << "bot" << "4";
+            QProcess::startDetached(name, arguments);
             arguments.clear();
         }
         for (int i = 0; i < 3; i++) // старт 3 юзеров
         {
-            arguments << "user" << "3";
-            QProcess::startDetached("PLORE.exe", arguments);
+            arguments << "user" << "2";
+            QProcess::startDetached(name, arguments);
             arguments.clear();
         }
         botAlive = 3;
@@ -887,12 +927,12 @@ void Widget::on_start_clicked() // старт игры
         {
             for (int i = 0; i < 4; i++) // старт 4 прог
             {
-                arguments << "normal" << "3";
-                QProcess::startDetached("PLORE.exe", arguments);
+                arguments << "normal" << "2";
+                QProcess::startDetached(name, arguments);
                 arguments.clear();
             }
-            arguments << "user" << "5"; // юзер
-            QProcess::startDetached("PLORE.exe", arguments);
+            arguments << "user" << "3"; // юзер
+            QProcess::startDetached(name, arguments);
             arguments.clear();
 
             botAlive = -2;
@@ -903,8 +943,8 @@ void Widget::on_start_clicked() // старт игры
         {
             for (int i = 0; i < 2; i++) // старт двух ботов
             {
-                arguments << "bot" << "7";
-                QProcess::startDetached("PLORE.exe", arguments);
+                arguments << "bot" << "5";
+                QProcess::startDetached(name, arguments);
                 arguments.clear();
             }
 
@@ -913,8 +953,8 @@ void Widget::on_start_clicked() // старт игры
         }
         else if (botAlive == 0)
         {
-            arguments << "normal" << "9";
-            QProcess::startDetached("PLORE.exe", arguments);
+            arguments << "normal" << "6";
+            QProcess::startDetached(name, arguments);
             arguments.clear();
             normAlive = 1;
             botAlive = -1;
@@ -924,18 +964,18 @@ void Widget::on_start_clicked() // старт игры
     {
         if (userAlive == 0)
         {
-            arguments << "troyan" << "8"; // старт трояна
-            QProcess::startDetached("PLORE.exe", arguments);
+            arguments << "troyan" << "6"; // старт трояна
+            QProcess::startDetached(name, arguments);
             arguments.clear();
 
             arguments << "timer";
-            QProcess::startDetached("PLORE.exe", arguments);
+            QProcess::startDetached(name, arguments);
             arguments.clear();
 
             for (int i = 0; i < 2; i++) // старт 2 юзеров
             {
-                arguments << "user" << "4";
-                QProcess::startDetached("PLORE.exe", arguments);
+                arguments << "user" << "3";
+                QProcess::startDetached(name, arguments);
                 arguments.clear();
             }
             botAlive = 1;
@@ -945,15 +985,15 @@ void Widget::on_start_clicked() // старт игры
         else
         {
             arguments << "worm" << "0"; // старт червя
-            QProcess::startDetached("PLORE.exe", arguments);
+            QProcess::startDetached(name, arguments);
             arguments.clear();
 
             botAlive++;
         }
     }
 
-    if (isHidden() == false)
-        setHidden(true);
+    /*if (isHidden() == false)
+        setHidden(true);*/
 
 }
 
