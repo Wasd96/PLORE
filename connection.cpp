@@ -19,6 +19,11 @@ Connection::Connection(int port, int _temper, int _type) // создание м�
     connect(udpSocket, SIGNAL(readyRead()), this, SLOT(readData())); // прием данных
 }
 
+Connection::~Connection()
+{
+    delete udpSocket;
+}
+
 void Connection::sendData(quint16 port, int Mtype) //подготовка и отправка данных
 {
     QString outData;

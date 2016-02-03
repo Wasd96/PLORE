@@ -31,6 +31,9 @@ Widget::Widget(QWidget *parent) :
     botAlive = 0;
     normAlive = 0;
 
+    core = NULL;
+    connection = NULL;
+
     //инициализация GUI
     disableGUI();
 
@@ -181,7 +184,6 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
         if (core->getDead()) // смерть программы естественным путем
         {
-            delete core;
             killTimer(timer);
             close();
             return;
@@ -364,8 +366,13 @@ void Widget::died(int type)
         {
             for (int i = 0; i < 200; i++)
             {
-                connection->sendData(50000+i, 88); // всем умереть
+                connection->sendData(50000+i, 88); // всем умереть                
             }
+            connection->sendData(45455, 88);
+            connection->sendData(45456, 88);
+            connection->sendData(45457, 88);
+            connection->sendData(45458, 88);
+
 
             if (userAlive == -1 && botAlive == -1 && normAlive == -1) // поражение
             {
@@ -382,24 +389,18 @@ void Widget::died(int type)
                 if (file.open(QIODevice::WriteOnly | QIODevice::Text)) // попытка открыть
                 {
                     char save = maxLevel;
-                    file.write(&save, 1); // считывание макс. уровня
-                }
-                else
-                {
-                    file.open(QIODevice::WriteOnly); // создаем файл, если его не было
+                    file.write(&save, 1); // запись макс. уровня
                 }
                 file.close();
             }
 
-            setHidden(false);
-            raise();
+            //setHidden(false);
+            //raise();
 
             for(int i = 0; i <= maxLevel; i++)
                 ui->launcherTab->setTabEnabled(i,1);
 
-            userAlive = 0;
-            botAlive = 0;
-            normAlive = 0;
+            setAlive(0, 0, 0);
             return;
         }
 
@@ -411,7 +412,7 @@ void Widget::died(int type)
                 connection->sendData(45456, 88);
             }
 
-            if (userAlive == 0)
+            if (userAlive == 0) // поражение
             {
 
                 qDebug() << "Game Over";
@@ -421,11 +422,9 @@ void Widget::died(int type)
                 args << "lose";
                 QProcess::startDetached(name, args);
 
-                userAlive = -1;
-                botAlive = -1;
-                normAlive = -1;
+                setAlive(-1, -1, -1);
             }
-            else
+            else // победа
             {
                 if (level == 3)
                 {
@@ -442,9 +441,9 @@ void Widget::died(int type)
                         return;
                     }
                 }
-                if (maxLevel > 0)
+                if (maxLevel > 0 && level != 0)
                 {
-                    if (maxLevel < 5)
+                    if (maxLevel < 5 && level == maxLevel)
                         maxLevel++;
                     QStringList args;
                     args << "win";
@@ -453,15 +452,12 @@ void Widget::died(int type)
                     ui->console->append("win");
                 }
 
-                userAlive = -1;
-                botAlive = -1;
-                normAlive = -1;
+                //setAlive(-1, -1, -1);
             }
         }
     }
     else
     {
-        //delete Core;
         close();
     }
 }
@@ -672,6 +668,17 @@ void Widget::disableGUI()
     ui->label_help_3->setVisible(0);
 }
 
+void Widget::setAlive(int norm, int user, int bot)
+{
+    normAlive = norm;
+    userAlive = user;
+    botAlive = bot;
+
+    QString str = "set: norm " + QString::number(norm) + ", user " + QString::number(user) + ", bot " + QString::number(bot);
+    qDebug() << str;
+    ui->console->append(str);
+}
+
 void Widget::setArgs(int argc, char *argv[])
 {
     rand()%10; // костыль для рандома...
@@ -683,7 +690,14 @@ void Widget::setArgs(int argc, char *argv[])
         ui->console->append(argv[i]);
     }
 
-    name = QString(argv[0]); // сохранение расположения (имени) программы
+    QString fullName = QString(argv[0]); // сохранение расположения (имени) программы
+    int found = fullName.lastIndexOf("\\");
+    if (found == -1) found = fullName.lastIndexOf("/");
+    if (found != -1)
+        name = fullName.right(fullName.size()-1 - found);
+    else
+        name = fullName;
+
     if (argc <= 1) //всегда минимум один аргумент - место запуска
     {
         launcher = true; // значит это лаунчер
@@ -724,14 +738,22 @@ void Widget::setArgs(int argc, char *argv[])
             // power = 4 - скорость от 2.0 до 1.5
             // power = 5 - скорость от 1.5 до 1.0
             // power = 6 - скорость от 1.0 до 0.5
+            // power > 6 - скорость от 0.5 до 0.0 (0.3)
 
-            int D = rand()%(500)+6000+power*500;
+            int D = 0;
+            if (power <= 6)
+            {
+                D = rand()%(500)+6000+power*500;
+                if (D > 9700) D = 9700;
+            }
+            else
+                D = rand()%(400)+9400;
 
-            int I = rand()%50+50+power/3*50;
-            int C = rand()%10+5+power/3*50;
+            int I = rand()%50+50+(power/2-1)*50;
+            int C = rand()%10+5+(power/2-1)*20;
             int temper = rand()%11-5;
             int Ii = power/2;
-            int Ci = 2+(double)power/1.5;
+            int Ci = 2+power/2;
             int type = 0;
             if ((QString)argv[1] == "normal") // обычная прога
             {
@@ -802,7 +824,7 @@ void Widget::setArgs(int argc, char *argv[])
         {
             timerProgram = true;
             setFixedSize(201, 61);
-            ui->myPort->setText("25:00");
+            ui->myPort->setText("15:00");
 
             setWindowTitle("Обратный отсчет");
             setWindowFlags(windowFlags() ^ Qt::WindowStaysOnTopHint);
@@ -812,7 +834,7 @@ void Widget::setArgs(int argc, char *argv[])
                     this,
                     SLOT(died(int)));
             timer = startTimer(1000);
-            period = 1500; // 1500 секунд для победы
+            period = 900; // 900 секунд для победы
         }
 
         if ((QString)argv[1] == "win") // окно победы
@@ -825,8 +847,7 @@ void Widget::setArgs(int argc, char *argv[])
             ui->up_c->setText("Открыт следующий уровень.");
 
             setWindowTitle("Победа!");
-            connection = new Connection(45455, 0, -1); // порт окна победы (в принципе, такой же у хелпа)
-                                                       // роли это не играет - принимать ничего не надо
+            connection = new Connection(45457, 0, -1); // порт окна победы
         }
 
         if ((QString)argv[1] == "lose") // окно поражения
@@ -839,7 +860,7 @@ void Widget::setArgs(int argc, char *argv[])
             ui->up_c->setText("Ваши программы\nбыли уничтожены.");
 
             setWindowTitle("Поражение :(");
-            connection = new Connection(45455, 0, -1);
+            connection = new Connection(45458, 0, -1);
         }
     }
 
@@ -851,6 +872,10 @@ void Widget::setArgs(int argc, char *argv[])
 
 Widget::~Widget()
 {
+    if (core != NULL)
+        delete core;
+    if (connection != NULL)
+        delete connection;
     delete ui;
 }
 
@@ -862,8 +887,10 @@ void Widget::on_start_clicked() // старт игры
 
     if (ui->launcherTab->currentIndex() == 0) // на равных
     {
+        setAlive(3, 1, -1);
 
-        for (int i = 0; i < 3; i++) // старт трех программ
+
+        for (int i = 0; i < normAlive; i++) // старт трех программ
         {
             arguments << "normal" << "2";
 
@@ -876,17 +903,14 @@ void Widget::on_start_clicked() // старт игры
 
         arguments << "help"; // старт "кнопки ОК" для обучения
         QProcess::startDetached(name, arguments);
-        arguments.clear();
-
-        normAlive = 3;
-        userAlive = 1;
-        botAlive = -1;
+        arguments.clear();  
     }
 
     if (ui->launcherTab->currentIndex() == 1) // сильнейший
     {
+        setAlive(9, 1, -1);
 
-        for (int i = 0; i < 9; i++) // старт девяти программ
+        for (int i = 0; i < normAlive; i++) // старт девяти программ
         {
             arguments << "normal" << "3";
 
@@ -896,36 +920,31 @@ void Widget::on_start_clicked() // старт игры
         arguments << "user" << "3"; // старт юзера
         QProcess::startDetached(name, arguments);
         arguments.clear();
-
-        botAlive = -1;
-        userAlive = 1;
-        normAlive = 9;
     }
 
     if (ui->launcherTab->currentIndex() == 2) // стенка на стенку
     {
+        setAlive(-1, 3, 3);
 
-        for (int i = 0; i < 3; i++) // старт трех ботов
+        for (int i = 0; i < botAlive; i++) // старт трех ботов
         {
             arguments << "bot" << "4";
             QProcess::startDetached(name, arguments);
             arguments.clear();
         }
-        for (int i = 0; i < 3; i++) // старт 3 юзеров
+        for (int i = 0; i < userAlive; i++) // старт 3 юзеров
         {
-            arguments << "user" << "2";
+            arguments << "user" << "3";
             QProcess::startDetached(name, arguments);
             arguments.clear();
         }
-        botAlive = 3;
-        userAlive = 3;
-        normAlive = -1;
     }
     if (ui->launcherTab->currentIndex() == 3) // защита сервера
     {
         if (userAlive == 0)
         {
-            for (int i = 0; i < 4; i++) // старт 4 прог
+            setAlive(3, 1, -2);
+            for (int i = 0; i < normAlive; i++) // старт 3 прог
             {
                 arguments << "normal" << "2";
                 QProcess::startDetached(name, arguments);
@@ -934,36 +953,31 @@ void Widget::on_start_clicked() // старт игры
             arguments << "user" << "3"; // юзер
             QProcess::startDetached(name, arguments);
             arguments.clear();
-
-            botAlive = -2;
-            userAlive = 1;
-            normAlive = 4;
         }
         else if (normAlive == 0)
         {
-            for (int i = 0; i < 2; i++) // старт двух ботов
+            setAlive(-1, 1, 2);
+            for (int i = 0; i < botAlive; i++) // старт двух ботов
             {
-                arguments << "bot" << "5";
+                arguments << "bot" << "6";
                 QProcess::startDetached(name, arguments);
                 arguments.clear();
             }
-
-            botAlive = 2;
-            normAlive = -1;
         }
         else if (botAlive == 0)
         {
-            arguments << "normal" << "6";
+            setAlive(1, 1, -1);
+            arguments << "normal" << "10";
             QProcess::startDetached(name, arguments);
             arguments.clear();
-            normAlive = 1;
-            botAlive = -1;
         }
     }
     if (ui->launcherTab->currentIndex() == 4) // троян
     {
         if (userAlive == 0)
         {
+            setAlive(-1, 2, 1);
+
             arguments << "troyan" << "6"; // старт трояна
             QProcess::startDetached(name, arguments);
             arguments.clear();
@@ -972,15 +986,12 @@ void Widget::on_start_clicked() // старт игры
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
-            for (int i = 0; i < 2; i++) // старт 2 юзеров
+            for (int i = 0; i < userAlive; i++) // старт 2 юзеров
             {
-                arguments << "user" << "3";
+                arguments << "user" << "5";
                 QProcess::startDetached(name, arguments);
                 arguments.clear();
             }
-            botAlive = 1;
-            userAlive = 2;
-            normAlive = -1;
         }
         else
         {
@@ -988,6 +999,8 @@ void Widget::on_start_clicked() // старт игры
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
+            qDebug() << "bot +1";
+            ui->console->append("bot +1");
             botAlive++;
         }
     }

@@ -45,6 +45,7 @@ private slots:
 
 public:
     Connection(int port, int _temper, int _type);
+    ~Connection();
 
     void sendData(quint16 port, int Mtype); // запись на порт
     void sendData(quint16 port, int Mtype, int amount); // передача данных

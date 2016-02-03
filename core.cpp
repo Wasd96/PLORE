@@ -47,6 +47,15 @@ Core::Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type)
     timeToUpgrade = 0;
 }
 
+Core::~Core()
+{
+    delete connection;
+
+    free(I);
+    free(D);
+    free(C);
+}
+
 void Core::send(quint16 port, int _type)
 {
     connection->sendData(port, _type);
@@ -123,7 +132,7 @@ void Core::upgradeD()
     int decrease = getDNextRequire(); // стоимость
     Cn -= decrease;
     Dn += increase;
-    if (Dn > 9500) Dn = 9500;
+    if (Dn > 9800) Dn = 9800;
     str = "Оптимизированы команды процессора (+"+QString::number(increase)+") за " +QString::number(decrease) +" ресурса";
     messages.append(str);
     if (timeToUpgrade >= (int)(50.0*coeff))
@@ -155,11 +164,7 @@ void Core::deathRecountRealloc()
         else
         {
             dead = true; // смерть
-            free(I);
-            free(D);
-            free(C);
             send(45454, 1, type); // сообщение лаунчеру о своей смерти
-            free(connection);
             messages.append("died");
             return;
         }
@@ -167,7 +172,11 @@ void Core::deathRecountRealloc()
 
     In += Ii; // прирост памяти
     if (Cn < In) // предел ресурса
-        Cn += Ci; // ресурса
+    {
+        Cn += Ci; // прирост ресурса
+        if (Cn > In) // специально для Димы
+            Cn = In;
+    }
 
 
     I = (int*)realloc(I, In*sizeof(int)); // перевыделение памяти
@@ -194,7 +203,7 @@ int Core::getINextRequire()
 
 int Core::getDNextRequire()
 {
-    return 500.0/((10000.0-(double)Dn)/1000.0)-90;
+    return 200.0/((10000.0-(double)Dn)/1000.0-0.18)-50;
 }
 
 int Core::getCNextRequire()
@@ -416,7 +425,7 @@ void Core::update()
             int relate = connection->getTable(i).relationship;
             int targetType = connection->getTable(i).type;
             if (((type == 2 && targetType != 2 && targetType != 3) || type != 2) &&
-                    (type == 3 && targetType != 2 && targetType != 3) || type != 3)
+                    ((type == 3 && targetType != 2 && targetType != 3) || type != 3))
             {
                 if (rand()%(relate+10+connection->getTable(i).useful) == 0)
                 {

@@ -27,6 +27,8 @@ public:
 
     void disableGUI(); // сокрытие всех элементов интерфейса
 
+    void setAlive(int norm, int user, int bot);
+
     void timerEvent(QTimerEvent *t);
 
     void paintEvent(QPaintEvent *pEv);

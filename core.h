@@ -32,6 +32,7 @@ private:
 public:
     Core();
     Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type);
+    ~Core();
 
     void update();
     void updateUser();
