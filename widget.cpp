@@ -19,6 +19,7 @@ Widget::Widget(QWidget *parent) :
     userProgram = false;
     normalProgram = false;
     invisProgram = false;
+    silentProgram = false;
     troyanProgram = false;
     wormProgram = false;
     exploreProgram = false;
@@ -45,7 +46,7 @@ Widget::Widget(QWidget *parent) :
 
 void Widget::timerEvent(QTimerEvent *t) // таймер, частота работы проги
 {
-    if (t->timerId() == timer && timerProgram)
+    if (t->timerId() == timer && timerProgram) // таймер обратного отсчета
     {
         if (ui->up_c->isVisible())
         {
@@ -174,6 +175,11 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
     if (t->timerId() == timer) // таймер для программ
     {
 
+        if (invisProgram && isVisible())
+        {
+            hide();
+        }
+
         // обновление всех процессов
         if (userProgram)
             core->updateUser();
@@ -210,14 +216,17 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
 
         //обновление интерфейса
+        double speed = (double)(10000-core->getD())/1000.0;
         ui->I->setText(QString("Доступная память: " +
                                QString::number(core->getI()) +
-                               " УБ"));
+                               " УБ"+
+                               " "+QString::number((double)core->getIi()/speed)));
         ui->D->setText(QString("Быстродействие: " +
-                               QString::number((double)(10000-core->getD())/1000.0)+
+                               QString::number(speed)+
                                " сек/оп."));
         ui->C->setText(QString("Активный ресурс: " +
-                               QString::number(core->getC())));
+                               QString::number(core->getC())+
+                               " "+QString::number((double)core->getCi()/speed)));
 
 
         while(core->hasMessages())
@@ -328,6 +337,7 @@ void Widget::paintEvent(QPaintEvent *pEv)
 
 }
 
+
 void Widget::died(int type)
 {
     if (launcher)
@@ -430,12 +440,22 @@ void Widget::died(int type)
                 {
                     if (normAlive == 0 && botAlive == -2) // первый этап
                     {
+                        QStringList args;
+                        args << "info" << "serv2";
+                        QProcess info;
+                        info.start(name, args);
+                        info.waitForFinished();
                         //QMessageBox::information(NULL, "Тандем", "Готовьтесь отбить нападение двух хацкеров!");
                         on_start_clicked();
                         return;
                     }
                     else if (botAlive == 0)
                     {
+                        QStringList args;
+                        args << "info" << "serv3";
+                        QProcess info;
+                        info.start(name, args);
+                        info.waitForFinished();
                         //QMessageBox::information(this, "Босс", "Босса убить нада!");
                         on_start_clicked();
                         return;
@@ -451,8 +471,6 @@ void Widget::died(int type)
                     qDebug() << "You win";
                     ui->console->append("win");
                 }
-
-                //setAlive(-1, -1, -1);
             }
         }
     }
@@ -460,6 +478,19 @@ void Widget::died(int type)
     {
         close();
     }
+}
+
+void Widget::changeVisible(bool vis)
+{
+
+    if (vis)
+    {
+        invisProgram = 0;
+        ui->console->clear();
+    }
+    if (pos().y() > height())
+        move(pos().x(), pos().y()-3000);
+    setVisible(vis);
 }
 
 void Widget::initGUI()
@@ -598,6 +629,13 @@ void Widget::initGUI()
             ui->console->move(0,150);
             ui->console->resize(200,150);
         }
+
+        if (invisProgram)
+        {
+            move(pos().x(),pos().y()+3000);
+        }
+
+
     }
     if (timerProgram)
     {
@@ -608,6 +646,9 @@ void Widget::initGUI()
 
         ui->myPort->setStyleSheet("QLabel { color: red; font-size: 50px; border: 3px double darkred; }");
     }
+
+
+
 
 }
 
@@ -702,7 +743,7 @@ void Widget::setArgs(int argc, char *argv[])
     {
         launcher = true; // значит это лаунчер
         setWindowTitle("Лаунчер");
-        connection = new Connection(45454, 0, -1); // личный порт лаунчера
+        connection = new Connection(45454, 0, -1, 0); // личный порт лаунчера
         connect(connection,
                 SIGNAL(died(int)),
                 this,
@@ -780,7 +821,8 @@ void Widget::setArgs(int argc, char *argv[])
                 type = 3;
                 temper = -5;
             }
-            core = new Core(I, D, C, temper, Ii, Ci, type);
+
+            core = new Core(I, D, C, temper, Ii, Ci, type, 0);
             period = 10000 - core->getD();
             timer = startTimer(period);
 
@@ -788,6 +830,26 @@ void Widget::setArgs(int argc, char *argv[])
                     SIGNAL(died(int)),
                     this,
                     SLOT(died(int)));
+            connect(core->getConnection(),
+                    SIGNAL(setVisible(bool)),
+                    this,
+                    SLOT(changeVisible(bool)));
+
+            if (argc >= 4)
+                if (QString(argv[3]) == "hidden")
+                {
+                    invisProgram = true;
+
+                    ui->console->append("set invis");
+                }
+
+            if (argc >= 5)
+                if (QString(argv[4]) == "silent")
+                {
+                    core->getConnection()->setSilent(1);
+
+                    ui->console->append("set silent");
+                }
         }
 
         if ((QString)argv[1] == "worm") // червь - помощник трояна
@@ -796,7 +858,7 @@ void Widget::setArgs(int argc, char *argv[])
             setWindowTitle("Я - Червь");
             int type = 2;
 
-            core = new Core(100, 7000, 20, -5, 0, 2, type);
+            core = new Core(100, 7000, 20, -5, 0, 2, type, 0);
             core->setSearch(true);
             period = 10000 - core->getD();
             timer = startTimer(period);
@@ -817,7 +879,7 @@ void Widget::setArgs(int argc, char *argv[])
             ui->up_c->setText("Все понятно, продолжим!"); // улучшения тут нет
 
             setWindowTitle("Разобрались?");
-            connection = new Connection(45455, 0, -1); // порт хелпера
+            connection = new Connection(45455, 0, -1, 0); // порт хелпера
         }
 
         if ((QString)argv[1] == "timer") // счетчик для уровня с трояном
@@ -828,7 +890,7 @@ void Widget::setArgs(int argc, char *argv[])
 
             setWindowTitle("Обратный отсчет");
             setWindowFlags(windowFlags() ^ Qt::WindowStaysOnTopHint);
-            connection = new Connection(45456, 0, -1); // порт счетчика
+            connection = new Connection(45456, 0, -1, 0); // порт счетчика
             connect(connection,
                     SIGNAL(died(int)),
                     this,
@@ -847,7 +909,7 @@ void Widget::setArgs(int argc, char *argv[])
             ui->up_c->setText("Открыт следующий уровень.");
 
             setWindowTitle("Победа!");
-            connection = new Connection(45457, 0, -1); // порт окна победы
+            connection = new Connection(45457, 0, -1, 0); // порт окна победы
         }
 
         if ((QString)argv[1] == "lose") // окно поражения
@@ -860,7 +922,33 @@ void Widget::setArgs(int argc, char *argv[])
             ui->up_c->setText("Ваши программы\nбыли уничтожены.");
 
             setWindowTitle("Поражение :(");
-            connection = new Connection(45458, 0, -1);
+            connection = new Connection(45458, 0, -1, 0);
+        }
+
+        if ((QString)argv[1] == "info") // окно информации
+        {
+            setFixedSize(300, 120);
+            ui->up_c->setEnabled(true);
+            ui->up_c->setVisible(true);
+            ui->up_c->resize(60,30); // аналогично с предыдущим
+            ui->up_c->move(120, 85);
+            ui->up_c->setText("Ладно");
+
+            ui->console->setVisible(1);
+            ui->console->resize(290, 75);
+            ui->console->move(5,5);
+            ui->console->setEnabled(1);
+
+            if (QString(argv[2]) == "serv2")
+            {
+                ui->console->setText("Готовьтесь отбить нападение двух хацкеров!");
+            }
+            if (QString(argv[2]) == "serv3")
+            {
+                ui->console->setText("Босса убить нада!");
+            }
+
+            setWindowTitle("Информация");
         }
     }
 
@@ -939,37 +1027,51 @@ void Widget::on_start_clicked() // старт игры
             arguments.clear();
         }
     }
+
     if (ui->launcherTab->currentIndex() == 3) // защита сервера
     {
+
         if (userAlive == 0)
         {
-            setAlive(3, 1, -2);
+            setAlive(1, 1, -2);
             for (int i = 0; i < normAlive; i++) // старт 3 прог
             {
                 arguments << "normal" << "2";
                 QProcess::startDetached(name, arguments);
                 arguments.clear();
             }
-            arguments << "user" << "3"; // юзер
+            arguments << "user" << "6"; // юзер
+            QProcess::startDetached(name, arguments);
+            arguments.clear();
+
+            for (int i = 0; i < 2; i++) // старт 2 ботов отложенных
+            {
+                arguments << "bot" << "3" << "hidden" << "silent";
+                QProcess::startDetached(name, arguments);
+                arguments.clear();
+            }
+
+            arguments << "normal" << "3" << "hidden" << "silent"; // норм отложенный
             QProcess::startDetached(name, arguments);
             arguments.clear();
         }
         else if (normAlive == 0)
         {
             setAlive(-1, 1, 2);
-            for (int i = 0; i < botAlive; i++) // старт двух ботов
+            for (int i = 0; i < 200; i++)
             {
-                arguments << "bot" << "6";
-                QProcess::startDetached(name, arguments);
-                arguments.clear();
+                connection->sendData(50000+i, 70, 2); // вкл всем ботам связь
+                connection->sendData(50000+i, 71, 2); // стать видимыми
             }
         }
         else if (botAlive == 0)
         {
             setAlive(1, 1, -1);
-            arguments << "normal" << "10";
-            QProcess::startDetached(name, arguments);
-            arguments.clear();
+            for (int i = 0; i < 200; i++)
+            {
+                connection->sendData(50000+i, 70, 0); // вкл всем нормальным связь
+                connection->sendData(50000+i, 71, 0); // стать видимыми
+            }
         }
     }
     if (ui->launcherTab->currentIndex() == 4) // троян
@@ -1115,9 +1217,11 @@ void Widget::on_up_c_clicked()
         return;
     }
 
+
     if (!ui->up_d->isVisible()) // если это кнопка конца уровня
     {               // ^ костыль - если не видна кнопка другого улучшения, то это точно не юзер
-        connection->sendData(45454, 90); // конец уровня
+        if (connection != NULL) // если связь подключена
+            connection->sendData(45454, 90); // конец уровня
         close();
     }
     else

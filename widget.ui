@@ -180,7 +180,7 @@ QTabBar::tab:selected {
     <rect>
      <x>10</x>
      <y>80</y>
-     <width>161</width>
+     <width>201</width>
      <height>20</height>
     </rect>
    </property>
@@ -193,7 +193,7 @@ QTabBar::tab:selected {
     <rect>
      <x>10</x>
      <y>100</y>
-     <width>161</width>
+     <width>201</width>
      <height>20</height>
     </rect>
    </property>
@@ -206,7 +206,7 @@ QTabBar::tab:selected {
     <rect>
      <x>10</x>
      <y>121</y>
-     <width>161</width>
+     <width>201</width>
      <height>20</height>
     </rect>
    </property>

@@ -6,6 +6,8 @@
 #include <QPaintEvent>
 #include <QPainter>
 
+#include <QShowEvent>
+
 #include "core.h"
 
 namespace Ui {
@@ -33,8 +35,11 @@ public:
 
     void paintEvent(QPaintEvent *pEv);
 
+
 private slots:
     void died(int type); // прием лаунчера о смерти
+
+    void changeVisible(bool vis);
 
     void on_start_clicked();
 
@@ -71,6 +76,7 @@ private:
     bool normalProgram;
     bool userProgram;
     bool invisProgram;
+    bool silentProgram;
     bool troyanProgram;
     bool wormProgram;
     bool exploreProgram;

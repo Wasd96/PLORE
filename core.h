@@ -31,7 +31,7 @@ private:
 
 public:
     Core();
-    Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type);
+    Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type, bool _silent);
     ~Core();
 
     void update();
@@ -60,6 +60,8 @@ public:
     int getI() { return In; }
     int getD() { return Dn; }
     int getC() { return Cn; }
+    int getIi() { return Ii; }
+    int getCi() { return Ci; }
     int getType() { return type; }
     int getTemper() { return temper; }
     bool getDead() { return dead; }

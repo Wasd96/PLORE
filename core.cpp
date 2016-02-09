@@ -2,7 +2,7 @@
 
 Core::Core()
 {
-    connection = new Connection(rand()%200 + 50000, 0 ,0);
+    connection = new Connection(rand()%200 + 50000, 0 ,0, 0);
 
     In = 100;
     Dn = 9000;
@@ -24,9 +24,9 @@ Core::Core()
     timeToUpgrade = 0;
 }
 
-Core::Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type)
+Core::Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type, bool _silent)
 {
-    connection = new Connection(rand()%200 + 50000, _temper, _type);
+    connection = new Connection(rand()%200 + 50000, _temper, _type, _silent);
 
     In = _I;
     Dn = _D;
@@ -186,14 +186,17 @@ void Core::deathRecountRealloc()
 
 void Core::findConnections()
 {
-    QString str;
-    quint16 port = rand()%200 + 50000;
-    while (port == connection->getPort()) // нет смысла себе писать
-        port = rand()%200 + 50000;
-    send(port, 0); // отправка поискового сообщения
-    Cn -= 1; // стоимость поиска
-    str = "Поиск -> " + QString::number(port%1000); // отчет
-    messages.append(str);
+    if (connection->getSilent() == 0)
+    {
+        QString str;
+        quint16 port = rand()%200 + 50000;
+        while (port == connection->getPort()) // нет смысла себе писать
+            port = rand()%200 + 50000;
+        send(port, 0); // отправка поискового сообщения
+        Cn -= 1; // стоимость поиска
+        str = "Поиск -> " + QString::number(port%1000); // отчет
+        messages.append(str);
+    }
 }
 
 int Core::getINextRequire()

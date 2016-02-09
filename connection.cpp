@@ -1,12 +1,13 @@
 #include "connection.h"
 
-Connection::Connection(int port, int _temper, int _type) // создание модуля связи
+Connection::Connection(int port, int _temper, int _type, bool _silent) // создание модуля связи
 {
     table.clear(); // очистка таблицы связей (на всякий случай)
     data.clear();
 
     temper = _temper;
     type = _type;
+    silent = _silent;
 
     udpSocket = new QUdpSocket(this); // создание сокета
     while (!udpSocket->bind(port, QUdpSocket::ShareAddress)) //инициализация
@@ -27,11 +28,13 @@ Connection::~Connection()
 void Connection::sendData(quint16 port, int Mtype) //подготовка и отправка данных
 {
     QString outData;
+    outData = QString::number(Mtype)+" ";
+
     if (Mtype == 0) // установка связи
     {
         outData = "0 "+QString::number(temper)+" "+QString::number(type);
     }
-    if (Mtype == 1) // проверка связи
+    /*if (Mtype == 1) // проверка связи
     {
         outData = "1 ";
     }
@@ -54,7 +57,7 @@ void Connection::sendData(quint16 port, int Mtype) //подготовка и о�
     if (Mtype == 90) // Закончен уровень (посылка лаунчеру)
     {
         outData = "90 ";
-    }
+    }*/
 
 
     QByteArray datagram = outData.toUtf8();
@@ -67,7 +70,8 @@ void Connection::sendData(quint16 port, int Mtype) //подготовка и о�
 void Connection::sendData(quint16 port, int Mtype, int amount)
 {
     QString outData;
-    if (Mtype == 1) // сообщение о смерти
+    outData = QString::number(Mtype)+" "+QString::number(amount);
+    /*if (Mtype == 1) // сообщение о смерти
     {
         outData = "1 " + QString::number(amount);
     }
@@ -78,7 +82,7 @@ void Connection::sendData(quint16 port, int Mtype, int amount)
     if (Mtype == 4) // помощь (передача памяти)
     {
         outData = "4 " + QString::number(amount);
-    }
+    }*/
     if (Mtype == 5) // просьба о помощи
     {
         // здесь amount = port врага
@@ -93,6 +97,7 @@ void Connection::sendData(quint16 port, int Mtype, int amount)
         }
         outData = "5 " + QString::number(amount) + " " + QString::number(table.at(index).type);
     }
+
 
 
     QByteArray datagram = outData.toUtf8();
@@ -122,15 +127,10 @@ void Connection::readData() // прием данных
         QString str = datagram.data();
         QStringList strList = str.split(' ');
 
-        if (strList.first() != "0" &&
-                strList.first() != "1" &&
-                strList.first() != "2" &&
-                strList.first() != "3" &&
-                strList.first() != "4" &&
-                strList.first() != "5" &&
-                strList.first() != "6" &&
-                strList.first() != "88" &&
-                strList.first() != "80")
+        if (silent && port != 45454)
+            continue;
+
+        if (!(strList.first().toInt() >= 0 && strList.first().toInt() <= 100))
         {
             QString rec = QString::number(port)+ " -> " + str; // создание отчета
             data.append(rec); // сохранение отчета
@@ -235,7 +235,7 @@ void Connection::readData() // прием данных
                 data.append(str);
             }
 
-            if (strList.first() != "0") // сообщение о смерти
+            if (strList.first() != "0") // системное сообщение
             {
                 if (strList.first() == "88") // лаунчер сообщает, что пора умирать
                 {
@@ -245,6 +245,22 @@ void Connection::readData() // прием данных
                 if (strList.first() == "80") // спавн червя
                 {
                     emit died(80);
+                    break;
+                }
+                if (strList.first() == "70") // включить связь
+                {
+                    if (strList.at(1) == QString::number(type))
+                    {
+                        setSilent(0);
+                    }
+                    break;
+                }
+                if (strList.first() == "71") // изменить видимость
+                {
+                    if (strList.at(1) == QString::number(type))
+                    {
+                        emit setVisible(1);
+                    }
                     break;
                 }
                 if (strList.first() == "90") // конец уровня

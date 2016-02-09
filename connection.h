@@ -14,7 +14,8 @@ struct connectTable
     int relationship; // -5 - злейший враг, 0 - нейтрал, 5 - лучший друг
     int useful; // 0 - связь бесполезна, 10 - очень полезна
     int lostSignal; // "мертвая" связь
-    int type; // -1 - лаунчер, 0 - бот, 1 - юзер
+    int type; // -1 - лаунчер, 0 - норм, 1 - юзер, 2 - юзер, 3 - троян
+    bool silent;
 };
 
 class Connection : public QObject
@@ -34,6 +35,7 @@ private:
 
     int temper; // настроение
     int type; // 0 - бот, 1 - юзер
+    bool silent;
 
     QUdpSocket* udpSocket; // сокет
 
@@ -44,7 +46,7 @@ private slots:
 
 
 public:
-    Connection(int port, int _temper, int _type);
+    Connection(int port, int _temper, int _type, bool _silent);
     ~Connection();
 
     void sendData(quint16 port, int Mtype); // запись на порт
@@ -55,6 +57,7 @@ public:
     void setUseful(int pos, int n) { table[pos].useful = n; }
     void createTable(connectTable _table);
     void setSelectedConnection(int index) { selectedConnection = index; }
+    void setSilent(bool _silent) { silent = _silent; }
 
     bool hasData() { return (bool)data.size(); }
 
@@ -66,9 +69,11 @@ public:
     int getTableSize() { return table.size(); }
     int getSelectedConnection() { return selectedConnection; }
     int getType() { return type; }
+    bool getSilent() { return silent; }
 
 signals:
     void died(int type);
+    void setVisible(bool visible);
 
 };
 
