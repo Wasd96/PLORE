@@ -25,6 +25,15 @@ Connection::~Connection()
     delete udpSocket;
 }
 
+void Connection::rebindPort(int port)
+{
+    while (udpSocket->localPort() != port) {
+        udpSocket->close();
+        udpSocket->bind(port, QUdpSocket::DontShareAddress);
+        portRecieve = port;
+    }
+}
+
 void Connection::sendData(quint16 port, int Mtype) //подготовка и отправка данных
 {
     QString outData;
@@ -239,7 +248,7 @@ void Connection::readData() // прием данных
             {
                 if (strList.first() == "88") // лаунчер сообщает, что пора умирать
                 {
-                    emit died(0);
+                    emit died(88);
                     break;
                 }
                 if (strList.first() == "80") // спавн червя

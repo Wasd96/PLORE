@@ -48,6 +48,7 @@ private slots:
 public:
     Connection(int port, int _temper, int _type, bool _silent);
     ~Connection();
+    void rebindPort(int port);
 
     void sendData(quint16 port, int Mtype); // запись на порт
     void sendData(quint16 port, int Mtype, int amount); // передача данных
@@ -62,6 +63,7 @@ public:
     bool hasData() { return (bool)data.size(); }
 
     void sortTable();
+
 
     QString getData() { return data.takeFirst(); }
     quint16 getPort() { return portRecieve; }

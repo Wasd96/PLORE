@@ -372,6 +372,10 @@ void Widget::died(int type)
         {
             on_start_clicked();
         }
+        if (type == 88)
+        {
+            deleteLater();
+        }
         if (type == 90) // конец уровня
         {
             for (int i = 0; i < 200; i++)
@@ -761,6 +765,36 @@ void Widget::setArgs(int argc, char *argv[])
             file.open(QIODevice::WriteOnly); // создаем файл, если его не было
         }
         file.close();
+        qDebug() << connection->getPort();
+
+        if (connection->getPort() != 45454)
+        {
+            connection->sendData(45454, 88);
+
+            connection->rebindPort(45454);
+            qDebug() << "rebinded! " << connection->getPort();
+
+            connection->sendData(45455, 88);
+            connection->sendData(45456, 88);
+            connection->sendData(45457, 88);
+            connection->sendData(45458, 88);
+            for (int i = 50000; i <= 50200; i++)
+            {
+                connection->sendData(i, 88);
+            }
+
+        }
+        else
+        {
+            connection->sendData(45455, 88);
+            connection->sendData(45456, 88);
+            connection->sendData(45457, 88);
+            connection->sendData(45458, 88);
+            for (int i = 50000; i <= 50200; i++)
+            {
+                connection->sendData(i, 88);
+            }
+        }
 
     }
     else
@@ -862,11 +896,6 @@ void Widget::setArgs(int argc, char *argv[])
             core->setSearch(true);
             period = 10000 - core->getD();
             timer = startTimer(period);
-
-            connect(core->getConnection(),
-                    SIGNAL(died(int)),
-                    this,
-                    SLOT(died(int)));
         }
 
         if ((QString)argv[1] == "help") // help для первого уровня
@@ -950,10 +979,21 @@ void Widget::setArgs(int argc, char *argv[])
 
             setWindowTitle("Информация");
         }
+
+        if (core == NULL)
+        {
+            connect(connection,
+                    SIGNAL(died(int)),
+                    this,
+                    SLOT(died(int)));
+        }
     }
 
 
     initGUI();
+
+    if (connection != NULL)
+        qDebug() << connection->getPort();
 }
 
 
