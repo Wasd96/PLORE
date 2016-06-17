@@ -1,4 +1,4 @@
-#include "widget.h"
+﻿#include "widget.h"
 #include "ui_widget.h"
 #include <QProcess>
 #include <QDesktopWidget>
@@ -41,7 +41,7 @@ Widget::Widget(QWidget *parent) :
 
     setFixedSize(200,100);
     move(200,200);
-    setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint );
+    setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint | Qt::FramelessWindowHint);
 }
 
 void Widget::timerEvent(QTimerEvent *t) // таймер, частота работы проги
@@ -145,11 +145,9 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
                             close();
                         }
-
                         repaint();
                     }
                 }
-
             }
         }
         else
@@ -168,7 +166,6 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
             ui->myPort->setText(str);
         }
-
 
         return;
     }
@@ -195,7 +192,6 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             return;
         }
 
-
         QString str;
         Connection* connection = core->getConnection();
         ui->connections->clear(); // заполнение таблицы связей
@@ -203,15 +199,14 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         {
             connectTable table = connection->getTable(i);
             str = QString::number(i+1) + ") " +
-                    QString::number(table.port%1000) + " отношение: " +
+                    QString::number(table.port%1000) + " отн: " +
                     QString::number(table.relationship) + " польза: " +
-                    QString::number(table.useful) + " юзер: "  +
+                    QString::number(table.useful) + " тип: "  +
                     QString::number(table.type);
             ui->connections->addItem(str);
         }
         //выделяем предыдущее значение
         ui->connections->setCurrentRow(core->getConnection()->getSelectedConnection());
-
 
 
 
@@ -315,26 +310,69 @@ void Widget::paintEvent(QPaintEvent *pEv)
 
     if (wormProgram)
     {
-        p.fillRect(0,0,width(),height(),qRgb(100,80,80));
+        p.fillRect(0,0,width(),height(),qRgb(150,120,130));
+        ui->console->setStyleSheet("QTextEdit { background: rgb(200, 180, 180);}");
+        ui->connections->setStyleSheet("QListWidget{background: rgb(200, 180, 180);}");
+        ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
     }
 
     if (troyanProgram)
     {
         p.fillRect(0,0,width(),height(),qRgb(200,80,80));
         ui->console->setStyleSheet("QTextEdit { background: rgb(255, 180, 180);}");
+        ui->connections->setStyleSheet("QListWidget{background: rgb(255, 180, 180);}");
+        ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
     }
 
-    if (normalProgram && core->getType() == 2)
+    if (normalProgram && core->getType() == 2) // бот (своих не бьет)
     {
         p.fillRect(0,0,width(),height(),qRgb(250,200,200));
+        ui->console->setStyleSheet("QTextEdit {background: rgb(255, 225, 225);}");
+        ui->connections->setStyleSheet("QListWidget{background: rgb(255, 225, 225);}");
+        ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
     }
-    if (normalProgram && core->getType() == 0)
+    if (normalProgram && core->getType() == 0) // обычная прога
     {
         p.fillRect(0,0,width(),height(),qRgb(200,200,250));
+        ui->console->setStyleSheet("QTextEdit {background: rgb(225, 225, 255);}");
+        ui->connections->setStyleSheet("QListWidget{background: rgb(225, 225, 255);}");
+        ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
+    }
+
+    if (!launcher)
+    {
+        QPen pen;
+        pen.setColor(Qt::black);
+        p.setPen(pen);
+        p.drawRect(0,0,width()-1,height()-1);
     }
 
 
+}
 
+void Widget::mouseMoveEvent(QMouseEvent *mEv)
+{
+    if (moving)
+        move(mEv->globalPos().x() - movingX, mEv->globalPos().y() - movingY);
+}
+
+void Widget::mousePressEvent(QMouseEvent *mEv)
+{
+    if (mEv->button() == Qt::LeftButton && !launcher)
+    {
+        //move(mEv->globalPos());
+        movingX = mEv->x();
+        movingY = mEv->y();
+        moving = true;
+        return;
+    }
+    moving = false;
+
+}
+
+void Widget::mouseReleaseEvent(QMouseEvent *mEv)
+{
+    moving = false;
 }
 
 
@@ -520,8 +558,8 @@ void Widget::initGUI()
 
         ui->console->setVisible(1);
         ui->console->setEnabled(1);
-        ui->console->resize(480, 210);
-        ui->console->move(10, 30);
+        ui->console->resize(500, 230);
+        ui->console->move(00, 20);
 
 
     }
@@ -1313,21 +1351,23 @@ void Widget::on_launcherTab_currentChanged(int index)
     {
         if (index == 0)
         {
-        ui->console->setText("Ознакомительный режим. Осмотритесь, \
-познакомьтесь с управлением и оповещениями.\n\n\
-1) Память - это состояние программы, насколько стабильно она \
-функционирует в операционной системе.\n\
-2) Быстродействие - показатель, сколько секунд требуется программе \
-на выполнение одной операции.\n\
+        ui->console->setText("        Ознакомительный режим. Познакомьтесь \
+с управлением и оповещениями.\n\n\
+1) Память - стабильность функционирования программы.\n\
+2) Быстродействие - скорость выполнения одной операции.\n\
 3) Ресурс - способность программы выполнять операции - \
 взламывать другие, передавать им память \
 или посылать запросы о поддержке.\n\n\
-Программа завершается после того, как у нее заканчивается \
+        Программа завершает работу после того, как у неё заканчивается \
 доступная память. Атаки на программу удаляют часть памяти, \
-помощь же в свою очередь передает память от одной программы \
-к другой.\nДружелюбность показывает как программа должна \
-взаимодействовать с другими - атаковать, помогать или все вместе. \
-В зависимости от действий  ее отношения с другими может меняться.");
+помощь - передаёт память от одной программы к другой.\n\
+        Для выбора цели действия нажмите на соответствующую строку \
+в списке связей и впишите количество ресурса для операции. \
+Если нужно запросить атаку, то выбранная строка будет являться \
+целью, а вписанный номер - номером помощника в списке.\n\
+        Дружелюбность показывает, каким действиям программа \
+отдаёт приоритет. В зависимости от действий её отношения \
+с другими программами может меняться.");
         }
         if (index == 1)
         {

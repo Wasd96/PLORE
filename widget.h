@@ -1,10 +1,11 @@
-#ifndef WIDGET_H
+﻿#ifndef WIDGET_H
 #define WIDGET_H
 
 #include "time.h"
 #include <QWidget>
 #include <QPaintEvent>
 #include <QPainter>
+#include <QMouseEvent>
 
 #include <QShowEvent>
 
@@ -34,6 +35,12 @@ public:
     void timerEvent(QTimerEvent *t);
 
     void paintEvent(QPaintEvent *pEv);
+
+    void mouseMoveEvent(QMouseEvent *mEv);
+
+    void mousePressEvent(QMouseEvent *mEv);
+
+    void mouseReleaseEvent(QMouseEvent *mEv);
 
 
 private slots:
@@ -90,6 +97,10 @@ private:
 
     int level; // текущий уровень
     int maxLevel; // максимальный доступный уровень
+
+
+    bool moving; // флаг-костыль для перемещения окон
+    int movingX, movingY; // смещения от угла
 };
 
 #endif // WIDGET_H

@@ -13,6 +13,66 @@
   <property name="windowTitle">
    <string>Widget</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">QPushButton  {
+    background-color: rgb(225, 255, 225);
+    border: 2px outset darkgreen;
+    border-radius: 2px;
+    font: 12px;
+	color: black;
+/*	padding-left: 5px;*/
+}
+QPushButton:hover {
+	background-color: rgb(245, 255, 245);
+}
+QPushButton:pressed  {
+    background-color: rgb(200, 255, 255);
+    border-style: inset;
+	color: black;
+}
+
+
+QProgressBar {
+border: rgb(0, 0, 0);
+border-width: 1px;
+border-style: solid;
+color: rgb(0,0,0);
+background-color: rgb(220, 250, 255);
+text-align: right;
+margin-right: 30px;
+}
+QProgressBar:chunk  {
+background-color: qlineargradient(spread:pad, x1:0.017, y1:0.642045, x2:0.988636, y2:0.205, stop:0 rgba(0, 171, 0, 255), stop:1 rgba(52, 255, 54, 255));
+}
+
+
+
+QScrollBar:horizontal {
+    border: 1px solid grey;
+    background: black;
+    height: 15px;
+}
+QScrollBar::handle:horizontal {
+    background: lightblue;
+    border: 1px solid ;
+    min-width: 20px;
+    width: 50px;
+}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {background: none;}
+
+
+QScrollBar:vertical {
+    border: 1px solid grey;
+    background: black;
+    width: 15px;
+}
+QScrollBar::handle:vertical{
+    background: lightblue;
+    border: 1px solid ;
+    min-height: 20px;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical{background: none;}</string>
+  </property>
   <widget class="QTextEdit" name="console">
    <property name="geometry">
     <rect>
@@ -21,6 +81,12 @@
      <width>280</width>
      <height>290</height>
     </rect>
+   </property>
+   <property name="cursorWidth">
+    <number>0</number>
+   </property>
+   <property name="textInteractionFlags">
+    <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
    </property>
   </widget>
   <widget class="QTabWidget" name="launcherTab">
@@ -90,7 +156,7 @@ QTabBar::tab:selected {
     <enum>QTabWidget::Rounded</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>2</number>
    </property>
    <property name="usesScrollButtons">
     <bool>false</bool>
@@ -106,7 +172,7 @@ QTabBar::tab:selected {
    </property>
    <widget class="QWidget" name="tab1">
     <attribute name="title">
-     <string>На равных</string>
+     <string>Обучение</string>
     </attribute>
    </widget>
    <widget class="QWidget" name="tab2">
@@ -140,7 +206,7 @@ QTabBar::tab:selected {
     <rect>
      <x>40</x>
      <y>590</y>
-     <width>100</width>
+     <width>113</width>
      <height>30</height>
     </rect>
    </property>
@@ -236,15 +302,109 @@ QTabBar::tab:selected {
      <height>120</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">QListWidget {
+    /*show-decoration-selected: 1; /* make the selection span the entire width of the view */
+background: rgb(225, 255, 225);
+}
+
+QListWidget::item:alternate {
+    background:  rgb(20, 250, 255);
+border: 4px solid red;
+}
+
+QListWidget::item:selected {
+    background: qlineargradient(spread:pad, x1:0.221591, y1:0.119, x2:1, y2:0, stop:0 rgba(120, 150, 185, 255), stop:1 rgba(220, 250, 255, 255)) ;
+color:black;
+border:0px;
+}
+
+QListWidget::item:hover {
+    background: rgb(255, 246, 146);
+}</string>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Sunken</enum>
+   </property>
+   <property name="horizontalScrollBarPolicy">
+    <enum>Qt::ScrollBarAsNeeded</enum>
+   </property>
+   <property name="sizeAdjustPolicy">
+    <enum>QAbstractScrollArea::AdjustIgnored</enum>
+   </property>
+   <property name="alternatingRowColors">
+    <bool>false</bool>
+   </property>
+   <property name="selectionMode">
+    <enum>QAbstractItemView::SingleSelection</enum>
+   </property>
+   <property name="textElideMode">
+    <enum>Qt::ElideRight</enum>
+   </property>
+   <property name="horizontalScrollMode">
+    <enum>QAbstractItemView::ScrollPerItem</enum>
+   </property>
+   <property name="movement">
+    <enum>QListView::Static</enum>
+   </property>
+   <property name="flow">
+    <enum>QListView::TopToBottom</enum>
+   </property>
+   <property name="isWrapping" stdset="0">
+    <bool>false</bool>
+   </property>
+   <property name="resizeMode">
+    <enum>QListView::Fixed</enum>
+   </property>
+   <property name="layoutMode">
+    <enum>QListView::SinglePass</enum>
+   </property>
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="viewMode">
+    <enum>QListView::ListMode</enum>
+   </property>
+   <property name="uniformItemSizes">
+    <bool>false</bool>
+   </property>
+   <property name="wordWrap">
+    <bool>false</bool>
+   </property>
+   <property name="selectionRectVisible">
+    <bool>false</bool>
+   </property>
+   <property name="sortingEnabled">
+    <bool>false</bool>
+   </property>
+   <item>
+    <property name="text">
+     <string>1) test 1</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>2) test two its overcompilcated test be sure</string>
+    </property>
+   </item>
   </widget>
   <widget class="QPushButton" name="attack">
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>190</y>
+     <y>189</y>
      <width>141</width>
      <height>31</height>
     </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
    </property>
    <property name="text">
     <string>Атаковать</string>
@@ -259,6 +419,12 @@ QTabBar::tab:selected {
      <height>31</height>
     </rect>
    </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
+   </property>
    <property name="text">
     <string>Помочь памятью</string>
    </property>
@@ -271,6 +437,12 @@ QTabBar::tab:selected {
      <width>141</width>
      <height>31</height>
     </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
    </property>
    <property name="text">
     <string>Запросить атаку</string>
@@ -319,10 +491,18 @@ QTabBar::tab:selected {
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>195</y>
+     <y>190</y>
      <width>81</width>
-     <height>21</height>
+     <height>31</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit {
+border: 1px solid gray;
+color: rgb(200, 82, 82);
+font: bold 16px;
+background-color: rgb(220, 250, 255);
+}</string>
    </property>
    <property name="text">
     <string>0</string>
@@ -332,10 +512,18 @@ QTabBar::tab:selected {
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>225</y>
+     <y>220</y>
      <width>81</width>
-     <height>20</height>
+     <height>31</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit {
+border: 1px solid gray;
+color: rgb(82, 200, 82);
+font: bold 16px;
+background-color: rgb(220, 250, 255);
+}</string>
    </property>
    <property name="text">
     <string>0</string>
@@ -345,10 +533,18 @@ QTabBar::tab:selected {
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>275</y>
+     <y>270</y>
      <width>81</width>
-     <height>20</height>
+     <height>31</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit {
+border: 1px solid gray;
+color: rgb(82, 82, 82);
+font: bold 16px;
+background-color: rgb(220, 250, 255);
+}</string>
    </property>
    <property name="text">
     <string>0</string>
@@ -362,6 +558,39 @@ QTabBar::tab:selected {
      <width>70</width>
      <height>16</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">
+QCheckBox::indicator {
+    width: 13px;
+    height: 13px;
+	border: 1px solid black;
+	border-radius: 7px;
+}
+
+QCheckBox::indicator:unchecked {
+    background: rgb(200, 55, 55);
+}
+
+QCheckBox::indicator:unchecked:hover {
+   background: rgb(100, 35, 35);
+}
+
+QCheckBox::indicator:unchecked:pressed {
+    background: rgb(200, 200, 60);
+}
+
+QCheckBox::indicator:checked {
+   background: rgb(55, 200, 55);
+}
+
+QCheckBox::indicator:checked:hover {
+    background: rgb(35, 100, 35);
+}
+
+QCheckBox::indicator:checked:pressed {
+   background: rgb(200, 200, 60);
+}</string>
    </property>
    <property name="text">
     <string>Поиск</string>
@@ -379,6 +608,12 @@ QTabBar::tab:selected {
      <height>21</height>
     </rect>
    </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
+   </property>
    <property name="text">
     <string>+</string>
    </property>
@@ -391,6 +626,12 @@ QTabBar::tab:selected {
      <width>21</width>
      <height>21</height>
     </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
    </property>
    <property name="text">
     <string>+</string>
@@ -405,6 +646,12 @@ QTabBar::tab:selected {
      <height>21</height>
     </rect>
    </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
+   </property>
    <property name="text">
     <string>+</string>
    </property>
@@ -413,9 +660,9 @@ QTabBar::tab:selected {
    <property name="geometry">
     <rect>
      <x>250</x>
-     <y>82</y>
+     <y>80</y>
      <width>201</width>
-     <height>16</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="value">
@@ -426,9 +673,9 @@ QTabBar::tab:selected {
    <property name="geometry">
     <rect>
      <x>250</x>
-     <y>102</y>
+     <y>100</y>
      <width>201</width>
-     <height>16</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="value">
@@ -439,9 +686,9 @@ QTabBar::tab:selected {
    <property name="geometry">
     <rect>
      <x>250</x>
-     <y>122</y>
+     <y>120</y>
      <width>201</width>
-     <height>16</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="value">
