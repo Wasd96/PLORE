@@ -172,6 +172,9 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
     if (t->timerId() == timer) // таймер для программ
     {
 
+        if (core->getConnection()->getUdpSocket()->pendingDatagramSize() != -1)
+            core->getConnection()->read();
+
         if (invisProgram && isVisible())
         {
             hide();
@@ -247,7 +250,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 ui->console->setTextColor(QColor(100,80,80));
             else
                 ui->console->setTextColor(QColor(0,0,0));
-            ui->console->append(str);
+            ui->console->append(QTime::currentTime().toString("hh:mm:ss.zzz ")+str);
 
         }
 
@@ -360,7 +363,6 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
 {
     if (mEv->button() == Qt::LeftButton && !launcher)
     {
-        //move(mEv->globalPos());
         movingX = mEv->x();
         movingY = mEv->y();
         moving = true;
@@ -410,7 +412,7 @@ void Widget::died(int type)
         {
             on_start_clicked();
         }
-        if (type == 88)
+        if (type == 88) // приказ умереть
         {
             deleteLater();
         }
@@ -418,7 +420,7 @@ void Widget::died(int type)
         {
             for (int i = 0; i < 200; i++)
             {
-                connection->sendData(50000+i, 88); // всем умереть                
+                connection->sendData(50000+i, 88); // всем умереть
             }
             connection->sendData(45455, 88);
             connection->sendData(45456, 88);
@@ -491,7 +493,7 @@ void Widget::died(int type)
                         on_start_clicked();
                         return;
                     }
-                    else if (botAlive == 0)
+                    else if (botAlive == 0) // второй этап
                     {
                         QStringList args;
                         args << "info" << "serv3";
@@ -518,7 +520,25 @@ void Widget::died(int type)
     }
     else
     {
-        close();
+        if (type == 88)
+        {
+            QFile file(QString("suicide%1.txt").arg((int)core->getConnection()->getPort())); // файл сохранения
+            if (file.open(QIODevice::WriteOnly | QIODevice::Text)) // попытка открыть
+            {
+                file.write("Я <3 суицид "); // запись макс. уровня
+                file.write(QString("%1").arg(type).toStdString().c_str());
+            }
+            file.close();
+
+
+            close();
+        }
+
+
+        if (type == 77)
+        {
+            ui->console->append(QTime::currentTime().toString("hh:mm:ss.zzz ")+core->getConnection()->strCostyl);
+        }
     }
 }
 
@@ -934,6 +954,11 @@ void Widget::setArgs(int argc, char *argv[])
             core->setSearch(true);
             period = 10000 - core->getD();
             timer = startTimer(period);
+
+            connect(connection,
+                    SIGNAL(died(int)),
+                    this,
+                    SLOT(died(int)));
         }
 
         if ((QString)argv[1] == "help") // help для первого уровня
@@ -1111,14 +1136,14 @@ void Widget::on_start_clicked() // старт игры
 
         if (userAlive == 0)
         {
-            setAlive(1, 1, -2);
-            for (int i = 0; i < normAlive; i++) // старт 3 прог
+            setAlive(3, 1, -2);
+            for (int i = 0; i < 3; i++) // старт 3 прог
             {
                 arguments << "normal" << "2";
                 QProcess::startDetached(name, arguments);
                 arguments.clear();
             }
-            arguments << "user" << "6"; // юзер
+            arguments << "user" << "4"; // юзер
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
@@ -1302,7 +1327,7 @@ void Widget::on_up_c_clicked()
             connection->sendData(45454, 90); // конец уровня
         close();
     }
-    else
+    else // собственно повышение параметра
     {
         if ((double)core->getC()/(double)ui->bar_c->maximum() >= 1)
         {
@@ -1371,7 +1396,7 @@ void Widget::on_launcherTab_currentChanged(int index)
         }
         if (index == 1)
         {
-            ui->console->setText("Хех дерись! 9 на одного.");
+            ui->console->setText("компиляция - выживет только 1");
         }
         if (index == 2)
         {

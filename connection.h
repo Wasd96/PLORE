@@ -34,7 +34,7 @@ private:
     int selectedConnection; // выбранная строка в таблице соединений
 
     int temper; // настроение
-    int type; // 0 - бот, 1 - юзер
+    int type; // 0 - норм, 1 - юзер, 2 - бот, 3 - троян
     bool silent;
 
     QUdpSocket* udpSocket; // сокет
@@ -61,10 +61,11 @@ public:
     void setSilent(bool _silent) { silent = _silent; }
 
     bool hasData() { return (bool)data.size(); }
+    void read() { readData(); } // оболочка
 
     void sortTable();
 
-
+    QUdpSocket* getUdpSocket() { return udpSocket; }
     QString getData() { return data.takeFirst(); }
     quint16 getPort() { return portRecieve; }
     connectTable getTable(int pos) { return table.at(pos); }
@@ -76,6 +77,12 @@ public:
 signals:
     void died(int type);
     void setVisible(bool visible);
+
+
+
+
+public: // ОСТОРОЖНО!!! КОСТЫЛИ
+    QString strCostyl;
 
 };
 

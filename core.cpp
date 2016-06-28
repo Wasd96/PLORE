@@ -225,7 +225,7 @@ void Core::connectionSupport() // проверка связи с существ�
             if (connection->getTableSize() > 0)
                 connection->setSelectedConnection(connection->getTableSize()/2);
             else
-                connection->setSelectedConnection(-1);
+                connection->setSelectedConnection(-1); // подумать над этим
         }
         else
         {
@@ -286,7 +286,7 @@ void Core::operateDataFromConnection()
                 messages.append(str);
             }
 
-            else if (strList.at(1) == "5") // если это помощь в бою
+            else if (strList.at(1) == "5") // если это запрос помощи в бою
             {
                 quint16 senderPort = strList.at(0).toInt(); //порт просящего
                 quint16 targetPort = strList.at(2).toInt(); // порт цели

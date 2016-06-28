@@ -10,7 +10,7 @@ Connection::Connection(int port, int _temper, int _type, bool _silent) // соз
     silent = _silent;
 
     udpSocket = new QUdpSocket(this); // создание сокета
-    while (!udpSocket->bind(port, QUdpSocket::ShareAddress)) //инициализация
+    while (!udpSocket->bind(port, QUdpSocket::ShareAddress)) // инициализация
     {
        port++;
        if (port >= 50200) port = 50000;
@@ -37,7 +37,7 @@ void Connection::rebindPort(int port)
 void Connection::sendData(quint16 port, int Mtype) //подготовка и отправка данных
 {
     QString outData;
-    outData = QString::number(Mtype)+" ";
+    outData = QString::number(Mtype);
 
     if (Mtype == 0) // установка связи
     {
@@ -67,6 +67,9 @@ void Connection::sendData(quint16 port, int Mtype) //подготовка и о�
     {
         outData = "90 ";
     }*/
+
+    strCostyl = QString("%1").arg(port) + " - " + outData + " PDS:"+QString("%1").arg(udpSocket->pendingDatagramSize());
+    emit died(77);
 
 
     QByteArray datagram = outData.toUtf8();
@@ -107,7 +110,8 @@ void Connection::sendData(quint16 port, int Mtype, int amount)
         outData = "5 " + QString::number(amount) + " " + QString::number(table.at(index).type);
     }
 
-
+    strCostyl = QString("%1").arg(port) + " - " + outData + " PDS:"+QString("%1").arg(udpSocket->pendingDatagramSize());
+    emit died(77);
 
     QByteArray datagram = outData.toUtf8();
     udpSocket->writeDatagram(datagram.data(),
@@ -117,14 +121,12 @@ void Connection::sendData(quint16 port, int Mtype, int amount)
 }
 
 
-
-
 void Connection::readData() // прием данных
 {
     QHostAddress host;
     quint16 port;
 
-    while (udpSocket->hasPendingDatagrams()) {
+    while (udpSocket->pendingDatagramSize() != -1) {
 
         QByteArray datagram;
         datagram.resize(udpSocket->pendingDatagramSize());
@@ -133,13 +135,19 @@ void Connection::readData() // прием данных
                                 &host,
                                 &port); // прием
 
-        QString str = datagram.data();
-        QStringList strList = str.split(' ');
-
         if (silent && port != 45454)
             continue;
 
+
+        QString str = datagram.data();
+        QStringList strList = str.split(' ');
+
+        // КОСТЫЛИ
+        strCostyl = QString("%1").arg(port) + " PDS:"+QString("%1").arg(udpSocket->pendingDatagramSize());
+        emit died(77);
+
         if (!(strList.first().toInt() >= 0 && strList.first().toInt() <= 100))
+        //if ((strList.first().toInt() >= 0 && strList.first().toInt() <= 100))
         {
             QString rec = QString::number(port)+ " -> " + str; // создание отчета
             data.append(rec); // сохранение отчета
@@ -148,7 +156,7 @@ void Connection::readData() // прием данных
                 strList.first() == "4"||
                 strList.first() == "5") // передача данных о сложных сообщениях
         {
-            data.append(QString::number(port) + " " + str);
+            data.append(QString::number(port) + " " + str); // о чем речь?
         }
 
 
@@ -246,6 +254,17 @@ void Connection::readData() // прием данных
 
             if (strList.first() != "0") // системное сообщение
             {
+                QFile file(QString("КтоЭто%1.txt").arg((int)portRecieve)); // файл сохранения
+                if (file.open(QIODevice::WriteOnly | QIODevice::Text)) // попытка открыть
+                {
+                    file.write("А почему это ");
+                    file.write(QString("%1").arg(port).toStdString().c_str());
+                    file.write(" приказывает мне умереть путем ");
+                    file.write(QString("%1").arg(strList.first()).toStdString().c_str());
+                    file.write(QTime::currentTime().toString(" hh:mm:ss.zzz").toStdString().c_str());
+                }
+                file.close();
+
                 if (strList.first() == "88") // лаунчер сообщает, что пора умирать
                 {
                     emit died(88);
@@ -279,7 +298,6 @@ void Connection::readData() // прием данных
                 }
 
                 emit died(strList.at(1).toInt()); // 0 - прога, 1 - юзер, 2 - бот, 3 - троян
-
             }
         }
     }
