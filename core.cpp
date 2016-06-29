@@ -50,10 +50,7 @@ Core::Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type, boo
 Core::~Core()
 {
     delete connection;
-
-    free(I);
-    free(D);
-    free(C);
+    delete I, D, C;
 }
 
 void Core::send(quint16 port, int _type)
@@ -371,7 +368,6 @@ void Core::operateDataFromConnection()
 void Core::update()
 {
     connection->sortTable();
-    QString str; // сообщения в "консоль"
     bool op = false;
     double coeff = ((double)(Ii+Ci))/((10000.0-(double)Dn)/1000.0+1.0); // коэффициент желания апгрейда
 
@@ -473,8 +469,6 @@ void Core::update()
 
 
 
-
-
     if (!op && Cn >= connection->getTableSize()*10+10
             && timeToUpgrade < (int)(90.0*coeff))    // поиск связей
     {
@@ -495,7 +489,6 @@ void Core::update()
 
     connectionSupport(); // поддержка связи
 
-
     operateDataFromConnection(); // обработка сообщений
 
 
@@ -514,30 +507,21 @@ void Core::update()
 void Core::updateUser() // пользовательский апдейт
 {
     connection->sortTable();
-    QString str; // сообщения в "консоль"
-
-
 
     if (search && Cn > 1) // поиск
     {
         findConnections();
     }
 
-
     connectionSupport(); // поддержка связи
-
     operateDataFromConnection(); // обработка сообщений
-
-
     deathRecountRealloc(); // обработка смерти, подсчетов, перевыделений
 }
 
 void Core::updateWorm()
 {
     connection->sortTable();
-    QString str; // сообщения в "консоль"
     bool op = false;
-
 
     if (!op) // помощь
     {
@@ -560,7 +544,6 @@ void Core::updateWorm()
         for (int i = 0; i < connection->getTableSize(); i++)
         {
             int targetType = connection->getTable(i).type;
-
             if (rand()%8 == 0 && targetType != 2 && targetType != 3)
             {
                 attack(connection->getTable(i).port, Cn/2);
@@ -570,15 +553,12 @@ void Core::updateWorm()
         }
     }
 
-
     if (Cn > 1) // поиск
     {
         findConnections();
     }
 
     connectionSupport(); // поддержка связи
-
     operateDataFromConnection(); // обработка сообщений
-
     deathRecountRealloc(); // обработка смерти, подсчетов, перевыделений
 }

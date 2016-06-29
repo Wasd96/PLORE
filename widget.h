@@ -77,6 +77,7 @@ private:
     QString name; // имя программы, запуск именно такой проги, а не PLORE.exe
 
     int timer; //id таймера
+    int deathTimer; // таймер для красивой смерти
     int period; // частота таймера
 
     // режим программы

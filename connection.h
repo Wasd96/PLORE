@@ -15,7 +15,7 @@ struct connectTable
     int useful; // 0 - связь бесполезна, 10 - очень полезна
     int lostSignal; // "мертвая" связь
     int type; // -1 - лаунчер, 0 - норм, 1 - юзер, 2 - юзер, 3 - троян
-    bool silent;
+    bool silent; // режим радиомолчания
 };
 
 class Connection : public QObject
@@ -77,12 +77,6 @@ public:
 signals:
     void died(int type);
     void setVisible(bool visible);
-
-
-
-
-public: // ОСТОРОЖНО!!! КОСТЫЛИ
-    QString strCostyl;
 
 };
 

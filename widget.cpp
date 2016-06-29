@@ -26,6 +26,7 @@ Widget::Widget(QWidget *parent) :
     timerProgram = false;
 
     level = 0;
+    deathTimer = 0;
     maxLevel = 0;
 
     userAlive = 0;
@@ -166,14 +167,14 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
             ui->myPort->setText(str);
         }
-
         return;
     }
+
     if (t->timerId() == timer) // таймер для программ
     {
 
         if (core->getConnection()->getUdpSocket()->pendingDatagramSize() != -1)
-            core->getConnection()->read();
+            core->getConnection()->read(); // избавление от фриза сокета
 
         if (invisProgram && isVisible())
         {
@@ -191,7 +192,8 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         if (core->getDead()) // смерть программы естественным путем
         {
             killTimer(timer);
-            close();
+            timer = -1;
+            deathTimer = startTimer(300);
             return;
         }
 
@@ -250,7 +252,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 ui->console->setTextColor(QColor(100,80,80));
             else
                 ui->console->setTextColor(QColor(0,0,0));
-            ui->console->append(QTime::currentTime().toString("hh:mm:ss.zzz ")+str);
+            ui->console->append(str);
 
         }
 
@@ -288,6 +290,71 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             period = 10000 - core->getD(); // запоминаем новую
             killTimer(timer);
             timer = startTimer(period); // запускаем ее
+        }
+    }
+
+    if (t->timerId() == deathTimer)
+    {
+        int disappear = 0;
+        disappear = rand()%100;
+        QList<QWidget*> uiWidgets;
+        uiWidgets.clear();
+        QWidget* tempWid;
+        // Простите...
+        tempWid = ui->attack; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->attack_count; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->bar_c; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->bar_d; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->bar_i; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->C; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->connections; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->console; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->D; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->find_state; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->help; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->help_count; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->I; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->label_help; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->label_help_2; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->label_help_3; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->myPort; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->request; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->request_number; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->temper; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->up_c; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->up_d; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        tempWid = ui->up_i; if (tempWid->isVisible()) uiWidgets.append(tempWid);
+        ui->console->append(QString(uiWidgets.size())+" "+QString((int)core));
+        // исправить фальш текст
+
+        if (uiWidgets.size() > 0)
+        {
+            disappear = disappear % uiWidgets.size();
+            uiWidgets.at(disappear)->setVisible(false);
+            setWindowOpacity(windowOpacity()-0.03);
+        }
+        else
+        {
+            if (level != -1) // уровень тут ничего не значит
+            {
+                level = -1; // используется незанятая переменная, чтобы не плодить лишние
+                maxLevel = 255.0*windowOpacity(); // то же самое для прозрачности
+                killTimer(deathTimer);
+                deathTimer = startTimer(20);
+            }
+            else
+            {
+                if (maxLevel >= 1)
+                {
+                    setWindowOpacity((float)maxLevel/255.0);
+                    maxLevel -= 6;
+                }
+                else
+                {
+                    killTimer(deathTimer);
+                    close();
+                }
+            }
         }
     }
 }
@@ -522,22 +589,7 @@ void Widget::died(int type)
     {
         if (type == 88)
         {
-            QFile file(QString("suicide%1.txt").arg((int)core->getConnection()->getPort())); // файл сохранения
-            if (file.open(QIODevice::WriteOnly | QIODevice::Text)) // попытка открыть
-            {
-                file.write("Я <3 суицид "); // запись макс. уровня
-                file.write(QString("%1").arg(type).toStdString().c_str());
-            }
-            file.close();
-
-
             close();
-        }
-
-
-        if (type == 77)
-        {
-            ui->console->append(QTime::currentTime().toString("hh:mm:ss.zzz ")+core->getConnection()->strCostyl);
         }
     }
 }
@@ -1139,11 +1191,11 @@ void Widget::on_start_clicked() // старт игры
             setAlive(3, 1, -2);
             for (int i = 0; i < 3; i++) // старт 3 прог
             {
-                arguments << "normal" << "2";
+                arguments << "normal" << "1";
                 QProcess::startDetached(name, arguments);
                 arguments.clear();
             }
-            arguments << "user" << "4"; // юзер
+            arguments << "user" << "5"; // юзер
             QProcess::startDetached(name, arguments);
             arguments.clear();
 

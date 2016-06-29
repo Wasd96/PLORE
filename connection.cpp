@@ -44,33 +44,12 @@ void Connection::sendData(quint16 port, int Mtype) //подготовка и о�
         outData = "0 "+QString::number(temper)+" "+QString::number(type);
     }
     /*if (Mtype == 1) // проверка связи
-    {
-        outData = "1 ";
-    }
     if (Mtype == 2) // подтверждение связи
-    {
-        outData = "2 ";
-    }
     if (Mtype == 6) // подтверждение боевой помощи
-    {
-        outData = "6 ";
-    }
     if (Mtype == 80) // спавн бота (лаунчеру)
-    {
-        outData = "80 ";
-    }
     if (Mtype == 88) // код самоубийства для процесса
-    {
-        outData = "88 ";
-    }
     if (Mtype == 90) // Закончен уровень (посылка лаунчеру)
-    {
-        outData = "90 ";
-    }*/
-
-    strCostyl = QString("%1").arg(port) + " - " + outData + " PDS:"+QString("%1").arg(udpSocket->pendingDatagramSize());
-    emit died(77);
-
+    */
 
     QByteArray datagram = outData.toUtf8();
     udpSocket->writeDatagram(datagram.data(),
@@ -84,17 +63,10 @@ void Connection::sendData(quint16 port, int Mtype, int amount)
     QString outData;
     outData = QString::number(Mtype)+" "+QString::number(amount);
     /*if (Mtype == 1) // сообщение о смерти
-    {
-        outData = "1 " + QString::number(amount);
-    }
     if (Mtype == 3) // атака
-    {
-        outData = "3 " + QString::number(amount);
-    }
     if (Mtype == 4) // помощь (передача памяти)
-    {
-        outData = "4 " + QString::number(amount);
-    }*/
+    */
+
     if (Mtype == 5) // просьба о помощи
     {
         // здесь amount = port врага
@@ -110,9 +82,6 @@ void Connection::sendData(quint16 port, int Mtype, int amount)
         outData = "5 " + QString::number(amount) + " " + QString::number(table.at(index).type);
     }
 
-    strCostyl = QString("%1").arg(port) + " - " + outData + " PDS:"+QString("%1").arg(udpSocket->pendingDatagramSize());
-    emit died(77);
-
     QByteArray datagram = outData.toUtf8();
     udpSocket->writeDatagram(datagram.data(),
                              datagram.size(),
@@ -126,8 +95,7 @@ void Connection::readData() // прием данных
     QHostAddress host;
     quint16 port;
 
-    while (udpSocket->pendingDatagramSize() != -1) {
-
+    while (udpSocket->hasPendingDatagrams()) {
         QByteArray datagram;
         datagram.resize(udpSocket->pendingDatagramSize());
         udpSocket->readDatagram(datagram.data(),
@@ -138,16 +106,10 @@ void Connection::readData() // прием данных
         if (silent && port != 45454)
             continue;
 
-
         QString str = datagram.data();
         QStringList strList = str.split(' ');
 
-        // КОСТЫЛИ
-        strCostyl = QString("%1").arg(port) + " PDS:"+QString("%1").arg(udpSocket->pendingDatagramSize());
-        emit died(77);
-
         if (!(strList.first().toInt() >= 0 && strList.first().toInt() <= 100))
-        //if ((strList.first().toInt() >= 0 && strList.first().toInt() <= 100))
         {
             QString rec = QString::number(port)+ " -> " + str; // создание отчета
             data.append(rec); // сохранение отчета
@@ -254,17 +216,6 @@ void Connection::readData() // прием данных
 
             if (strList.first() != "0") // системное сообщение
             {
-                QFile file(QString("КтоЭто%1.txt").arg((int)portRecieve)); // файл сохранения
-                if (file.open(QIODevice::WriteOnly | QIODevice::Text)) // попытка открыть
-                {
-                    file.write("А почему это ");
-                    file.write(QString("%1").arg(port).toStdString().c_str());
-                    file.write(" приказывает мне умереть путем ");
-                    file.write(QString("%1").arg(strList.first()).toStdString().c_str());
-                    file.write(QTime::currentTime().toString(" hh:mm:ss.zzz").toStdString().c_str());
-                }
-                file.close();
-
                 if (strList.first() == "88") // лаунчер сообщает, что пора умирать
                 {
                     emit died(88);
