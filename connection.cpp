@@ -2,6 +2,8 @@
 
 Connection::Connection(int port, int _temper, int _type, bool _silent) // создание модуля связи
 {
+    foundTable = new int[200];
+    for (int i = 0; i < 200; i++) foundTable[i] = 0;
     table.clear(); // очистка таблицы связей (на всякий случай)
     data.clear();
 
@@ -23,6 +25,7 @@ Connection::Connection(int port, int _temper, int _type, bool _silent) // соз
 Connection::~Connection()
 {
     delete udpSocket;
+    delete foundTable;
 }
 
 void Connection::rebindPort(int port)
@@ -70,16 +73,11 @@ void Connection::sendData(quint16 port, int Mtype, int amount)
     if (Mtype == 5) // просьба о помощи
     {
         // здесь amount = port врага
-        int index;
-        for (int i = 0; i < table.size(); i++)
-        {
+        int i;
+        for (i = 0; i < table.size(); i++)
             if (table.at(i).port == amount) // сравниваем текущий порт с существующими
-            {
-                index = i;
                 break;
-            }
-        }
-        outData = "5 " + QString::number(amount) + " " + QString::number(table.at(index).type);
+        outData = "5 " + QString::number(amount) + " " + QString::number(table.at(i).type);
     }
 
     QByteArray datagram = outData.toUtf8();

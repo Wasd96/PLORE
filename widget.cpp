@@ -324,14 +324,21 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         tempWid = ui->up_c; if (tempWid->isVisible()) uiWidgets.append(tempWid);
         tempWid = ui->up_d; if (tempWid->isVisible()) uiWidgets.append(tempWid);
         tempWid = ui->up_i; if (tempWid->isVisible()) uiWidgets.append(tempWid);
-        ui->console->append(QString(uiWidgets.size())+" "+QString((int)core));
-        // исправить фальш текст
+        QString fakeOutput;
+        for (int i = 0, j = rand()%15; i < j; i++)
+        {
+            if (rand()%5 == 0)
+                fakeOutput.append(" ");
+            fakeOutput.append(50+rand()%100);
+        }
+        ui->console->append(QString(uiWidgets.size())+" "+fakeOutput);
+
 
         if (uiWidgets.size() > 0)
         {
             disappear = disappear % uiWidgets.size();
             uiWidgets.at(disappear)->setVisible(false);
-            setWindowOpacity(windowOpacity()-0.03);
+            setWindowOpacity(windowOpacity()-0.015);
         }
         else
         {
@@ -657,14 +664,17 @@ void Widget::initGUI()
         ui->myPort->setVisible(1);
         ui->myPort->setText(QString::number(core->getConnection()->getPort()%1000));
         ui->I->setVisible(1);
+        ui->I->move(10,80);
         ui->I->setText(QString("Доступная память: " +
                                QString::number(core->getI()) +
                                " УБ"));
         ui->D->setVisible(1);
+        ui->D->move(10,100);
         ui->D->setText(QString("Быстродействие: " +
                                QString::number((double)(10000-core->getD())/1000.0) +
                                " сек/оп."));
         ui->C->setVisible(1);
+        ui->C->move(10,120);
         ui->C->setText(QString("Активный ресурс: " +
                                QString::number(core->getC())));
 
@@ -836,6 +846,14 @@ void Widget::setAlive(int norm, int user, int bot)
 
 void Widget::setArgs(int argc, char *argv[])
 {
+    ui->C->setText("Зачем... Ты меня создал?"); // смеха ради
+    ui->C->move(10,5);
+    ui->I->setText("Так... Больно...");
+    ui->I->move(10,height()/2-8);
+    ui->D->setText("Убей меня!");
+    ui->D->move(10,height()-20);
+    bool lulz = true;
+
     rand()%10; // костыль для рандома...
     qDebug() << argc;
     ui->console->append(QString("%1").arg(argc));
@@ -853,8 +871,9 @@ void Widget::setArgs(int argc, char *argv[])
     else
         name = fullName;
 
-    if (argc <= 1) //всегда минимум один аргумент - место запуска
+    if (argc == 1) //всегда минимум один аргумент - место запуска
     {
+        lulz = false;
         launcher = true; // значит это лаунчер
         setWindowTitle("Лаунчер");
         connection = new Connection(45454, 0, -1, 0); // личный порт лаунчера
@@ -914,6 +933,7 @@ void Widget::setArgs(int argc, char *argv[])
                 (QString)argv[1] == "bot" ||
                 (QString)argv[1] == "troyan") // обычная программа
         {
+            lulz = false;
             int power = QString(argv[2]).toInt();
 
             // power = 0 - скорость от 4.0 до 3.5
@@ -998,6 +1018,7 @@ void Widget::setArgs(int argc, char *argv[])
 
         if ((QString)argv[1] == "worm") // червь - помощник трояна
         {
+            lulz = false;
             wormProgram = true;
             setWindowTitle("Я - Червь");
             int type = 2;
@@ -1015,6 +1036,7 @@ void Widget::setArgs(int argc, char *argv[])
 
         if ((QString)argv[1] == "help") // help для первого уровня
         {
+            lulz = false;
             setFixedSize(200, 100);
             ui->up_c->setEnabled(true);
             ui->up_c->setVisible(true);
@@ -1028,6 +1050,7 @@ void Widget::setArgs(int argc, char *argv[])
 
         if ((QString)argv[1] == "timer") // счетчик для уровня с трояном
         {
+            lulz = false;
             timerProgram = true;
             setFixedSize(201, 61);
             ui->myPort->setText("15:00");
@@ -1045,6 +1068,7 @@ void Widget::setArgs(int argc, char *argv[])
 
         if ((QString)argv[1] == "win") // окно победы
         {
+            lulz = false;
             setFixedSize(200, 100);
             ui->up_c->setEnabled(true);
             ui->up_c->setVisible(true);
@@ -1058,6 +1082,7 @@ void Widget::setArgs(int argc, char *argv[])
 
         if ((QString)argv[1] == "lose") // окно поражения
         {
+            lulz = false;
             setFixedSize(200, 100);
             ui->up_c->setEnabled(true);
             ui->up_c->setVisible(true);
@@ -1071,6 +1096,7 @@ void Widget::setArgs(int argc, char *argv[])
 
         if ((QString)argv[1] == "info") // окно информации
         {
+            lulz = false;
             setFixedSize(300, 120);
             ui->up_c->setEnabled(true);
             ui->up_c->setVisible(true);
@@ -1104,6 +1130,12 @@ void Widget::setArgs(int argc, char *argv[])
         }
     }
 
+    if (lulz)
+    {
+        ui->C->setVisible(1);
+        ui->I->setVisible(1);
+        ui->D->setVisible(1);
+    }
 
     initGUI();
 
@@ -1191,22 +1223,22 @@ void Widget::on_start_clicked() // старт игры
             setAlive(3, 1, -2);
             for (int i = 0; i < 3; i++) // старт 3 прог
             {
-                arguments << "normal" << "1";
+                arguments << "normal" << "2";
                 QProcess::startDetached(name, arguments);
                 arguments.clear();
             }
-            arguments << "user" << "5"; // юзер
+            arguments << "user" << "4"; // юзер
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
             for (int i = 0; i < 2; i++) // старт 2 ботов отложенных
             {
-                arguments << "bot" << "3" << "hidden" << "silent";
+                arguments << "bot" << "2" << "hidden" << "silent";
                 QProcess::startDetached(name, arguments);
                 arguments.clear();
             }
 
-            arguments << "normal" << "3" << "hidden" << "silent"; // норм отложенный
+            arguments << "normal" << "2" << "hidden" << "silent"; // норм отложенный
             QProcess::startDetached(name, arguments);
             arguments.clear();
         }
@@ -1448,7 +1480,7 @@ void Widget::on_launcherTab_currentChanged(int index)
         }
         if (index == 1)
         {
-            ui->console->setText("компиляция - выживет только 1");
+            ui->console->setText("компиляция - выживет только 1\nЯ по прежнему не сценарист хД");
         }
         if (index == 2)
         {
@@ -1456,7 +1488,8 @@ void Widget::on_launcherTab_currentChanged(int index)
         }
         if (index == 3)
         {
-            ui->console->setText("Отбивай атаку за атакой!");
+            ui->console->setText("Отбивай атаку за атакой! \n\
+Режим ебнутый, если не повезет то играть можно очень долго");
         }
         if (index == 4)
         {

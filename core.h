@@ -3,7 +3,6 @@
 
 #include "connection.h"
 
-
 class Core
 {
 private:

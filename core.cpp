@@ -50,7 +50,9 @@ Core::Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type, boo
 Core::~Core()
 {
     delete connection;
-    delete I, D, C;
+    delete I;
+    delete D;
+    delete C;
 }
 
 void Core::send(quint16 port, int _type)
@@ -185,14 +187,32 @@ void Core::findConnections()
 {
     if (connection->getSilent() == 0)
     {
-        QString str;
         quint16 port = rand()%200 + 50000;
-        while (port == connection->getPort()) // нет смысла себе писать
+        bool ready = false;
+        while (!ready) // нет смысла себе писать
+        {
             port = rand()%200 + 50000;
+            int foundTable = getConnection()->getFoundTableAt(port);
+            if (foundTable <= 1)
+                ready = true;
+            else
+            {
+                if (rand()%foundTable == 0)
+                {
+                    getConnection()->setFoundTableAtInc(port);
+                    ready = true;
+                }
+                else
+                {
+                    port = rand()%200 + 50000;
+                }
+            }
+            if (port == connection->getPort())
+                ready = false;
+        }
         send(port, 0); // отправка поискового сообщения
         Cn -= 1; // стоимость поиска
-        str = "Поиск -> " + QString::number(port%1000); // отчет
-        messages.append(str);
+        messages.append("Поиск -> " + QString::number(port%1000)); // отчет
     }
 }
 
@@ -299,7 +319,7 @@ void Core::operateDataFromConnection()
                 }
                 if (targetIndex == -1) // это новая связь
                 {
-                    connectTable table = {targetPort, -5, 0, 0, targetType};
+                    connectTable table = {targetPort, -5, 0, 0, targetType, 0};
                     connection->createTable(table); // создание такой связь
                     send(targetPort, 0); // добавление себя в список цели
                     for (int i = 0; i < connection->getTableSize(); i++)

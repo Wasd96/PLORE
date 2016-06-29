@@ -39,6 +39,7 @@ private:
 
     QUdpSocket* udpSocket; // сокет
 
+    int* foundTable; // массив поиска портов для ускорения
 
 private slots:
 
@@ -59,6 +60,7 @@ public:
     void createTable(connectTable _table);
     void setSelectedConnection(int index) { selectedConnection = index; }
     void setSilent(bool _silent) { silent = _silent; }
+    void setFoundTableAtInc(int index) { (foundTable[index])++; }
 
     bool hasData() { return (bool)data.size(); }
     void read() { readData(); } // оболочка
@@ -70,6 +72,7 @@ public:
     quint16 getPort() { return portRecieve; }
     connectTable getTable(int pos) { return table.at(pos); }
     int getTableSize() { return table.size(); }
+    int getFoundTableAt(int index) { return foundTable[index]; }
     int getSelectedConnection() { return selectedConnection; }
     int getType() { return type; }
     bool getSilent() { return silent; }
