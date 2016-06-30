@@ -22,6 +22,10 @@ Core::Core()
     search = true;
 
     timeToUpgrade = 0;
+    coeff = 0;
+
+    requestAttack = -1;
+    requestAttackSender = -1;
 }
 
 Core::Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type, bool _silent)
@@ -45,6 +49,10 @@ Core::Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type, boo
     search = true;
 
     timeToUpgrade = 0;
+    coeff = 0;
+
+    requestAttack = -1;
+    requestAttackSender = -1;
 }
 
 Core::~Core()
@@ -72,6 +80,11 @@ void Core::attack(quint16 port, int amount)
     Cn -= amount;
     str = "Атака -> " +QString::number(port%1000)+
           " (" + QString::number(amount) + " ресурса).";
+    if (port == requestAttack && type == 1)
+    {
+        send(requestAttackSender, 6);
+        requestAttack = -1;
+    }
     messages.append(str);
 }
 
@@ -108,7 +121,6 @@ void Core::request(quint16 portHelper, quint16 portEnemy)
 void Core::upgradeI()
 {
     QString str;
-    double coeff = ((double)(Ii+Ci))/((10000.0-(double)Dn)/1000.0+1.0);
     int decrease = rand()%5 + getINextRequire();
     Cn -= decrease;
     Ii++;
@@ -122,7 +134,6 @@ void Core::upgradeI()
 void Core::upgradeD()
 {
     QString str;
-    double coeff = ((double)(Ii+Ci))/((10000.0-(double)Dn)/1000.0+1.0); // для обновлений
     double x = (10000.0-(double)Dn)/1000.0; // х от 4 до 0.2
     int rndInc = ((0.3*x*x+0.5*x-0.33)/6.0)*100; // случайная надбавка
     if (rndInc < 3) rndInc = 3;
@@ -142,7 +153,6 @@ void Core::upgradeD()
 void Core::upgradeC()
 {
     QString str;
-    double coeff = ((double)(Ii+Ci))/((10000.0-(double)Dn)/1000.0+1.0);
     int decrease = rand()%5 + getCNextRequire();
     Cn -= decrease;
     Ci++;
@@ -187,32 +197,28 @@ void Core::findConnections()
 {
     if (connection->getSilent() == 0)
     {
-        quint16 port = rand()%200 + 50000;
+        quint16 port;
+        int foundTable;
         bool ready = false;
-        while (!ready) // нет смысла себе писать
+        while (!ready)
         {
-            port = rand()%200 + 50000;
-            int foundTable = getConnection()->getFoundTableAt(port);
-            if (foundTable <= 1)
+            port = rand()%200;
+            foundTable = getConnection()->getFoundTableAt(port);
+            if (rand()%(foundTable+2) == 0)
+            {
+                getConnection()->setFoundTableAtInc(port);
                 ready = true;
+            }
             else
             {
-                if (rand()%foundTable == 0)
-                {
-                    getConnection()->setFoundTableAtInc(port);
-                    ready = true;
-                }
-                else
-                {
-                    port = rand()%200 + 50000;
-                }
+                port = rand()%200;
             }
-            if (port == connection->getPort())
+            if (port == connection->getPort()-50000)  // нет смысла себе писать
                 ready = false;
         }
-        send(port, 0); // отправка поискового сообщения
+        send(port+50000, 0); // отправка поискового сообщения
         Cn -= 1; // стоимость поиска
-        messages.append("Поиск -> " + QString::number(port%1000)); // отчет
+        messages.append("Поиск -> " + QString::number(port)); // отчет
     }
 }
 
@@ -333,8 +339,7 @@ void Core::operateDataFromConnection()
                 }
                 if (targetIndex != -1) // если такая связь есть
                 {
-
-                    if (type != 1) // если это бот
+                    if (type != 1) // если это не человек
                     {
                         str = QString::number(senderPort%1000) +
                               "-> просит помощи в борьбе с " +
@@ -368,9 +373,10 @@ void Core::operateDataFromConnection()
                         str = QString::number(senderPort%1000) +
                               "-> просит помощи в борьбе с " +
                               QString::number(targetPort%1000);
+                        requestAttack = targetPort;
+                        requestAttackSender = senderPort;
                         messages.append(str);
                     }
-
                 }
             }
             else
@@ -385,12 +391,16 @@ void Core::operateDataFromConnection()
     }
 }
 
+void Core::coeffRecount()
+{
+    coeff = (((double)(Ii+Ci))/((10000.0-(double)Dn)/1000.0+1.0))/3.0; // коэффициент желания апгрейда
+}
+
 void Core::update()
 {
     connection->sortTable();
     bool op = false;
-    double coeff = ((double)(Ii+Ci))/((10000.0-(double)Dn)/1000.0+1.0); // коэффициент желания апгрейда
-
+    coeffRecount();
 
     if (!op && Cn >= 1.3*getDNextRequire() && rand()%3==0 && Dn<9500) // апгрейд быстродействия
     {
@@ -414,44 +424,43 @@ void Core::update()
     {
         for (int i = 0; i < connection->getTableSize(); i++)
         {
-            int relate = -connection->getTable(i).relationship;
+            connectTable link = connection->getTable(i);
 
-            if (rand()%(relate+10) == 0 &&
-                    connection->getTable(i).useful > 0 &&
-                    ((type == 2 && connection->getTable(i).type == 2) || type != 2) &&
+            if (rand()%(-link.relationship+10) == 0 && link.useful > 0 &&
+                    ((type == 2 && link.type == 2) || type != 2) &&
                     type != 3)
             {
-                int Ihelp = (double)In/10 + rand()%(1*(In/10));
+                int Ihelp = (double)In/10 + rand()%(In/10);
                 if (In - Ihelp < 100) Ihelp = In - 100;
                 if (Ihelp < 10) break;
 
                 help(connection->getTable(i).port, Ihelp);
-
                 op = true;
                 break;
             }
             if (rand()%20 == 0 && connection->getTable(i).useful == 0) // случайное повышене пользы
-                connection->setUseful(i, connection->getTable(i).useful + 1);
+                connection->setUseful(i, 1);
         }
     }
 
     if (!op && Cn > In/(5+In/500)
-            && In > 50
+            && In > 40
             && timeToUpgrade < (int)(50.0*coeff)) // атака
     {
         for (int i = 0; i < connection->getTableSize(); i++)
         {
-            int relate = connection->getTable(i).relationship;
-            int targetType = connection->getTable(i).type;
+            connectTable link = connection->getTable(i);
+            int relate = link.relationship;
+            int targetType = link.type;
             if (((type == 2 && targetType != 2 && targetType != 3) || type != 2) &&
                     ((type == 3 && targetType != 2 && targetType != 3) || type != 3))
             {
-                if (rand()%(relate+10+connection->getTable(i).useful) == 0)
+                if (rand()%(relate+10+link.useful) == 0)
                 {
                     int Cattack = (double)Cn/2.0 + In/200*rand()%(5*abs(relate-6));
                     if (Cattack > Cn) Cattack = Cn;
                     if (Cattack < 5*Ci) break;
-                    attack(connection->getTable(i).port, Cattack);
+                    attack(link.port, Cattack);
                     op = true;
                     break;
                 }
@@ -466,17 +475,18 @@ void Core::update()
         int enemyIndex = -1;
         int friendIndex = -1;
 
+
         for (int i = 0; i < connection->getTableSize()/2; i++) // выбор врага
-            if (connection->getTable(i).relationship <= -4)
-                if (rand()%(4+6*(5-abs(connection->getTable(i).relationship))) == 0)
-                {        // ^ 4 - если отношение -5, 10 - если отн. -4
+            if (connection->getTable(i).relationship <= -3)
+                if (rand()%(4+4*(5+connection->getTable(i).relationship)) == 0)
+                {        // ^ 4 - если отношение -5, 8 - если отн. -4, 12 при -3
                     enemyIndex = i;
                     break;
                 }
         for (int i = connection->getTableSize()-1; i > connection->getTableSize()/2; i--) // выбор помощника
-            if (connection->getTable(i).relationship >= 4)
-                if (rand()%(4+6*(5-connection->getTable(i).relationship)) == 0)
-                {        // ^ 4 - если отношение 5, 10 - если отн. 4
+            if (connection->getTable(i).relationship >= 3)
+                if (rand()%(4+4*(5-connection->getTable(i).relationship)) == 0)
+                {        // ^ 4 - если отношение 5, 8 - если отн. 4, 12 при 3
                     friendIndex = i;
                     break;
                 }
@@ -508,7 +518,6 @@ void Core::update()
     }
 
     connectionSupport(); // поддержка связи
-
     operateDataFromConnection(); // обработка сообщений
 
 
@@ -519,7 +528,6 @@ void Core::update()
     if (timeToUpgrade == (int)(90.0*coeff))
         messages.append("Необходима оптимизация: поиск портов отключен.");
     timeToUpgrade++;
-
 
     deathRecountRealloc(); // обработка смерти, подсчетов, перевыделений
 }

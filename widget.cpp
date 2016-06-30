@@ -272,9 +272,9 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             else
                 ui->bar_i->setValue(core->getC());
 
-            ui->bar_d->setMaximum(core->getDNextRequire()); // 100% возможность улучшения
-            if (core->getC() >= core->getDNextRequire())
-                ui->bar_d->setValue(core->getDNextRequire());
+            ui->bar_d->setMaximum(core->getDNextRequire() + 5); // 100% возможность улучшения
+            if (core->getC() >= core->getDNextRequire()+5)
+                ui->bar_d->setValue(core->getDNextRequire()+5);
             else
                 ui->bar_d->setValue(core->getC());
 
@@ -1351,23 +1351,31 @@ void Widget::on_request_clicked()
         int helper = ui->request_number->text().toInt() - 1; // помощник
         if (helper < core->getConnection()->getTableSize() && helper >= 0) // если в пределах таблицы
         {
-            if (core->getConnection()->getTable(helper).relationship >= 4) // если достаточно
+            if (index != helper)
             {
-                if (core->getC() >= 10)
+                if (core->getConnection()->getTable(helper).relationship >= 3) // если достаточно
                 {
-                    core->request(core->getConnection()->getTable(helper).port,
-                                  core->getConnection()->getTable(index).port);
+                    if (core->getC() >= 10)
+                    {
+                        core->request(core->getConnection()->getTable(helper).port,
+                                      core->getConnection()->getTable(index).port);
+                    }
+                    else
+                    {
+                        ui->console->setTextColor(QColor(0,0,0));
+                        ui->console->append("Недостаточно ресурсов.");
+                    }
                 }
                 else
                 {
                     ui->console->setTextColor(QColor(0,0,0));
-                    ui->console->append("Недостаточно ресурсов.");
+                    ui->console->append("Слишком низкое отношение с "+QString::number(helper+1));
                 }
             }
             else
             {
                 ui->console->setTextColor(QColor(0,0,0));
-                ui->console->append("Слишком низкое отношение с "+QString::number(helper));
+                ui->console->append("Выберите различные цель и помощника.");
             }
         }
     }

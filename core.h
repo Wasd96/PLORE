@@ -22,9 +22,13 @@ private:
 
     bool dead; // мертв, пора удалять
     bool search; // флаг автопоиск
-    int type; // тип проги 0 - норм 1 - юзер 2 - бот
+    int type; // тип проги 0 - норм 1 - юзер 2 - бот 3 - троян
 
     int timeToUpgrade; // желание улучшить параметры (от застоя)
+    double coeff; // граница улучшения (просто коэффициент)
+
+    int requestAttack; // порт, который просили атаковать (для юзера)
+    int requestAttackSender; // порт просящего атаку
 
     QList<QString> messages;
 
@@ -38,6 +42,7 @@ public:
     void updateWorm();
     void connectionSupport();
     void operateDataFromConnection();
+    void coeffRecount();
 
     void send(quint16 port, int _type);
     void send(quint16 port, int _type, int amount);
