@@ -90,15 +90,16 @@ private:
     bool exploreProgram;
     bool launcher;
     bool timerProgram;
+    bool educateProgram;
+
+    int education; // этап обучения
 
     int normAlive; // живые норм проги
     int botAlive; // живые боты
     int userAlive; // живые юзеры
 
-
     int level; // текущий уровень
     int maxLevel; // максимальный доступный уровень
-
 
     bool moving; // флаг-костыль для перемещения окон
     int movingX, movingY; // смещения от угла

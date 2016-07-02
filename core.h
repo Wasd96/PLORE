@@ -61,6 +61,9 @@ public:
     void deathRecountRealloc();
     void findConnections();
 
+
+    void setD(int _D) { Dn = (double)_D; }
+
     int getI() { return In; }
     int getD() { return Dn; }
     int getC() { return Cn; }

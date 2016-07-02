@@ -22,7 +22,7 @@ Core::Core()
     search = true;
 
     timeToUpgrade = 0;
-    coeff = 0;
+    coeff = -1;
 
     requestAttack = -1;
     requestAttackSender = -1;
@@ -393,7 +393,7 @@ void Core::operateDataFromConnection()
 
 void Core::coeffRecount()
 {
-    coeff = (((double)(Ii+Ci))/((10000.0-(double)Dn)/1000.0+1.0))/3.0; // коэффициент желания апгрейда
+    coeff = (((double)(Ii+Ci))/((10000.0-(double)Dn)/1000.0+1.0))/1.5; // коэффициент желания апгрейда
 }
 
 void Core::update()
@@ -402,7 +402,7 @@ void Core::update()
     bool op = false;
     coeffRecount();
 
-    if (!op && Cn >= 1.3*getDNextRequire() && rand()%3==0 && Dn<9500) // апгрейд быстродействия
+    if (!op && Cn >= 1.3*getDNextRequire() && rand()%3==0 && Dn<9800) // апгрейд быстродействия
     {
         upgradeD();
         op = true;

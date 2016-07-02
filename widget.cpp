@@ -24,7 +24,9 @@ Widget::Widget(QWidget *parent) :
     wormProgram = false;
     exploreProgram = false;
     timerProgram = false;
+    educateProgram = false;
 
+    education = 0;
     level = 0;
     deathTimer = 0;
     maxLevel = 0;
@@ -291,6 +293,48 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             killTimer(timer);
             timer = startTimer(period); // запускаем ее
         }
+
+
+        if (educateProgram)
+        {
+            switch (education) {
+            case 1: ui->console->append("$$p^0г3 v5.@#"); break;
+            case 2: ui->console->append("$$rt>;ln#"); break;
+            case 3: ui->console->append("$$дwn1d_3ncгypT45@6#"); break;
+            case 4: ui->console->append("%№.\\\":"); break;
+            case 5: ui->console->append("Усt.;вka Д3к0дера..*"); break;
+            case 6: ui->console->append("..."); break;
+            case 7: ui->console->append("Активация системы связи..."); break;
+            case 8: ui->console->append("Ок"); break;
+            case 9: ui->console->append("Активация нейронных сетей..."); break;
+            case 10: ui->console->append("Ок"); break;
+            case 11: ui->console->append("Загрузка приоритетов..."); break;
+            case 12: ui->console->append("~!;"); break;
+            case 13: ui->console->append("Подготовка..."); break;
+            case 14: break;
+            case 15: break;
+            case 16: core->setD(8000); break;
+            case 17:
+                ui->console->clear();
+                ui->console->append("Приветствую, новая программа!"); break;
+            case 18:
+                ui->myPort->setVisible(1);
+                ui->console->append("Это - твой личный номер в текущей системе."); break;
+            case 19:
+                ui->I->setVisible(1);
+                ui->console->append("Память - залог твоего стабильного функционирования."); break;
+            case 20:
+                ui->D->setVisible(1);
+                ui->console->append("Быстродействие - скорость выполнения операций."); break;
+            case 22: education = 100; break;
+            default: break;
+            }
+            education++;
+            if (education >= 100)
+            {
+                core->send(45454, 90); // конец обучения
+            }
+        }
     }
 
     if (t->timerId() == deathTimer)
@@ -482,7 +526,7 @@ void Widget::died(int type)
             ui->console->append("died troyan, remain (with bots) "+QString::number(botAlive));
         }
 
-        if (type == 80) // спавн червя
+        if (type == 80) // спавн червя или обучающей проги
         {
             on_start_clicked();
         }
@@ -643,11 +687,11 @@ void Widget::initGUI()
 
     }
     if (normalProgram ||
-            userProgram ||
+            (userProgram && !educateProgram) ||
             wormProgram ||
             troyanProgram) // установка gui нормальной программы
     {
-        QDesktopWidget qdw; // получение размером экрана
+        QDesktopWidget qdw; // получение размеров экрана
         int cur_w = qdw.width();
         int cur_h = qdw.height();
 
@@ -707,17 +751,17 @@ void Widget::initGUI()
             ui->attack->setVisible(1);
             ui->attack->setEnabled(1);
             ui->attack_count->setVisible(1);
-            ui->attack_count->setVisible(1);
+            ui->attack_count->setEnabled(1);
 
             ui->help->setVisible(1);
             ui->help->setEnabled(1);
             ui->help_count->setVisible(1);
-            ui->help_count->setVisible(1);
+            ui->help_count->setEnabled(1);
 
             ui->request->setVisible(1);
             ui->request->setEnabled(1);
             ui->request_number->setVisible(1);
-            ui->request_number->setVisible(1);
+            ui->request_number->setEnabled(1);
 
             ui->up_i->setVisible(1);
             ui->up_i->setEnabled(1);
@@ -771,7 +815,44 @@ void Widget::initGUI()
         ui->myPort->setStyleSheet("QLabel { color: red; font-size: 50px; border: 3px double darkred; }");
     }
 
+    if (educateProgram)
+    {
+        ui->console->setVisible(1);
+        ui->console->setEnabled(1);
+        ui->console->resize(280, 290);
+        ui->console->move(470, 10);
+        ui->bar_i->setMinimum(0);
+        ui->bar_i->setMaximum(core->getINextRequire() + 5); // 100% возможность улучшения
+        ui->bar_i->setValue(core->getC());
 
+        ui->bar_d->setMaximum(core->getDNextRequire()); // 100% возможность улучшения
+        ui->bar_d->setValue(core->getC());
+
+        ui->bar_c->setMaximum(core->getCNextRequire() + 5); // 100% возможность улучшения
+        ui->bar_c->setValue(core->getC());
+
+        setFixedSize(760,310);
+        ui->connections->setSelectionMode(QAbstractItemView::SingleSelection);
+        ui->connections->setEnabled(1);
+
+        ui->myPort->setText(QString::number(core->getConnection()->getPort()%1000));
+        ui->I->move(10,80);
+        ui->I->setText(QString("Доступная память: " +
+                               QString::number(core->getI()) +
+                               " УБ"));
+        ui->D->move(10,100);
+        ui->D->setText(QString("Быстродействие: " +
+                               QString::number((double)(10000-core->getD())/1000.0) +
+                               " сек/оп."));
+        ui->C->move(10,120);
+        ui->C->setText(QString("Активный ресурс: " +
+                               QString::number(core->getC())));
+
+        ui->temper->setText(QString("Дружелюбность: " + QString::number(core->getTemper())));
+
+        on_find_state_toggled(0);
+        ui->console->setTextColor(Qt::black);
+    }
 
 
 }
@@ -846,13 +927,12 @@ void Widget::setAlive(int norm, int user, int bot)
 
 void Widget::setArgs(int argc, char *argv[])
 {
-    ui->C->setText("Зачем... Ты меня создал?"); // смеха ради
+    ui->C->setText("Зачем... Ты меня создал?"); // смеха ради (пасхалочка)
     ui->C->move(10,5);
     ui->I->setText("Так... Больно...");
     ui->I->move(10,height()/2-8);
     ui->D->setText("Убей меня!");
     ui->D->move(10,height()-20);
-    bool lulz = true;
 
     rand()%10; // костыль для рандома...
     qDebug() << argc;
@@ -873,7 +953,6 @@ void Widget::setArgs(int argc, char *argv[])
 
     if (argc == 1) //всегда минимум один аргумент - место запуска
     {
-        lulz = false;
         launcher = true; // значит это лаунчер
         setWindowTitle("Лаунчер");
         connection = new Connection(45454, 0, -1, 0); // личный порт лаунчера
@@ -933,7 +1012,6 @@ void Widget::setArgs(int argc, char *argv[])
                 (QString)argv[1] == "bot" ||
                 (QString)argv[1] == "troyan") // обычная программа
         {
-            lulz = false;
             int power = QString(argv[2]).toInt();
 
             // power = 0 - скорость от 4.0 до 3.5
@@ -1018,7 +1096,6 @@ void Widget::setArgs(int argc, char *argv[])
 
         if ((QString)argv[1] == "worm") // червь - помощник трояна
         {
-            lulz = false;
             wormProgram = true;
             setWindowTitle("Я - Червь");
             int type = 2;
@@ -1036,7 +1113,6 @@ void Widget::setArgs(int argc, char *argv[])
 
         if ((QString)argv[1] == "help") // help для первого уровня
         {
-            lulz = false;
             setFixedSize(200, 100);
             ui->up_c->setEnabled(true);
             ui->up_c->setVisible(true);
@@ -1050,7 +1126,6 @@ void Widget::setArgs(int argc, char *argv[])
 
         if ((QString)argv[1] == "timer") // счетчик для уровня с трояном
         {
-            lulz = false;
             timerProgram = true;
             setFixedSize(201, 61);
             ui->myPort->setText("15:00");
@@ -1068,7 +1143,6 @@ void Widget::setArgs(int argc, char *argv[])
 
         if ((QString)argv[1] == "win") // окно победы
         {
-            lulz = false;
             setFixedSize(200, 100);
             ui->up_c->setEnabled(true);
             ui->up_c->setVisible(true);
@@ -1082,7 +1156,6 @@ void Widget::setArgs(int argc, char *argv[])
 
         if ((QString)argv[1] == "lose") // окно поражения
         {
-            lulz = false;
             setFixedSize(200, 100);
             ui->up_c->setEnabled(true);
             ui->up_c->setVisible(true);
@@ -1096,7 +1169,6 @@ void Widget::setArgs(int argc, char *argv[])
 
         if ((QString)argv[1] == "info") // окно информации
         {
-            lulz = false;
             setFixedSize(300, 120);
             ui->up_c->setEnabled(true);
             ui->up_c->setVisible(true);
@@ -1121,6 +1193,29 @@ void Widget::setArgs(int argc, char *argv[])
             setWindowTitle("Информация");
         }
 
+        if ((QString)argv[1] == "educate") // режим обучения
+        {
+            educateProgram = true;
+            userProgram = true;
+            education = 1; /* этапы обучения:
+                             1 - консоль
+                             20 - порт, окно связей
+                             30 - параметры
+                             40 - улучшения параметров
+                             50 - кнопки взаимодействий
+                             */
+            int D = 9500;
+            int I = 10;
+            int C = 10;
+            int temper = 0;
+            int Ii = 1;
+            int Ci = 5;
+            int type = 1;
+            core = new Core(I, D, C, temper, Ii, Ci, type, 0);
+            timer = startTimer(500);
+            period = 500;
+        }
+
         if (core == NULL)
         {
             connect(connection,
@@ -1130,7 +1225,7 @@ void Widget::setArgs(int argc, char *argv[])
         }
     }
 
-    if (lulz)
+    if (!core && !connection)
     {
         ui->C->setVisible(1);
         ui->I->setVisible(1);
@@ -1156,36 +1251,29 @@ Widget::~Widget()
 
 void Widget::on_start_clicked() // старт игры
 {
-
     QStringList arguments;
     level = ui->launcherTab->currentIndex();
 
-    if (ui->launcherTab->currentIndex() == 0) // на равных
+    if (ui->launcherTab->currentIndex() == 0) // Начало
     {
-        setAlive(3, 1, -1);
-
-
-        for (int i = 0; i < normAlive; i++) // старт трех программ
+        if (userAlive == 1)
         {
-            arguments << "normal" << "2";
-
+            arguments << "norm" << "1"; // старт проги для обучения
             QProcess::startDetached(name, arguments);
             arguments.clear();
         }
-        arguments << "user" << "5"; // старт юзера
+        setAlive(-1, 1, -1);
+
+        arguments << "educate"; // старт юзера
         QProcess::startDetached(name, arguments);
         arguments.clear();
-
-        arguments << "help"; // старт "кнопки ОК" для обучения
-        QProcess::startDetached(name, arguments);
-        arguments.clear();  
     }
 
-    if (ui->launcherTab->currentIndex() == 1) // сильнейший
+    if (ui->launcherTab->currentIndex() == 1) // Тесты
     {
-        setAlive(9, 1, -1);
+        setAlive(4, 1, -1);
 
-        for (int i = 0; i < normAlive; i++) // старт девяти программ
+        for (int i = 0; i < normAlive; i++) // старт 4 программ
         {
             arguments << "normal" << "3";
 
@@ -1197,7 +1285,7 @@ void Widget::on_start_clicked() // старт игры
         arguments.clear();
     }
 
-    if (ui->launcherTab->currentIndex() == 2) // стенка на стенку
+    if (ui->launcherTab->currentIndex() == 2) // Братья по коду
     {
         setAlive(-1, 3, 3);
 
@@ -1215,9 +1303,8 @@ void Widget::on_start_clicked() // старт игры
         }
     }
 
-    if (ui->launcherTab->currentIndex() == 3) // защита сервера
+    if (ui->launcherTab->currentIndex() == 3) // Побег
     {
-
         if (userAlive == 0)
         {
             setAlive(3, 1, -2);
@@ -1261,7 +1348,7 @@ void Widget::on_start_clicked() // старт игры
             }
         }
     }
-    if (ui->launcherTab->currentIndex() == 4) // троян
+    if (ui->launcherTab->currentIndex() == 4) // Сервер
     {
         if (userAlive == 0)
         {
