@@ -2,7 +2,7 @@
 
 Core::Core()
 {
-    connection = new Connection(rand()%200 + 50000, 0 ,0, 0);
+    connection = new Connection(rand()%200 + 50000, 0, 0, 0);
 
     In = 100;
     Dn = 9000;
@@ -12,7 +12,6 @@ Core::Core()
     D = (double*)malloc(sizeof(double)*Dn);
     C = (char*)malloc(sizeof(char)*Cn);
 
-    temper = 0;
     type = 0;
 
     Ii = 1;
@@ -39,7 +38,6 @@ Core::Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type, boo
     D = (double*)malloc(sizeof(double)*Dn);
     C = (char*)malloc(sizeof(char)*Cn);
 
-    temper = _temper;
     type = _type;
 
     Ii = _Ii;

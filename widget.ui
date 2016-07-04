@@ -156,7 +156,7 @@ QTabBar::tab:selected {
     <enum>QTabWidget::Rounded</enum>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>0</number>
    </property>
    <property name="usesScrollButtons">
     <bool>false</bool>
@@ -172,27 +172,27 @@ QTabBar::tab:selected {
    </property>
    <widget class="QWidget" name="tab1">
     <attribute name="title">
-     <string>Обучение</string>
+     <string>Начало</string>
     </attribute>
    </widget>
    <widget class="QWidget" name="tab2">
     <attribute name="title">
-     <string>Сильнейший</string>
+     <string>Тесты</string>
     </attribute>
    </widget>
    <widget class="QWidget" name="tab3">
     <attribute name="title">
-     <string>Стенка на стенку</string>
+     <string>Братья по коду</string>
     </attribute>
    </widget>
    <widget class="QWidget" name="tab4">
     <attribute name="title">
-     <string>Защита сервера</string>
+     <string>Побег</string>
     </attribute>
    </widget>
    <widget class="QWidget" name="tab5">
     <attribute name="title">
-     <string>Охота</string>
+     <string>Сервер</string>
     </attribute>
    </widget>
    <widget class="QWidget" name="tab6">

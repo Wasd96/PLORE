@@ -33,7 +33,7 @@ private:
 
     int selectedConnection; // выбранная строка в таблице соединений
 
-    int temper; // настроение
+    int temper;  // настроение, характер, -5 - злой, +5 - добрый
     int type; // 0 - норм, 1 - юзер, 2 - бот, 3 - троян
     bool silent;
 
@@ -57,6 +57,7 @@ public:
     void setLostSignal(int pos, int n) { table[pos].lostSignal = n; }
     void setRelationship(int pos, int n) { table[pos].relationship = n; }
     void setUseful(int pos, int n) { table[pos].useful = n; }
+    void setTemper(int _temper) { temper = _temper; }
     void createTable(connectTable _table);
     void setSelectedConnection(int index) { selectedConnection = index; }
     void setSilent(bool _silent) { silent = _silent; }
@@ -75,6 +76,7 @@ public:
     int getFoundTableAt(int index) { return foundTable[index]; }
     int getSelectedConnection() { return selectedConnection; }
     int getType() { return type; }
+    int getTemper() { return temper; }
     bool getSilent() { return silent; }
 
 signals:

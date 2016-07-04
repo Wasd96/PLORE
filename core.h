@@ -16,8 +16,6 @@ private:
 
     int In, Dn, Cn; // кол-во параметров каждого типа
 
-    int temper; // настроение, характер, -5 - злой, +5 - добрый
-
     int Ii, Ci; // прирост памяти и активного ресурса
 
     bool dead; // мертв, пора удалять
@@ -70,7 +68,6 @@ public:
     int getIi() { return Ii; }
     int getCi() { return Ci; }
     int getType() { return type; }
-    int getTemper() { return temper; }
     bool getDead() { return dead; }
     int getINextRequire();
     int getDNextRequire();
