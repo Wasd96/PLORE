@@ -2,14 +2,15 @@
 
 Connection::Connection(int port, int _temper, int _type, bool _silent) // создание модуля связи
 {
-    foundTable = new int[200];
-    for (int i = 0; i < 200; i++) foundTable[i] = 0;
     table.clear(); // очистка таблицы связей (на всякий случай)
     data.clear();
 
     temper = _temper;
     type = _type;
     silent = _silent;
+
+    foundTable = new int[200];
+    for (int i = 0; i < 200; i++) foundTable[i] = 0;
 
     udpSocket = new QUdpSocket(this); // создание сокета
     while (!udpSocket->bind(port, QUdpSocket::ShareAddress)) // инициализация
@@ -18,6 +19,7 @@ Connection::Connection(int port, int _temper, int _type, bool _silent) // соз
        if (port >= 50200) port = 50000;
     }
     portRecieve = udpSocket->localPort(); // сохранение личного порта
+
 
     connect(udpSocket, SIGNAL(readyRead()), this, SLOT(readData())); // прием данных
 }
@@ -28,9 +30,9 @@ Connection::~Connection()
     delete foundTable;
 }
 
-void Connection::rebindPort(int port)
+void Connection::rebindPort(int port) // попытка получить нужный порт
 {
-    while (udpSocket->localPort() != port) {
+    while (udpSocket->localPort() != port) { // потенциально бесконечный цикл(
         udpSocket->close();
         udpSocket->bind(port, QUdpSocket::DontShareAddress);
         portRecieve = port;
@@ -107,18 +109,8 @@ void Connection::readData() // прием данных
         QString str = datagram.data();
         QStringList strList = str.split(' ');
 
-        if (!(strList.first().toInt() >= 0 && strList.first().toInt() <= 100))
-        {
-            QString rec = QString::number(port)+ " -> " + str; // создание отчета
-            data.append(rec); // сохранение отчета
-        }
-        if (strList.first() == "3" ||
-                strList.first() == "4"||
-                strList.first() == "5") // передача данных о сложных сообщениях
-        {
-            data.append(QString::number(port) + " " + str); // о чем речь?
-        }
-
+        QString rec = QString::number(port)+ " -> " + str; // создание сообщения
+        data.append(rec); // сохранение сообщения
 
         bool exist = false; // проверка наличия такого соединения
         for (int i = 0; i < table.size(); i++)

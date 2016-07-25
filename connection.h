@@ -28,18 +28,16 @@ private:
     QList<QString> data; // сохраненные отчеты о приемах
 
     quint16 portRecieve; // личный порт приема
-    quint16 portMin; // ???
-    quint16 portMax; // зачем
 
     int selectedConnection; // выбранная строка в таблице соединений
+
+    int* foundTable; // массив поиска портов для ускорения
 
     int temper;  // настроение, характер, -5 - злой, +5 - добрый
     int type; // 0 - норм, 1 - юзер, 2 - бот, 3 - троян
     bool silent;
 
     QUdpSocket* udpSocket; // сокет
-
-    int* foundTable; // массив поиска портов для ускорения
 
 private slots:
 

@@ -25,47 +25,30 @@ public:
     ~Widget();
 
     void setArgs(int argc, char* argv[]); //определяет, что это будет за программа
-
     void initGUI();
-
     void disableGUI(); // сокрытие всех элементов интерфейса
-
     void setAlive(int norm, int user, int bot);
+    void educate();
 
     void timerEvent(QTimerEvent *t);
-
     void paintEvent(QPaintEvent *pEv);
-
     void mouseMoveEvent(QMouseEvent *mEv);
-
     void mousePressEvent(QMouseEvent *mEv);
-
     void mouseReleaseEvent(QMouseEvent *mEv);
-
 
 private slots:
     void died(int type); // прием лаунчера о смерти
 
     void changeVisible(bool vis);
-
     void on_start_clicked();
-
     void on_attack_clicked();
-
     void on_help_clicked();
-
     void on_connections_itemSelectionChanged();
-
     void on_request_clicked();
-
     void on_find_state_toggled(bool checked);
-
     void on_up_c_clicked();
-
     void on_up_d_clicked();
-
     void on_up_i_clicked();
-
     void on_launcherTab_currentChanged(int index);
 
 private:

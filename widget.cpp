@@ -2,7 +2,6 @@
 #include "ui_widget.h"
 #include <QProcess>
 #include <QDesktopWidget>
-#include <QMessageBox>
 #include <QDebug>
 
 
@@ -40,7 +39,6 @@ Widget::Widget(QWidget *parent) :
 
     //инициализация GUI
     disableGUI();
-
 
     setFixedSize(200,100);
     move(200,200);
@@ -294,8 +292,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             timer = startTimer(period); // запускаем ее
         }
 
-
-        if (educateProgram)
+        if (educateProgram && education < 16)
         {
             switch (education) {
             case 1: ui->console->append("$$p^0г3 v5.@#"); break;
@@ -313,79 +310,18 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             case 13: ui->console->append("Подготовка..."); break;
             case 14:
             case 15: core->setD(9000); break;
-            case 16:
-                ui->console->clear();
-                ui->console->append("Приветствую, новая программа!"); break;
-            case 19:
-                ui->myPort->setVisible(1);
-                ui->console->append("Это - твой личный номер в текущей системе."); break;
-            case 21:
-                ui->I->setVisible(1);
-                ui->console->append("Память - залог твоего стабильного функционирования."); break;
-            case 24:
-                ui->D->setVisible(1);
-                ui->console->append("Быстродействие - скорость выполнения операций."); break;
-            case 27:
-                ui->C->setVisible(1);
-                ui->console->append("Ресурс - способность выполнять операции."); break;
-            case 30:
-                core->getConnection()->setTemper(5);
-                ui->temper->setVisible(1);
-                ui->console->append("Это твой характер. Не подарок, конечно"); break;
-            case 33:
-                ui->up_c->setVisible(1); ui->bar_c->setVisible(1);
-                ui->up_d->setVisible(1); ui->bar_d->setVisible(1);
-                ui->up_i->setVisible(1); ui->bar_i->setVisible(1);
-                ui->console->append("Прирост каждого параметра можно улучшить. На это требуются ресурсы"); break;
-            case 36:
-                ui->label_help->setVisible(1);
-                ui->attack->setVisible(1);
-                ui->attack_count->setVisible(1);
-                ui->console->append("\nотакуй охуевших"); break;
-            case 39:
-                ui->help->setVisible(1);
-                ui->help_count->setVisible(1);
-                ui->console->append("помогай нуждающимся"); break;
-            case 42:
-                ui->label_help_2->setVisible(1);
-                ui->request->setVisible(1);
-                ui->request_number->setVisible(1);
-                ui->console->append("будь отзывчивым"); break;
-            case 45:
-                ui->connections->setVisible(1);
-                ui->label_help_3->setVisible(1);
-                ui->console->append("твои связи"); break;
-            case 48:
-                ui->find_state->setVisible(1);
-                ui->find_state->setEnabled(1);
-                on_find_state_toggled(0);
-                ui->console->append("ищи давай"); break;
-            case 51:
-                ui->console->append("Опробуй полученные возможности на других программах!");
-                core->send(45454, 80);
-                core->setD(9000); break;
-            case 52:
-                for (int i = 50000; i < 50200; i++)
-                    if (i != core->getConnection()->getPort())
-                        core->send(i, 0);
-                break;
-            case 53:
-            case 54:
-            case 55:
-            case 56:
-            case 57:
-            case 58:
-                education--; break;
-            case 59:
-                ui->console->setTextColor(Qt::black);
-                ui->console->append("молоца! "); break;
-            case 63:
-                ui->console->setTextColor(Qt::black);
-                ui->console->append("закончим на этом"); break;
-            case 67:
-                core->send(45454, 90); break;
             default: break;
             }
+            education++;
+            if (education == 16) educate(); // переход на нажатия вместо таймера
+        }
+
+        if (educateProgram && education >= 28 && education <= 32)
+        {
+            for (int i = 50000; i < 50200; i++)
+                if (i != core->getConnection()->getPort())
+                    core->send(i, 0);
+
             education++;
         }
     }
@@ -524,6 +460,73 @@ void Widget::paintEvent(QPaintEvent *pEv)
 
 }
 
+
+void Widget::educate()
+{
+    switch(education)
+    {
+    case 16:
+        ui->console->clear();
+        ui->console->append("Приветствую, новая программа!"); break;
+    case 17:
+        ui->myPort->setVisible(1);
+        ui->console->append("Это - твой личный номер в текущей системе."); break;
+    case 18:
+        ui->I->setVisible(1);
+        ui->console->append("Память - залог твоего стабильного функционирования."); break;
+    case 19:
+        ui->D->setVisible(1);
+        ui->console->append("Быстродействие - скорость выполнения операций."); break;
+    case 20:
+        ui->C->setVisible(1);
+        ui->console->append("Ресурс - способность выполнять операции."); break;
+    case 21:
+        core->getConnection()->setTemper(5);
+        ui->temper->setVisible(1);
+        ui->console->append("Это твой характер. Не подарок, конечно"); break;
+    case 22:
+        ui->up_c->setVisible(1); ui->bar_c->setVisible(1);
+        ui->up_d->setVisible(1); ui->bar_d->setVisible(1);
+        ui->up_i->setVisible(1); ui->bar_i->setVisible(1);
+        ui->console->append("Прирост каждого параметра можно улучшить. На это требуются ресурсы"); break;
+    case 23:
+        ui->label_help->setVisible(1);
+        ui->attack->setVisible(1);
+        ui->attack_count->setVisible(1);
+        ui->console->append("\nотакуй охуевших"); break;
+    case 24:
+        ui->help->setVisible(1);
+        ui->help_count->setVisible(1);
+        ui->console->append("помогай нуждающимся"); break;
+    case 25:
+        ui->label_help_2->setVisible(1);
+        ui->request->setVisible(1);
+        ui->request_number->setVisible(1);
+        ui->console->append("будь отзывчивым"); break;
+    case 26:
+        ui->connections->setVisible(1);
+        ui->label_help_3->setVisible(1);
+        ui->console->append("твои связи"); break;
+    case 27:
+        ui->find_state->setVisible(1);
+        ui->find_state->setEnabled(1);
+        on_find_state_toggled(0);
+        ui->console->append("ищи давай"); break;
+    case 28:
+        ui->console->append("Опробуй полученные возможности на других программах!");
+        core->send(45454, 80); break;
+    case 36:
+        ui->console->setTextColor(Qt::black);
+        ui->console->append("молоца! "); break;
+    case 37:
+        ui->console->setTextColor(Qt::black);
+        ui->console->append("закончим на этом"); break;
+    case 38:
+        core->send(45454, 90); break;
+    default: break;
+    }
+}
+
 void Widget::mouseMoveEvent(QMouseEvent *mEv)
 {
     if (moving)
@@ -532,6 +535,12 @@ void Widget::mouseMoveEvent(QMouseEvent *mEv)
 
 void Widget::mousePressEvent(QMouseEvent *mEv)
 {
+    if (educateProgram && education > 15 && education < 29)
+    {
+        education++;
+        educate();
+    }
+
     if (mEv->button() == Qt::LeftButton && !launcher)
     {
         movingX = mEv->x();
@@ -631,8 +640,12 @@ void Widget::died(int type)
 
         if (userAlive == 0 || botAlive == 0 || normAlive == 0)
         {
+            if (level == 0)
+            {
+                on_start_clicked(); // спавн еще двух треников
+            }
 
-            if (level == 4) // если это уровень с трояном
+            if (level == 4) // если это уровень с сервером
             {
                 connection->sendData(45456, 88);
             }
@@ -660,7 +673,6 @@ void Widget::died(int type)
                         QProcess info;
                         info.start(name, args);
                         info.waitForFinished();
-                        //QMessageBox::information(NULL, "Тандем", "Готовьтесь отбить нападение двух хацкеров!");
                         on_start_clicked();
                         return;
                     }
@@ -671,7 +683,6 @@ void Widget::died(int type)
                         QProcess info;
                         info.start(name, args);
                         info.waitForFinished();
-                        //QMessageBox::information(this, "Босс", "Босса убить нада!");
                         on_start_clicked();
                         return;
                     }
@@ -903,6 +914,7 @@ void Widget::initGUI()
 
         ui->temper->setText(QString("Дружелюбность: " + QString::number(core->getConnection()->getTemper())));
 
+        ui->find_state->setChecked(false);
         on_find_state_toggled(0);
         ui->console->setTextColor(Qt::black);
     }
@@ -980,16 +992,9 @@ void Widget::setAlive(int norm, int user, int bot)
 
 void Widget::setArgs(int argc, char *argv[])
 {
-    ui->C->setText("Зачем... Ты меня создал?"); // смеха ради (пасхалочка)
-    ui->C->move(10,5);
-    ui->I->setText("Так... Больно...");
-    ui->I->move(10,height()/2-8);
-    ui->D->setText("Убей меня!");
-    ui->D->move(10,height()-20);
-
     rand()%10; // костыль для рандома...
     qDebug() << argc;
-    /*ui->console->append(QString("%1").arg(argc));
+    /*ui->console->append(QString::number(argc));
     for (int i = 0; i < argc; i++)
     {
         qDebug() << argv[i];
@@ -1085,8 +1090,8 @@ void Widget::setArgs(int argc, char *argv[])
             else
                 D = rand()%(400)+9400;
 
-            int I = rand()%50+50+(power/2-1)*50;
-            int C = rand()%10+5+(power/2-1)*20;
+            int I = rand()%50+51+(power/2-1)*50;
+            int C = rand()%10+5+(power/2)*20;
             int temper = rand()%11-5;
             int Ii = power/2;
             int Ci = 2+power/2;
@@ -1147,7 +1152,7 @@ void Widget::setArgs(int argc, char *argv[])
                 }
         }
 
-        if ((QString)argv[1] == "worm") // червь - помощник трояна
+        else if ((QString)argv[1] == "worm") // червь - помощник трояна
         {
             wormProgram = true;
             setWindowTitle("Я - Червь");
@@ -1164,7 +1169,7 @@ void Widget::setArgs(int argc, char *argv[])
                     SLOT(died(int)));
         }
 
-        if ((QString)argv[1] == "help") // help для первого уровня
+        else if ((QString)argv[1] == "help") // help для первого уровня
         {
             setFixedSize(200, 100);
             ui->up_c->setEnabled(true);
@@ -1177,7 +1182,7 @@ void Widget::setArgs(int argc, char *argv[])
             connection = new Connection(45455, 0, -1, 0); // порт хелпера
         }
 
-        if ((QString)argv[1] == "timer") // счетчик для уровня с трояном
+        else if ((QString)argv[1] == "timer") // счетчик для уровня с трояном
         {
             timerProgram = true;
             setFixedSize(201, 61);
@@ -1194,7 +1199,7 @@ void Widget::setArgs(int argc, char *argv[])
             period = 900; // 900 секунд для победы
         }
 
-        if ((QString)argv[1] == "win") // окно победы
+        else if ((QString)argv[1] == "win") // окно победы
         {
             setFixedSize(200, 100);
             ui->up_c->setEnabled(true);
@@ -1207,7 +1212,7 @@ void Widget::setArgs(int argc, char *argv[])
             connection = new Connection(45457, 0, -1, 0); // порт окна победы
         }
 
-        if ((QString)argv[1] == "lose") // окно поражения
+        else if ((QString)argv[1] == "lose") // окно поражения
         {
             setFixedSize(200, 100);
             ui->up_c->setEnabled(true);
@@ -1220,7 +1225,7 @@ void Widget::setArgs(int argc, char *argv[])
             connection = new Connection(45458, 0, -1, 0);
         }
 
-        if ((QString)argv[1] == "info") // окно информации
+        else if ((QString)argv[1] == "info") // окно информации
         {
             setFixedSize(300, 120);
             ui->up_c->setEnabled(true);
@@ -1246,7 +1251,7 @@ void Widget::setArgs(int argc, char *argv[])
             setWindowTitle("Информация");
         }
 
-        if ((QString)argv[1] == "educate") // режим обучения
+        else if ((QString)argv[1] == "educate") // режим обучения
         {
             educateProgram = true;
             userProgram = true;
@@ -1273,6 +1278,19 @@ void Widget::setArgs(int argc, char *argv[])
             timer = startTimer(500);
             period = 500;
         }
+        else
+        {
+            ui->C->setText("Зачем... Ты меня создал?"); // смеха ради (пасхалочка)
+            ui->C->move(10,5);
+            ui->I->setText("Так... Больно...");
+            ui->I->move(10,height()/2-8);
+            ui->D->setText("Убей меня!");
+            ui->D->move(10,height()-20);
+
+            ui->C->setVisible(1);
+            ui->I->setVisible(1);
+            ui->D->setVisible(1);
+        }
 
         if (core == NULL)
         {
@@ -1281,13 +1299,6 @@ void Widget::setArgs(int argc, char *argv[])
                     this,
                     SLOT(died(int)));
         }
-    }
-
-    if (!core && !connection)
-    {
-        ui->C->setVisible(1);
-        ui->I->setVisible(1);
-        ui->D->setVisible(1);
     }
 
     initGUI();
@@ -1316,10 +1327,11 @@ void Widget::on_start_clicked() // старт игры
     {
         if (userAlive == 1)
         {
-            arguments << "normal" << "1"; // старт 2 прог для обучения
+            arguments << "normal" << "2"; // старт 2 прог для обучения
             QProcess::startDetached(name, arguments);
             QProcess::startDetached(name, arguments);
             arguments.clear();
+            setAlive(2,1,-1);
             return;
         }
         setAlive(-1, 1, -1);
@@ -1456,7 +1468,7 @@ void Widget::on_attack_clicked() // атака пользователя на в�
         if (core->getC() >= c && c > 0) // если достаточно
         {
             core->attack(core->getConnection()->getTable(index).port, c);
-            if (education > 30)
+            if (education > 70)
                 education++;
         }
         else
@@ -1479,7 +1491,7 @@ void Widget::on_help_clicked() // помощь пользователя выбр
                 i > 0) // если достаточно
         {
             core->help(core->getConnection()->getTable(index).port, i);
-            if (education > 30)
+            if (education > 70)
                 education++;
         }
         else
@@ -1510,7 +1522,7 @@ void Widget::on_request_clicked()
                         core->request(core->getConnection()->getTable(helper).port,
                                       core->getConnection()->getTable(index).port);
 
-                        if (education > 30)
+                        if (education > 70)
                             education++;
                     }
                     else
@@ -1551,7 +1563,7 @@ void Widget::on_connections_itemSelectionChanged() // выбран другой 
 void Widget::on_find_state_toggled(bool checked) // переключен автопоиск (пользователь)
 {
     core->setSearch(checked);
-    if (education > 30)
+    if (education > 70)
         education++;
 }
 

@@ -47,7 +47,7 @@ Core::Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type, boo
     search = true;
 
     timeToUpgrade = 0;
-    coeff = 0;
+    coeff = 1;
 
     requestAttack = -1;
     requestAttackSender = -1;
@@ -265,10 +265,10 @@ void Core::operateDataFromConnection()
         QStringList strList = str.split(" ");
         if (strList.size() > 1)
         {
-            if (strList.at(1) == "3") // если это атака
+            if (strList.at(2) == "3") // если это атака
             {
                 quint16 port = strList.at(0).toInt(); //порт атакующего
-                double amount = strList.at(2).toInt(); // сколько пришло ресурса
+                double amount = strList.at(3).toInt(); // сколько пришло ресурса
 
                 int decreaseI = 0;
                 int decreaseC = 0;
@@ -293,10 +293,10 @@ void Core::operateDataFromConnection()
                 messages.append(str);
             }
 
-            else if (strList.at(1) == "4") // если это помощь
+            else if (strList.at(2) == "4") // если это помощь
             {
                 quint16 port = strList.at(0).toInt(); //порт помощника
-                double amount = strList.at(2).toInt(); // сколько пришло помощи
+                double amount = strList.at(3).toInt(); // сколько пришло помощи
 
                 In += amount;
 
@@ -307,11 +307,11 @@ void Core::operateDataFromConnection()
                 messages.append(str);
             }
 
-            else if (strList.at(1) == "5") // если это запрос помощи в бою
+            else if (strList.at(2) == "5") // если это запрос помощи в бою
             {
                 quint16 senderPort = strList.at(0).toInt(); //порт просящего
-                quint16 targetPort = strList.at(2).toInt(); // порт цели
-                int targetType = strList.at(3).toInt(); // тип цели
+                quint16 targetPort = strList.at(3).toInt(); // порт цели
+                int targetType = strList.at(4).toInt(); // тип цели
                 int targetIndex = -1;
                 int senderIndex = -1;
                 for (int i = 0; i < connection->getTableSize(); i++)
@@ -377,12 +377,20 @@ void Core::operateDataFromConnection()
                     }
                 }
             }
-            else
+            else if (strList.at(2) != "0" &&
+                     strList.at(2) != "1" &&
+                     strList.at(2) != "2" &&
+                     strList.at(2) != "6" &&
+                     strList.at(2) != "88")
             {
                 messages.append(str);
             }
         }
-        else
+        else if (strList.at(2) != "0" &&
+                 strList.at(0) != "1" &&
+                 strList.at(0) != "2" &&
+                 strList.at(0) != "6" &&
+                 strList.at(0) != "88")
         {
             messages.append(str);
         }
