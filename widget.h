@@ -3,6 +3,7 @@
 
 #include "time.h"
 #include <QWidget>
+#include <QLabel>
 #include <QPaintEvent>
 #include <QPainter>
 #include <QMouseEvent>
@@ -53,6 +54,7 @@ private slots:
 
 private:
     Ui::Widget *ui;
+    QLabel* bord;
 
     Core* core;
     Connection *connection;

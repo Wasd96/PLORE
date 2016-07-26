@@ -292,7 +292,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             timer = startTimer(period); // запускаем ее
         }
 
-        if (educateProgram && education < 16)
+        if (educateProgram && education < 18)
         {
             switch (education) {
             case 1: ui->console->append("$$p^0г3 v5.@#"); break;
@@ -308,15 +308,17 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             case 11: ui->console->append("Загрузка приоритетов..."); break;
             case 12: ui->console->append("~!;"); break;
             case 13: ui->console->append("Подготовка..."); break;
-            case 14:
-            case 15: core->setD(9000); break;
+            case 14: break;
+            case 15: break;
+            case 16: break;
+            case 17: core->setD(9000); break;
             default: break;
             }
             education++;
-            if (education == 16) educate(); // переход на нажатия вместо таймера
+            if (education == 18) educate(); // переход на нажатия вместо таймера
         }
 
-        if (educateProgram && education >= 28 && education <= 32)
+        if (educateProgram && education >= 31 && education <= 32)
         {
             for (int i = 50000; i < 50200; i++)
                 if (i != core->getConnection()->getPort())
@@ -326,7 +328,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         }
     }
 
-    if (t->timerId() == deathTimer)
+    if (t->timerId() == deathTimer) // смерть
     {
         int disappear = 0;
         disappear = rand()%100;
@@ -397,66 +399,33 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             }
         }
     }
+
+    if (t->timerId() == level && educateProgram)
+    {
+        //ui->console->append("lol");
+        setFixedWidth(width()+2);
+        if (width() >= 531)
+            ui->console->move(ui->console->x()+4, ui->console->y());
+        bord->resize(this->size());
+
+        if (width() >= 760)
+        {
+            killTimer(level);
+        }
+    }
 }
 
 void Widget::paintEvent(QPaintEvent *pEv)
 {
-    QPainter p(this);
 
     if (timerProgram && isFullScreen())
     {
+        QPainter p(this);
         if (period == -3)
             p.fillRect(0,0,width(),height(),Qt::white);
         else
             p.fillRect(0,0,width(),height(),Qt::black);
     }
-
-    if (userProgram)
-    {
-        p.fillRect(0,0,width(),height(),qRgb(200,255,200));
-
-        ui->console->setStyleSheet("QTextEdit { background: rgb(225, 255, 225);}");
-    }
-
-    if (wormProgram)
-    {
-        p.fillRect(0,0,width(),height(),qRgb(150,120,130));
-        ui->console->setStyleSheet("QTextEdit { background: rgb(200, 180, 180);}");
-        ui->connections->setStyleSheet("QListWidget{background: rgb(200, 180, 180);}");
-        ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
-    }
-
-    if (troyanProgram)
-    {
-        p.fillRect(0,0,width(),height(),qRgb(200,80,80));
-        ui->console->setStyleSheet("QTextEdit { background: rgb(255, 180, 180);}");
-        ui->connections->setStyleSheet("QListWidget{background: rgb(255, 180, 180);}");
-        ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
-    }
-
-    if (normalProgram && core->getType() == 2) // бот (своих не бьет)
-    {
-        p.fillRect(0,0,width(),height(),qRgb(250,200,200));
-        ui->console->setStyleSheet("QTextEdit {background: rgb(255, 225, 225);}");
-        ui->connections->setStyleSheet("QListWidget{background: rgb(255, 225, 225);}");
-        ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
-    }
-    if (normalProgram && core->getType() == 0) // обычная прога
-    {
-        p.fillRect(0,0,width(),height(),qRgb(200,200,250));
-        ui->console->setStyleSheet("QTextEdit {background: rgb(225, 225, 255);}");
-        ui->connections->setStyleSheet("QListWidget{background: rgb(225, 225, 255);}");
-        ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
-    }
-
-    if (!launcher)
-    {
-        QPen pen;
-        pen.setColor(Qt::black);
-        p.setPen(pen);
-        p.drawRect(0,0,width()-1,height()-1);
-    }
-
 
 }
 
@@ -465,63 +434,71 @@ void Widget::educate()
 {
     switch(education)
     {
-    case 16:
+    case 18:
+        ui->console->resize(280, 290);
+        ui->console->move(470, 10);
+        setFixedSize(760,310);
+        bord->resize(this->size());
+
+        setStyleSheet(styleSheet()+" QWidget#Widget {background: rgb(200,255,200); }");
+        ui->console->setStyleSheet("QTextEdit { background: rgb(225, 255, 225);}");
+
         ui->console->clear();
         ui->console->append("Приветствую, новая программа!"); break;
-    case 17:
+    case 19:
         ui->myPort->setVisible(1);
         ui->console->append("Это - твой личный номер в текущей системе."); break;
-    case 18:
+    case 20:
         ui->I->setVisible(1);
         ui->console->append("Память - залог твоего стабильного функционирования."); break;
-    case 19:
+    case 21:
         ui->D->setVisible(1);
         ui->console->append("Быстродействие - скорость выполнения операций."); break;
-    case 20:
+    case 22:
         ui->C->setVisible(1);
         ui->console->append("Ресурс - способность выполнять операции."); break;
-    case 21:
+    case 23:
         core->getConnection()->setTemper(5);
         ui->temper->setVisible(1);
         ui->console->append("Это твой характер. Не подарок, конечно"); break;
-    case 22:
+    case 24:
         ui->up_c->setVisible(1); ui->bar_c->setVisible(1);
         ui->up_d->setVisible(1); ui->bar_d->setVisible(1);
         ui->up_i->setVisible(1); ui->bar_i->setVisible(1);
         ui->console->append("Прирост каждого параметра можно улучшить. На это требуются ресурсы"); break;
-    case 23:
+    case 25:
         ui->label_help->setVisible(1);
         ui->attack->setVisible(1);
         ui->attack_count->setVisible(1);
         ui->console->append("\nотакуй охуевших"); break;
-    case 24:
+    case 26:
         ui->help->setVisible(1);
         ui->help_count->setVisible(1);
         ui->console->append("помогай нуждающимся"); break;
-    case 25:
+    case 27:
         ui->label_help_2->setVisible(1);
         ui->request->setVisible(1);
         ui->request_number->setVisible(1);
         ui->console->append("будь отзывчивым"); break;
-    case 26:
+    case 28:
         ui->connections->setVisible(1);
         ui->label_help_3->setVisible(1);
         ui->console->append("твои связи"); break;
-    case 27:
+    case 29:
         ui->find_state->setVisible(1);
         ui->find_state->setEnabled(1);
         on_find_state_toggled(0);
         ui->console->append("ищи давай"); break;
-    case 28:
+    case 30:
         ui->console->append("Опробуй полученные возможности на других программах!");
         core->send(45454, 80); break;
-    case 36:
+    case 35:
         ui->console->setTextColor(Qt::black);
         ui->console->append("молоца! "); break;
-    case 37:
+    case 36:
         ui->console->setTextColor(Qt::black);
         ui->console->append("закончим на этом"); break;
-    case 38:
+    case 37:
         core->send(45454, 90); break;
     default: break;
     }
@@ -535,7 +512,7 @@ void Widget::mouseMoveEvent(QMouseEvent *mEv)
 
 void Widget::mousePressEvent(QMouseEvent *mEv)
 {
-    if (educateProgram && education > 15 && education < 29)
+    if (educateProgram && education > 17 && education < 31)
     {
         education++;
         educate();
@@ -728,7 +705,7 @@ void Widget::initGUI()
     if (launcher) // установка gui лаунчера
     {
         setWindowFlags(Qt::Window);
-        setFixedSize(501, 300);
+        setFixedSize(500, 300);
 
         ui->start->setVisible(1);
         ui->start->setEnabled(1);
@@ -747,8 +724,13 @@ void Widget::initGUI()
         ui->console->setEnabled(1);
         ui->console->resize(500, 230);
         ui->console->move(00, 20);
+        ui->console->raise();
+        ui->console->setStyleSheet("QTextEdit { background: rgb(20,50,20); "
+                                   "color: rgb(255,255,255);"
+                                   "border: 0px;font: 14px;"
+                                   "font-family: \"Arial\";}");
 
-
+        setStyleSheet(styleSheet() + "QWidget#Widget {background: rgb(50,50,50);}");
     }
     if (normalProgram ||
             (userProgram && !educateProgram) ||
@@ -795,10 +777,41 @@ void Widget::initGUI()
             ui->console->resize(280, 290);
             ui->console->move(220, 10);
         }
+        if (normalProgram && core->getType() == 2) // бот (своих не бьет)
+        {
+            setStyleSheet(styleSheet()+" QWidget {background: rgb(250,200,200);}");
+            ui->console->setStyleSheet("QTextEdit {background: rgb(255, 225, 225);}");
+            ui->connections->setStyleSheet("QListWidget{background: rgb(255, 225, 225);}");
+            ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
+        }
+        if (normalProgram && core->getType() == 0) // обычная прога
+        {
+
+            setStyleSheet(styleSheet()+" QWidget {background: rgb(200,200,250);}");
+            ui->console->setStyleSheet("QTextEdit {background: rgb(225, 225, 255);}");
+            ui->connections->setStyleSheet("QListWidget{background: rgb(225, 225, 255);}");
+            ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
+        }
+
+        if (troyanProgram)
+        {
+            setStyleSheet(styleSheet()+" QWidget {background: rgb(200,80,80);}");
+            ui->console->setStyleSheet("QTextEdit { background: rgb(255, 180, 180);}");
+            ui->connections->setStyleSheet("QListWidget{background: rgb(255, 180, 180);}");
+            ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
+        }
+
         if (userProgram)
         {
+            setStyleSheet(styleSheet()+" QWidget#Widget {background: rgb(200,255,200); }");
+            ui->console->setStyleSheet("QTextEdit { background: rgb(225, 255, 225);}");
+
             ui->console->resize(280, 290);
             ui->console->move(470, 10);
+
+            setFixedSize(760,310);
+            ui->connections->setSelectionMode(QAbstractItemView::SingleSelection);
+
             ui->bar_i->setMinimum(0);
             ui->bar_i->setMaximum(core->getINextRequire() + 5); // 100% возможность улучшения
             ui->bar_i->setValue(core->getC());
@@ -809,8 +822,6 @@ void Widget::initGUI()
             ui->bar_c->setMaximum(core->getCNextRequire() + 5); // 100% возможность улучшения
             ui->bar_c->setValue(core->getC());
 
-            setFixedSize(760,310);
-            ui->connections->setSelectionMode(QAbstractItemView::SingleSelection);
 
             ui->attack->setVisible(1);
             ui->attack->setEnabled(1);
@@ -848,6 +859,11 @@ void Widget::initGUI()
         }     
         if (wormProgram)
         {
+            setStyleSheet(styleSheet()+" QWidget {background: rgb(150,120,130);}");
+            ui->console->setStyleSheet("QTextEdit { background: rgb(200, 180, 180);}");
+            ui->connections->setStyleSheet("QListWidget{background: rgb(200, 180, 180);}");
+            ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
+
             setFixedSize(201, 300);
 
             ui->D->setVisible(0);
@@ -881,10 +897,11 @@ void Widget::initGUI()
 
     if (educateProgram)
     {
+        setFixedSize(300, 310);
         ui->console->setVisible(1);
         ui->console->setEnabled(1);
         ui->console->resize(280, 290);
-        ui->console->move(470, 10);
+        ui->console->move(10, 10);
         ui->bar_i->setMinimum(0);
         ui->bar_i->setMaximum(core->getINextRequire() + 5); // 100% возможность улучшения
         ui->bar_i->setValue(core->getC());
@@ -895,7 +912,7 @@ void Widget::initGUI()
         ui->bar_c->setMaximum(core->getCNextRequire() + 5); // 100% возможность улучшения
         ui->bar_c->setValue(core->getC());
 
-        setFixedSize(760,310);
+
         ui->connections->setSelectionMode(QAbstractItemView::SingleSelection);
         ui->connections->setEnabled(1);
 
@@ -917,10 +934,20 @@ void Widget::initGUI()
         ui->find_state->setChecked(false);
         on_find_state_toggled(0);
         ui->console->setTextColor(Qt::black);
+
+        level = startTimer(30);
     }
 
 
+    bord = new QLabel(this); // рамка
+    bord->setStyleSheet("border: 1px solid black;");
+    bord->setVisible(1);
+    bord->resize(width(), height());
+    bord->move(0,0);
+    bord->lower();
+
 }
+
 
 void Widget::disableGUI()
 {

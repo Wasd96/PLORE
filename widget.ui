@@ -31,7 +31,6 @@ QPushButton:pressed  {
 	color: black;
 }
 
-
 QProgressBar {
 border: rgb(0, 0, 0);
 border-width: 1px;
@@ -109,13 +108,16 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical{background: none;}<
    </property>
    <property name="styleSheet">
     <string notr="true">QWidget {
-	/*background: #0ff000;*/
+/*background: #000000;*/
+/*color: rgb(255,255,255);*/
 }
 
 QTabWidget::pane { /* The tab widget frame */
-    border: 1px solid;
-    /*position: absolute;
-	margin-top: -2px;*/
+   /* border: 1px solid;*/
+/*border-top: 5px solid #C2C7CB;*/
+/*color: rgb(255,255,0);
+   background: #0000f0;*/
+    /*position: absolute;*/
 }
 
 QTabWidget::tab-bar {
@@ -125,25 +127,24 @@ QTabWidget::tab-bar {
 /* Style the tab using the tab sub-control. Note that
     it reads QTabBar _not_ QTabWidget */
 QTabBar::tab {
-   /* background: #043701;*/
-    /*border: 1px solid #00b300;*/
-    /*border-bottom: 0px; /* same as the pane color */
-   /* border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-    width: 100px;
-	margin-right: 46px;
-    padding-top: 3px;
+    background: #043701;
+	color: white;
+    border-right: 1px solid lightgreen;
+    width: 84px;
+	height: 20px;
+	margin: 0px;
+    /*padding-top: 3px;
 	padding-bottom: 3px;*/
 
 	/*color: #ffffff;*/
 }
 
-QTabBar::tab:selected, QTabBar::tab:hover {
-	/*color: #1aa314;*/
+QTabBar::tab:hover {
+	 background: #095003;
 }
 
 QTabBar::tab:selected {
-	/* background: #097003;*/
+	 background: #097003;
 	/*border: 2px solid #fab700;*/
    /* border-bottom: 2px #000000; /* same as pane color */
 	/*color: #fab700;*/
@@ -156,7 +157,7 @@ QTabBar::tab:selected {
     <enum>QTabWidget::Rounded</enum>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>0</number>
    </property>
    <property name="usesScrollButtons">
     <bool>false</bool>
@@ -204,11 +205,26 @@ QTabBar::tab:selected {
   <widget class="QPushButton" name="start">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>590</y>
+     <x>50</x>
+     <y>600</y>
      <width>113</width>
      <height>30</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton  
+{
+background-color: rgb(80, 80, 80);                
+ border: 2px outset darkgreen;                             
+ border-radius: 2px;                         
+ font: 20px bold;
+ color: rgb(125,255,125);
+}
+                                     
+QPushButton:hover {background-color: rgb(125, 135, 125);}
+                                    
+ QPushButton:pressed  {background-color: rgb(200, 255, 255);
+                                    border-style: inset; color: black;}</string>
    </property>
    <property name="text">
     <string>Старт</string>
