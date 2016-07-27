@@ -113,7 +113,8 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical{background: none;}<
 }
 
 QTabWidget::pane { /* The tab widget frame */
-   /* border: 1px solid;*/
+    border: 1px solid;
+	border-top: 0px;
 /*border-top: 5px solid #C2C7CB;*/
 /*color: rgb(255,255,0);
    background: #0000f0;*/
@@ -127,10 +128,14 @@ QTabWidget::tab-bar {
 /* Style the tab using the tab sub-control. Note that
     it reads QTabBar _not_ QTabWidget */
 QTabBar::tab {
-    background: #043701;
+    background: #505050;
 	color: white;
-    border-right: 1px solid lightgreen;
-    width: 84px;
+border: 1px solid;
+    border-top-color: black;
+    border-right-color: qlineargradient(spread:pad, x1:0.506, y1:0.823864, x2:0.505, y2:0.977, stop:0.8125 rgba(0, 0, 0, 255), stop:1 #fab700);
+    border-left-color: qlineargradient(spread:pad, x1:0.506, y1:0.823864, x2:0.505, y2:0.977, stop:0.8125 rgba(0, 0, 0, 255), stop:1 #fab700);
+	border-bottom: 1px solid #fab700;
+    width: 81px;
 	height: 20px;
 	margin: 0px;
     /*padding-top: 3px;
@@ -140,14 +145,19 @@ QTabBar::tab {
 }
 
 QTabBar::tab:hover {
-	 background: #095003;
+	 background: #707070;
 }
 
 QTabBar::tab:selected {
-	 background: #097003;
-	/*border: 2px solid #fab700;*/
+	 background: #101010;
+	border: 1px solid #fab700;
+	border-bottom: 1px solid #101010;
    /* border-bottom: 2px #000000; /* same as pane color */
-	/*color: #fab700;*/
+	color: #fab700;
+}
+
+QTabBar::tab:!enabled {
+	 color: #505050;
 }</string>
    </property>
    <property name="tabPosition">
@@ -157,7 +167,7 @@ QTabBar::tab:selected {
     <enum>QTabWidget::Rounded</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>3</number>
    </property>
    <property name="usesScrollButtons">
     <bool>false</bool>

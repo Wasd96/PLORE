@@ -292,7 +292,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             timer = startTimer(period); // запускаем ее
         }
 
-        if (educateProgram && education < 18)
+        if (educateProgram && education < 18 || education > 35)
         {
             switch (education) {
             case 1: ui->console->append("$$p^0г3 v5.@#"); break;
@@ -315,14 +315,14 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             default: break;
             }
             education++;
-            if (education == 18) educate(); // переход на нажатия вместо таймера
+            if (education >= 18) educate(); // переход на нажатия вместо таймера
         }
 
         if (educateProgram && education >= 31 && education <= 32)
         {
             for (int i = 50000; i < 50200; i++)
                 if (i != core->getConnection()->getPort())
-                    core->send(i, 0);
+                    core->send(i, 0); // нужно ли?
 
             education++;
         }
@@ -413,6 +413,12 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             killTimer(level);
         }
     }
+
+    if  (t->timerId() == maxLevel && width() == 700)
+    {
+        particles.update();
+        repaint();
+    }
 }
 
 void Widget::paintEvent(QPaintEvent *pEv)
@@ -425,6 +431,22 @@ void Widget::paintEvent(QPaintEvent *pEv)
             p.fillRect(0,0,width(),height(),Qt::white);
         else
             p.fillRect(0,0,width(),height(),Qt::black);
+    }
+
+    if (width() == 700 && !userProgram)
+    {
+        QPainter p(this);
+        QPen pen;
+        pen.setWidth(4);
+        p.setPen(pen);
+        Parts par;
+        for (int i = 0; i < particles.parts.size(); i++)
+        {
+            par = particles.parts.at(i);
+            pen.setColor(QColor(par.red, par.green, par.blue));
+            p.setPen(pen);
+            p.drawPoint(par.x, par.y);
+        }
     }
 
 }
@@ -492,13 +514,13 @@ void Widget::educate()
     case 30:
         ui->console->append("Опробуй полученные возможности на других программах!");
         core->send(45454, 80); break;
-    case 35:
-        ui->console->setTextColor(Qt::black);
-        ui->console->append("молоца! "); break;
     case 36:
         ui->console->setTextColor(Qt::black);
-        ui->console->append("закончим на этом"); break;
+        ui->console->append("молоца! "); break;
     case 37:
+        ui->console->setTextColor(Qt::black);
+        ui->console->append("закончим на этом"); break;
+    case 38:
         core->send(45454, 90); break;
     default: break;
     }
@@ -512,13 +534,19 @@ void Widget::mouseMoveEvent(QMouseEvent *mEv)
 
 void Widget::mousePressEvent(QMouseEvent *mEv)
 {
+
+    if (width() == 700 && mEv->button() == Qt::LeftButton)
+    {
+        particles.setSpawn(mEv->x(), mEv->y());
+    }
+
     if (educateProgram && education > 17 && education < 31)
     {
         education++;
         educate();
     }
 
-    if (mEv->button() == Qt::LeftButton && !launcher)
+    if (mEv->button() == Qt::LeftButton)
     {
         movingX = mEv->x();
         movingY = mEv->y();
@@ -527,11 +555,20 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
     }
     moving = false;
 
+    if (width() == 700 && mEv->button() == Qt::MiddleButton)
+    {
+        exit(0);
+    }
+
+
+
 }
 
 void Widget::mouseReleaseEvent(QMouseEvent *mEv)
 {
     moving = false;
+
+    particles.deleteSpawn();
 }
 
 
@@ -701,19 +738,32 @@ void Widget::changeVisible(bool vis)
 
 void Widget::initGUI()
 {
-
     if (launcher) // установка gui лаунчера
     {
-        setWindowFlags(Qt::Window);
         setFixedSize(500, 300);
 
         ui->start->setVisible(1);
         ui->start->setEnabled(1);
         ui->start->move(10,260);
 
+        ui->up_d->resize(ui->start->size());
+        ui->up_d->setStyleSheet(ui->start->styleSheet());
+        ui->up_d->setVisible(1);
+        ui->up_d->setEnabled(1);
+        ui->up_d->move(width()/2-ui->up_d->width()/2, 260);
+        ui->up_d->setText("Об игре");
+
+        ui->up_i->resize(ui->start->size());
+        ui->up_i->setStyleSheet(ui->start->styleSheet());
+        ui->up_i->setVisible(1);
+        ui->up_i->setEnabled(1);
+        ui->up_i->move(width()-10-ui->up_d->width(), 260);
+        ui->up_i->setText("Выход");
+
         ui->launcherTab->setVisible(1);
         ui->launcherTab->setEnabled(1);
-        ui->launcherTab->move(0,0);
+        ui->launcherTab->resize(ui->launcherTab->width()-2, ui->launcherTab->height());
+        ui->launcherTab->move(1,1);
         ui->launcherTab->setCurrentIndex(1);
         ui->launcherTab->setCurrentIndex(0);
 
@@ -722,12 +772,13 @@ void Widget::initGUI()
 
         ui->console->setVisible(1);
         ui->console->setEnabled(1);
-        ui->console->resize(500, 230);
-        ui->console->move(00, 20);
+        ui->console->resize(498, 227);
+        ui->console->move(1, 23);
         ui->console->raise();
-        ui->console->setStyleSheet("QTextEdit { background: rgb(20,50,20); "
+        ui->console->setStyleSheet("QTextEdit { background: rgb(16,16,16); "
                                    "color: rgb(255,255,255);"
-                                   "border: 0px;font: 14px;"
+                                   "border: 1px solid #fab700;"
+                                   "border-top: 0px;font: 15px;"
                                    "font-family: \"Arial\";}");
 
         setStyleSheet(styleSheet() + "QWidget#Widget {background: rgb(50,50,50);}");
@@ -1166,7 +1217,6 @@ void Widget::setArgs(int argc, char *argv[])
                 if (QString(argv[3]) == "hidden")
                 {
                     invisProgram = true;
-
                     ui->console->append("set invis");
                 }
 
@@ -1174,7 +1224,6 @@ void Widget::setArgs(int argc, char *argv[])
                 if (QString(argv[4]) == "silent")
                 {
                     core->getConnection()->setSilent(1);
-
                     ui->console->append("set silent");
                 }
         }
@@ -1305,6 +1354,31 @@ void Widget::setArgs(int argc, char *argv[])
             timer = startTimer(500);
             period = 500;
         }
+        else if ((QString)argv[1] == "about") // режим обучения
+        {
+            setFixedSize(700, 600);
+            ui->console->setVisible(true);
+            ui->console->move(0,0);
+            ui->console->resize(700, 600);
+            ui->console->setStyleSheet("QTextEdit { background: rgba(0,0,0,0);"
+                                       "color: lightgreen; font: 20px;}");
+            setStyleSheet("QWidget#Widget { background: black; }");
+            ui->console->setText("\n\nПривет!\n\n\t\tХахах!\n\n\nВыдели меня!"
+                                 "\n\n\n \t\t\t\t:-)\n\nНажмите среднюю кнопку мыши для выхода.");
+
+            ui->attack_count->setVisible(1);
+            ui->attack_count->setEnabled(1);
+            ui->attack_count->resize(400,20);
+            ui->attack_count->setReadOnly(1);
+            ui->attack_count->setStyleSheet("QLineEdit { background: rgba(0,0,0,0);"
+                                            "color: #C0F0C0; font: 20px;"
+                                            "border:0px;"
+                                            "selection-background-color: #404040;"
+                                            "selection-color: #fab700;}");
+            ui->attack_count->setText("wasd3680@yandex.ru");
+
+            maxLevel = startTimer(10);
+        }
         else
         {
             ui->C->setText("Зачем... Ты меня создал?"); // смеха ради (пасхалочка)
@@ -1319,7 +1393,7 @@ void Widget::setArgs(int argc, char *argv[])
             ui->D->setVisible(1);
         }
 
-        if (core == NULL)
+        if (core == NULL && connection != NULL)
         {
             connect(connection,
                     SIGNAL(died(int)),
@@ -1495,7 +1569,7 @@ void Widget::on_attack_clicked() // атака пользователя на в�
         if (core->getC() >= c && c > 0) // если достаточно
         {
             core->attack(core->getConnection()->getTable(index).port, c);
-            if (education > 70)
+            if (education >= 30)
                 education++;
         }
         else
@@ -1518,7 +1592,7 @@ void Widget::on_help_clicked() // помощь пользователя выбр
                 i > 0) // если достаточно
         {
             core->help(core->getConnection()->getTable(index).port, i);
-            if (education > 70)
+            if (education >= 30)
                 education++;
         }
         else
@@ -1549,7 +1623,7 @@ void Widget::on_request_clicked()
                         core->request(core->getConnection()->getTable(helper).port,
                                       core->getConnection()->getTable(index).port);
 
-                        if (education > 70)
+                        if (education >= 30)
                             education++;
                     }
                     else
@@ -1590,8 +1664,9 @@ void Widget::on_connections_itemSelectionChanged() // выбран другой 
 void Widget::on_find_state_toggled(bool checked) // переключен автопоиск (пользователь)
 {
     core->setSearch(checked);
-    if (education > 70)
+    if (education >= 30)
         education++;
+    ui->console->append(QString::number(education));
 }
 
 void Widget::on_up_c_clicked()
@@ -1630,30 +1705,48 @@ void Widget::on_up_c_clicked()
 
 void Widget::on_up_d_clicked()
 {
-    if ((double)core->getC()/(double)ui->bar_d->maximum() >= 1)
+    if (launcher) // об игре
     {
-        core->upgradeD();
+        QStringList args;
+        args << "about";
+        QProcess about;
+        about.startDetached(name, args);
+        //about.waitForFinished();
     }
-    else
+    else // юзер
     {
-        ui->console->setTextColor(QColor(0,0,0));
-        ui->console->append("Недостаточно ресурсов");
+        if ((double)core->getC()/(double)ui->bar_d->maximum() >= 1)
+        {
+            core->upgradeD();
+        }
+        else
+        {
+            ui->console->setTextColor(QColor(0,0,0));
+            ui->console->append("Недостаточно ресурсов");
+        }
+        ui->up_d->setEnabled(false);
     }
-    ui->up_d->setEnabled(false);
 }
 
 void Widget::on_up_i_clicked()
 {
-    if ((double)core->getC()/(double)ui->bar_i->maximum() >= 1)
+    if (launcher) // выход
     {
-        core->upgradeI();
+        exit(0);
     }
-    else
+    else // юзер
     {
-        ui->console->setTextColor(QColor(0,0,0));
-        ui->console->append("Недостаточно ресурсов");
+        if ((double)core->getC()/(double)ui->bar_i->maximum() >= 1)
+        {
+            core->upgradeI();
+        }
+        else
+        {
+            ui->console->setTextColor(QColor(0,0,0));
+            ui->console->append("Недостаточно ресурсов");
+        }
+        ui->up_i->setEnabled(false);
     }
-    ui->up_i->setEnabled(false);
 }
 
 void Widget::on_launcherTab_currentChanged(int index)

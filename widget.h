@@ -11,6 +11,7 @@
 #include <QShowEvent>
 
 #include "core.h"
+#include "particles.h"
 
 namespace Ui {
 class Widget;
@@ -60,6 +61,7 @@ private:
     Connection *connection;
 
     QString name; // имя программы, запуск именно такой проги, а не PLORE.exe
+    Particles particles;
 
     int timer; //id таймера
     int deathTimer; // таймер для красивой смерти
