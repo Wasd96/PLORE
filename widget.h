@@ -64,8 +64,9 @@ private:
     Particles particles;
 
     int timer; //id таймера
+    int timerIncrease; // id таймера прироста
     int deathTimer; // таймер для красивой смерти
-    int period; // частота таймера
+    int period; // частота таймера операций
 
     // режим программы
     bool normalProgram;

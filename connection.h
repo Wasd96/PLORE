@@ -11,10 +11,10 @@ class QUdpSocket;
 struct connectTable
 {
     quint16 port; // порт
-    int relationship; // -5 - злейший враг, 0 - нейтрал, 5 - лучший друг
-    int useful; // 0 - связь бесполезна, 10 - очень полезна
+    int relationship; // -50 - злейший враг, 0 - нейтрал, 50 - лучший друг
+    int useful; // 0 - связь бесполезна, 50 - очень полезна
     int lostSignal; // "мертвая" связь
-    int type; // -1 - лаунчер, 0 - норм, 1 - юзер, 2 - юзер, 3 - троян
+    int type; // -1 - лаунчер, 0 - норм, 1 - юзер, 2 - юзер, 3 - Сервер
     bool silent; // режим радиомолчания
 };
 
@@ -33,8 +33,8 @@ private:
 
     int* foundTable; // массив поиска портов для ускорения
 
-    int temper;  // настроение, характер, -5 - злой, +5 - добрый
-    int type; // 0 - норм, 1 - юзер, 2 - бот, 3 - троян
+    int temper;  // настроение, характер, -50 - злой, +50 - добрый
+    int type; // 0 - норм, 1 - юзер, 2 - бот, 3 - Сервер
     bool silent;
 
     QUdpSocket* udpSocket; // сокет
@@ -54,7 +54,7 @@ public:
     void deleteTable(int pos) { table.removeAt(pos); }
     void setLostSignal(int pos, int n) { table[pos].lostSignal = n; }
     void setRelationship(int pos, int n) { table[pos].relationship = n; }
-    void setUseful(int pos, int n) { table[pos].useful = n; }
+    void setUseful(int pos, int n) { n>0?table[pos].useful=n:table[pos].useful=0; }
     void setTemper(int _temper) { temper = _temper; }
     void createTable(connectTable _table);
     void setSelectedConnection(int index) { selectedConnection = index; }

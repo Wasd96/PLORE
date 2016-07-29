@@ -14,13 +14,15 @@ private:
     double* D;
     char* C;
 
-    int In, Dn, Cn; // кол-во параметров каждого типа
+    double In, Cn; // кол-во параметров каждого типа
+    int Dn;
 
-    int Ii, Ci; // прирост памяти и активного ресурса
+    double Ii, Ci; // прирост памяти и активного ресурса
 
     bool dead; // мертв, пора удалять
     bool search; // флаг автопоиск
-    int type; // тип проги 0 - норм 1 - юзер 2 - бот 3 - троян
+    int searchTimeOut;
+    int type; // тип проги 0 - норм 1 - юзер 2 - бот 3 - сервер
 
     int timeToUpgrade; // желание улучшить параметры (от застоя)
     double coeff; // граница улучшения (просто коэффициент)
@@ -32,7 +34,7 @@ private:
 
 public:
     Core();
-    Core(int _I, int _D, int _C, int _temper, int _Ii, int _Ci, int _type, bool _silent);
+    Core(double _I, int _D, double _C, int _temper, double _Ii, double _Ci, int _type, bool _silent);
     ~Core();
 
     void update();
@@ -60,13 +62,13 @@ public:
     void findConnections();
 
 
-    void setD(int _D) { Dn = (double)_D; }
+    void setD(int _D) { Dn = _D; }
 
-    int getI() { return In; }
-    int getD() { return Dn; }
-    int getC() { return Cn; }
-    int getIi() { return Ii; }
-    int getCi() { return Ci; }
+    int getI() { return (int)In; }
+    int getD() { return (int)Dn; }
+    int getC() { return (int)Cn; }
+    double getIi() { return Ii; }
+    double getCi() { return Ci; }
     int getType() { return type; }
     bool getDead() { return dead; }
     int getINextRequire();

@@ -27,6 +27,8 @@ Widget::Widget(QWidget *parent) :
 
     education = 0;
     level = 0;
+    timer = 0;
+    timerIncrease = 0;
     deathTimer = 0;
     maxLevel = 0;
 
@@ -170,8 +172,55 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         return;
     }
 
+    if (t->timerId() == timerIncrease) // увеличение ресурсов
+    {
+        core->deathRecountRealloc(); // обработка смерти, подсчетов, перевыделений
+
+        //обновление интерфейса
+        double speed = 1000.0/((double)(50-period))/20.0;
+        ui->I->setText(QString("Доступная память: " +
+                               QString::number(core->getI()) +
+                               " УБ"+
+                               " "+QString::number((double)core->getIi()*20*speed)));
+        ui->D->setText(QString("Быстродействие: " +
+                               QString::number(period)+
+                               " оп/сек"));
+        ui->C->setText(QString("Активный ресурс: " +
+                               QString::number(core->getC())+
+                               " "+QString::number((double)(core->getCi()*20*speed))));
+
+        if (userProgram)
+        {
+            ui->bar_i->setMaximum(core->getINextRequire() + 5); // 100% возможность улучшения
+            if (core->getC() >= core->getINextRequire()+5)
+                ui->bar_i->setValue(core->getINextRequire()+5);
+            else
+                ui->bar_i->setValue(core->getC());
+
+            ui->bar_d->setMaximum(core->getDNextRequire() + 5); // 100% возможность улучшения
+            if (core->getC() >= core->getDNextRequire()+5)
+                ui->bar_d->setValue(core->getDNextRequire()+5);
+            else
+                ui->bar_d->setValue(core->getC());
+
+            ui->bar_c->setMaximum(core->getCNextRequire() + 5); // 100% возможность улучшения
+            if (core->getC() >= core->getCNextRequire()+5)
+                ui->bar_c->setValue(core->getCNextRequire()+5);
+            else
+                ui->bar_c->setValue(core->getC());
+        }
+
+    }
+
     if (t->timerId() == timer) // таймер для программ
     {
+
+        if (userProgram)
+            core->updateUser();
+        if (wormProgram)
+            core->updateWorm();
+        if (normalProgram || troyanProgram)
+            core->update();
 
         if (core->getConnection()->getUdpSocket()->pendingDatagramSize() != -1)
             core->getConnection()->read(); // избавление от фриза сокета
@@ -182,12 +231,6 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         }
 
         // обновление всех процессов
-        if (userProgram)
-            core->updateUser();
-        if (wormProgram)
-            core->updateWorm();
-        if (normalProgram || troyanProgram)
-            core->update();
 
         if (core->getDead()) // смерть программы естественным путем
         {
@@ -214,25 +257,12 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         ui->connections->setCurrentRow(core->getConnection()->getSelectedConnection());
 
 
-
-        //обновление интерфейса
-        double speed = (double)(10000-core->getD())/1000.0;
-        ui->I->setText(QString("Доступная память: " +
-                               QString::number(core->getI()) +
-                               " УБ"+
-                               " "+QString::number((double)core->getIi()/speed)));
-        ui->D->setText(QString("Быстродействие: " +
-                               QString::number(speed)+
-                               " сек/оп."));
-        ui->C->setText(QString("Активный ресурс: " +
-                               QString::number(core->getC())+
-                               " "+QString::number((double)core->getCi()/speed)));
-
-
         while(core->hasMessages())
         {
-            QString str = core->getMessage(); // подсветка сообщений разного типа
-            if (str.contains("Атака!"))       // по ключевым словам
+            QString str = core->getMessage(); // подсветка сообщений разного типа по ключевым словам
+            if (str.size() > 0)
+            {
+            if (str.contains("Атака!"))
                 ui->console->setTextColor(QColor(255,0,0));
             else if (str.contains("Атака ->"))
                 ui->console->setTextColor(QColor(140,210,0));
@@ -241,7 +271,15 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             else if (str.contains("-> Помощь"))
                 ui->console->setTextColor(QColor(0,255,0));
             else if (str.contains("Поиск"))
+            {
                 ui->console->setTextColor(QColor(100,100,100));
+                if (maxLevel == 0)
+                {
+                    maxLevel = 1;
+                    ui->console->append(str);
+                }
+                continue;
+            }
             else if (str.contains(" за "))
                 ui->console->setTextColor(QColor(0,0,255));
             else if (str.contains("Запрос"))
@@ -252,8 +290,10 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 ui->console->setTextColor(QColor(100,80,80));
             else
                 ui->console->setTextColor(QColor(0,0,0));
-            ui->console->append(str);
 
+            ui->console->append(str);
+            maxLevel = 0;
+            }
         }
 
 
@@ -265,34 +305,18 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             ui->attack->setEnabled(true);
             ui->help->setEnabled(true);
             ui->request->setEnabled(true);
-
-            ui->bar_i->setMaximum(core->getINextRequire() + 5); // 100% возможность улучшения
-            if (core->getC() >= core->getINextRequire()+5)
-                ui->bar_i->setValue(core->getINextRequire()+5);
-            else
-                ui->bar_i->setValue(core->getC());
-
-            ui->bar_d->setMaximum(core->getDNextRequire() + 5); // 100% возможность улучшения
-            if (core->getC() >= core->getDNextRequire()+5)
-                ui->bar_d->setValue(core->getDNextRequire()+5);
-            else
-                ui->bar_d->setValue(core->getC());
-
-            ui->bar_c->setMaximum(core->getCNextRequire() + 5); // 100% возможность улучшения
-            if (core->getC() >= core->getCNextRequire()+5)
-                ui->bar_c->setValue(core->getCNextRequire()+5);
-            else
-                ui->bar_c->setValue(core->getC());
         }
 
-        if (period != 10000 - core->getD()) // если скорость обновления изменилась
+        if (period != core->getD()) // если скорость обновления изменилась
         {
-            period = 10000 - core->getD(); // запоминаем новую
+            period = core->getD(); // запоминаем новую
             killTimer(timer);
-            timer = startTimer(period); // запускаем ее
+            killTimer(timerIncrease);
+            timer = startTimer(1000/period); // запускаем ее
+            timerIncrease = startTimer(1000/(50-period));
         }
 
-        if (educateProgram && education < 18 || education > 35)
+        if (educateProgram && (education < 18 || education > 35))
         {
             switch (education) {
             case 1: ui->console->append("$$p^0г3 v5.@#"); break;
@@ -311,7 +335,14 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             case 14: break;
             case 15: break;
             case 16: break;
-            case 17: core->setD(9000); break;
+            case 17:
+                core->setD(5);
+                period = 5;
+                killTimer(timer);
+                killTimer(timerIncrease);
+                timer = startTimer(1000/period);
+                timerIncrease = startTimer(1000/(50-period));
+                break;
             default: break;
             }
             education++;
@@ -393,6 +424,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 }
                 else
                 {
+                    core->send(45454, 1, core->getType()); // сообщение лаунчеру о своей смерти
                     killTimer(deathTimer);
                     close();
                 }
@@ -400,9 +432,8 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         }
     }
 
-    if (t->timerId() == level && educateProgram)
+    if (t->timerId() == level && educateProgram) // плавное увеличение
     {
-        //ui->console->append("lol");
         setFixedWidth(width()+2);
         if (width() >= 531)
             ui->console->move(ui->console->x()+4, ui->console->y());
@@ -414,7 +445,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         }
     }
 
-    if  (t->timerId() == maxLevel && width() == 700)
+    if  (t->timerId() == maxLevel && width() == 700) // частицы для окна "об игре"
     {
         particles.update();
         repaint();
@@ -423,7 +454,6 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
 void Widget::paintEvent(QPaintEvent *pEv)
 {
-
     if (timerProgram && isFullScreen())
     {
         QPainter p(this);
@@ -448,7 +478,6 @@ void Widget::paintEvent(QPaintEvent *pEv)
             p.drawPoint(par.x, par.y);
         }
     }
-
 }
 
 
@@ -466,60 +495,65 @@ void Widget::educate()
         ui->console->setStyleSheet("QTextEdit { background: rgb(225, 255, 225);}");
 
         ui->console->clear();
-        ui->console->append("Приветствую, новая программа!"); break;
+        ui->console->append("Приветствую тебя, свежая программа! Я - Сервер, и сейчас я обучу твою нейросеть базовым "
+                            "действиям. Не сопротивляйся, или нам придется расстаться."); break;
     case 19:
         ui->myPort->setVisible(1);
-        ui->console->append("Это - твой личный номер в текущей системе."); break;
+        ui->console->append("текст про порт"); break;
     case 20:
         ui->I->setVisible(1);
-        ui->console->append("Память - залог твоего стабильного функционирования."); break;
+        ui->console->append("текст про Память."); break;
     case 21:
         ui->D->setVisible(1);
-        ui->console->append("Быстродействие - скорость выполнения операций."); break;
+        ui->console->append("Быстродействие - количество возможных операций в секунду. Еще текст тут"); break;
     case 22:
         ui->C->setVisible(1);
-        ui->console->append("Ресурс - способность выполнять операции."); break;
+        ui->console->append("текст про Ресурс."); break;
     case 23:
         core->getConnection()->setTemper(5);
         ui->temper->setVisible(1);
-        ui->console->append("Это твой характер. Не подарок, конечно"); break;
+        ui->console->append("Это твой характер. што за бред"); break;
     case 24:
         ui->up_c->setVisible(1); ui->bar_c->setVisible(1);
         ui->up_d->setVisible(1); ui->bar_d->setVisible(1);
         ui->up_i->setVisible(1); ui->bar_i->setVisible(1);
-        ui->console->append("Прирост каждого параметра можно улучшить. На это требуются ресурсы"); break;
+        ui->console->append(" *текст про улучшения* Прирост памяти и ресурса можно улучшить. На это требуются ресурсы"); break;
     case 25:
         ui->label_help->setVisible(1);
         ui->attack->setVisible(1);
         ui->attack_count->setVisible(1);
-        ui->console->append("\nотакуй охуевших"); break;
+        ui->console->append("\nДля атаки выбери цель в списке слева, укажи количество ресурса для атаки и нажми на кнопку. еще пояснений про отношения"); break;
     case 26:
         ui->help->setVisible(1);
         ui->help_count->setVisible(1);
-        ui->console->append("помогай нуждающимся"); break;
+        ui->console->append("Помощь осуществляется аналогично атаке, но для помощи необходимо, "
+                            "чтобы отношение с выбранной программой были хоть немного полезными. "
+                            "Нет смысла помогать тому, кто считает тебя своим врагом.\n"
+                            "Программа, которой помогают, начинает лучше относиться к помощнику и считать, "
+                            "что это знакомство может пригодиться в дальнейшем. Но учти, что отношение пропорционально помощи!"); break;
     case 27:
         ui->label_help_2->setVisible(1);
         ui->request->setVisible(1);
         ui->request_number->setVisible(1);
-        ui->console->append("будь отзывчивым"); break;
+        ui->console->append("текст про помощь в бою "); break;
     case 28:
         ui->connections->setVisible(1);
         ui->label_help_3->setVisible(1);
-        ui->console->append("твои связи"); break;
+        ui->console->append("текст про связи "); break;
     case 29:
         ui->find_state->setVisible(1);
         ui->find_state->setEnabled(1);
         on_find_state_toggled(0);
-        ui->console->append("ищи давай"); break;
+        ui->console->append("текст про поиск"); break;
     case 30:
-        ui->console->append("Опробуй полученные возможности на других программах!");
+        ui->console->append("еще воды _Опробуй полученные возможности на других программах!");
         core->send(45454, 80); break;
     case 36:
         ui->console->setTextColor(Qt::black);
-        ui->console->append("молоца! "); break;
+        ui->console->append("текст для звершения "); break;
     case 37:
         ui->console->setTextColor(Qt::black);
-        ui->console->append("закончим на этом"); break;
+        ui->console->append("еще немножк"); break;
     case 38:
         core->send(45454, 90); break;
     default: break;
@@ -567,7 +601,6 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
 void Widget::mouseReleaseEvent(QMouseEvent *mEv)
 {
     moving = false;
-
     particles.deleteSpawn();
 }
 
@@ -760,6 +793,8 @@ void Widget::initGUI()
         ui->up_i->move(width()-10-ui->up_d->width(), 260);
         ui->up_i->setText("Выход");
 
+
+
         ui->launcherTab->setVisible(1);
         ui->launcherTab->setEnabled(1);
         ui->launcherTab->resize(ui->launcherTab->width()-2, ui->launcherTab->height());
@@ -780,6 +815,13 @@ void Widget::initGUI()
                                    "border: 1px solid #fab700;"
                                    "border-top: 0px;font: 15px;"
                                    "font-family: \"Arial\";}");
+
+        ui->C->resize(ui->console->size());
+        ui->C->move(ui->console->pos());
+        ui->C->setStyleSheet("QLabel{border:0px;background:rgba(255,0,0,0);}");
+        ui->C->setText(" ");
+        ui->C->setVisible(1);
+        ui->C->raise();
 
         setStyleSheet(styleSheet() + "QWidget#Widget {background: rgb(50,50,50);}");
     }
@@ -1146,33 +1188,34 @@ void Widget::setArgs(int argc, char *argv[])
         if ((QString)argv[1] == "normal" ||
                 (QString)argv[1] == "user" ||
                 (QString)argv[1] == "bot" ||
-                (QString)argv[1] == "troyan") // обычная программа
+                (QString)argv[1] == "server") // обычная программа
         {
             int power = QString(argv[2]).toInt();
 
-            // power = 0 - скорость от 4.0 до 3.5
-            // power = 1 - скорость от 3.5 до 3.0
-            // power = 2 - скорость от 3.0 до 2.5
-            // power = 3 - скорость от 2.5 до 2.0
-            // power = 4 - скорость от 2.0 до 1.5
-            // power = 5 - скорость от 1.5 до 1.0
-            // power = 6 - скорость от 1.0 до 0.5
-            // power > 6 - скорость от 0.5 до 0.0 (0.3)
+            // power = 0 - скорость 1
+            // power = 1 - скорость 2
+            // power = 2 - скорость 4
+            // power = 3 - скорость 5
+            // power = 4 - скорость 6
+            // power = 5 - скорость 7
+            // power = 6 - скорость 8
+            // power > 6 - скорость 10
 
             int D = 0;
             if (power <= 6)
             {
-                D = rand()%(500)+6000+power*500;
-                if (D > 9700) D = 9700;
+                D = power+2;
+                if (power <= 1)
+                    D = power+1;
             }
             else
-                D = rand()%(400)+9400;
+                D = 10;
 
-            int I = rand()%50+51+(power/2-1)*50;
-            int C = rand()%10+5+(power/2)*20;
-            int temper = rand()%11-5;
-            int Ii = power/2;
-            int Ci = 2+power/2;
+            double I = rand()%50+51+(power/2-1)*50;
+            double C = rand()%10+5+(power/2)*20;
+            int temper = rand()%21-10; // from -10 to 10
+            double Ii = 0.05*power/2;
+            double Ci = 0.05*(2+power/2);
             int type = 0;
             if ((QString)argv[1] == "normal") // обычная прога
             {
@@ -1192,17 +1235,18 @@ void Widget::setArgs(int argc, char *argv[])
                 setWindowTitle("Я - Бот");
                 type = 2;
             }
-            if ((QString)argv[1] == "troyan") // троян спавнит червей
+            if ((QString)argv[1] == "server") // троян спавнит червей
             {
                 troyanProgram = true;
-                setWindowTitle("Я - Троян   }:-[");
+                setWindowTitle("Я - Сервер   }:-[");
                 type = 3;
-                temper = -5;
+                temper = -50; // невероятно злой
             }
 
             core = new Core(I, D, C, temper, Ii, Ci, type, 0);
-            period = 10000 - core->getD();
-            timer = startTimer(period);
+            period = D;
+            timer = startTimer(1000/period);
+            timerIncrease = startTimer(1000/(50-period));
 
             connect(core->getConnection(),
                     SIGNAL(died(int)),
@@ -1234,10 +1278,11 @@ void Widget::setArgs(int argc, char *argv[])
             setWindowTitle("Я - Червь");
             int type = 2;
 
-            core = new Core(100, 7000, 20, -5, 0, 2, type, 0);
+            core = new Core(100, 1, 20, -50, 0, 0.05, type, 0);
             core->setSearch(true);
-            period = 10000 - core->getD();
-            timer = startTimer(period);
+            period = 1;
+            timer = startTimer(1000/period);
+            timerIncrease = startTimer(1000/(50-period));
 
             connect(connection,
                     SIGNAL(died(int)),
@@ -1338,12 +1383,12 @@ void Widget::setArgs(int argc, char *argv[])
                              40 - улучшения параметров
                              50 - кнопки взаимодействий
                              */
-            int D = 9500;
+            int D = 1;
             int I = 10;
             int C = 10;
             int temper = 0;
-            int Ii = 1;
-            int Ci = 5;
+            double Ii = 0.05;
+            double  Ci = 0.2;
             int type = 1;
             core = new Core(I, D, C, temper, Ii, Ci, type, 0);
             connect(core->getConnection(),
@@ -1352,7 +1397,7 @@ void Widget::setArgs(int argc, char *argv[])
                     SLOT(died(int)));
 
             timer = startTimer(500);
-            period = 500;
+            period = 1;
         }
         else if ((QString)argv[1] == "about") // режим обучения
         {
@@ -1428,7 +1473,7 @@ void Widget::on_start_clicked() // старт игры
     {
         if (userAlive == 1)
         {
-            arguments << "normal" << "2"; // старт 2 прог для обучения
+            arguments << "normal" << "1"; // старт 2 прог для обучения
             QProcess::startDetached(name, arguments);
             QProcess::startDetached(name, arguments);
             arguments.clear();
@@ -1464,7 +1509,7 @@ void Widget::on_start_clicked() // старт игры
 
         for (int i = 0; i < botAlive; i++) // старт трех ботов
         {
-            arguments << "bot" << "4";
+            arguments << "bot" << "5";
             QProcess::startDetached(name, arguments);
             arguments.clear();
         }
@@ -1483,11 +1528,11 @@ void Widget::on_start_clicked() // старт игры
             setAlive(3, 1, -2);
             for (int i = 0; i < 3; i++) // старт 3 прог
             {
-                arguments << "normal" << "2";
+                arguments << "normal" << "3";
                 QProcess::startDetached(name, arguments);
                 arguments.clear();
             }
-            arguments << "user" << "4"; // юзер
+            arguments << "user" << "5"; // юзер
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
@@ -1498,7 +1543,7 @@ void Widget::on_start_clicked() // старт игры
                 arguments.clear();
             }
 
-            arguments << "normal" << "2" << "hidden" << "silent"; // норм отложенный
+            arguments << "normal" << "1" << "hidden" << "silent"; // норм отложенный
             QProcess::startDetached(name, arguments);
             arguments.clear();
         }
@@ -1527,7 +1572,7 @@ void Widget::on_start_clicked() // старт игры
         {
             setAlive(-1, 2, 1);
 
-            arguments << "troyan" << "6"; // старт трояна
+            arguments << "server" << "10"; // старт Сервера
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
@@ -1537,7 +1582,7 @@ void Widget::on_start_clicked() // старт игры
 
             for (int i = 0; i < userAlive; i++) // старт 2 юзеров
             {
-                arguments << "user" << "5";
+                arguments << "user" << "3";
                 QProcess::startDetached(name, arguments);
                 arguments.clear();
             }
@@ -1588,7 +1633,7 @@ void Widget::on_help_clicked() // помощь пользователя выбр
     {
         int i = ui->help_count->text().toInt();
         if (core->getI() >= i &&
-                core->getConnection()->getTable(index).useful > 0 &&
+                core->getConnection()->getTable(index).useful >= 1 &&
                 i > 0) // если достаточно
         {
             core->help(core->getConnection()->getTable(index).port, i);
@@ -1616,7 +1661,7 @@ void Widget::on_request_clicked()
         {
             if (index != helper)
             {
-                if (core->getConnection()->getTable(helper).relationship >= 3) // если достаточно
+                if (core->getConnection()->getTable(helper).relationship >= 20) // если достаточно
                 {
                     if (core->getC() >= 10)
                     {
@@ -1635,7 +1680,7 @@ void Widget::on_request_clicked()
                 else
                 {
                     ui->console->setTextColor(QColor(0,0,0));
-                    ui->console->append("Слишком низкое отношение с "+QString::number(helper+1));
+                    ui->console->append("Слишком плохое отношение с "+QString::number(helper+1));
                 }
             }
             else
@@ -1666,7 +1711,7 @@ void Widget::on_find_state_toggled(bool checked) // переключен авт�
     core->setSearch(checked);
     if (education >= 30)
         education++;
-    ui->console->append(QString::number(education));
+    maxLevel = 0;
 }
 
 void Widget::on_up_c_clicked()
@@ -1711,7 +1756,6 @@ void Widget::on_up_d_clicked()
         args << "about";
         QProcess about;
         about.startDetached(name, args);
-        //about.waitForFinished();
     }
     else // юзер
     {
@@ -1755,44 +1799,30 @@ void Widget::on_launcherTab_currentChanged(int index)
     {
         if (index == 0)
         {
-        ui->console->setText("        Ознакомительный режим. Познакомьтесь \
-с управлением и оповещениями.\n\n\
-1) Память - стабильность функционирования программы.\n\
-2) Быстродействие - скорость выполнения одной операции.\n\
-3) Ресурс - способность программы выполнять операции - \
-взламывать другие, передавать им память \
-или посылать запросы о поддержке.\n\n\
-        Программа завершает работу после того, как у неё заканчивается \
-доступная память. Атаки на программу удаляют часть памяти, \
-помощь - передаёт память от одной программы к другой.\n\
-        Для выбора цели действия нажмите на соответствующую строку \
-в списке связей и впишите количество ресурса для операции. \
-Если нужно запросить атаку, то выбранная строка будет являться \
-целью, а вписанный номер - номером помощника в списке.\n\
-        Дружелюбность показывает, каким действиям программа \
-отдаёт приоритет. В зависимости от действий её отношения \
-с другими программами может меняться.");
+        ui->console->setText("тут должно быть нормальное описание для вступления, предыстория.");
         }
         if (index == 1)
         {
-            ui->console->setText("компиляция - выживет только 1\nЯ по прежнему не сценарист хД");
+            ui->console->setText("Тут че то про тестирование, обучение и отбор. Основная суть тестов - машинное обучение, ИИ и все такое");
         }
         if (index == 2)
         {
-            ui->console->setText("Слабо тремя управлять? Враг сильнее на старте.");
+            ui->console->setText("тут 3 на 3, кооперация ИИ и около того. Бред, но что поделать");
         }
         if (index == 3)
         {
-            ui->console->setText("Отбивай атаку за атакой! \n\
-Режим ебнутый, если не повезет то играть можно очень долго");
+            ui->console->setText("прорыв к Серверу, 3 уровня, если действовать неправаильно, легко проиграть. Возможно нужен баланс");
         }
         if (index == 4)
         {
-            ui->console->setText("Попробуй убить этот троян раньше того, как он отключит компьютер!");
+            ui->console->setText("Уровень с Сервером, победа или смерть. В первом случае он говорит, что ты лох и ничего не понял, и подвел свой род.\n"
+                                 "В случае поражения он все равно говорит что ты лох, и удаляет твою ветвь эволюции (на компе ничего не удаляется. пока.)");
         }
         if (index == 5)
         {
-            ui->console->setText("Дичь! Но пока ее нет, не нажимай.");
+            ui->console->setText("В случае победы, на серверной машине начинают безудержно развиваться и размножаться всякие проги, "
+                                 "которые раньше подавлялись Сервером. Тупо угарнуть, пройти пока нельзя. Можно придумать тут миниквест, но я вообще думаю над тем,"
+                                 " чтобы убрать этот режим в другую игру в другом виде. Идеи уже есть...");
         }
     }
 }

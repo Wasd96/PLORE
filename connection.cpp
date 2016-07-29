@@ -112,17 +112,17 @@ void Connection::readData() // прием данных
         QString rec = QString::number(port)+ " -> " + str; // создание сообщения
         data.append(rec); // сохранение сообщения
 
-        bool exist = false; // проверка наличия такого соединения
+        int numb = -1; // проверка наличия такого соединения
         for (int i = 0; i < table.size(); i++)
         {
             if (table.at(i).port == port) // сравниваем текущий порт с существующими
             {
-                exist = true;
+                numb = i;
                 break;
             }
         }
 
-        if (exist) // если было
+        if (numb != -1) // если было
         {
             if (strList.first() == "1") // проверка связи
             {
@@ -130,58 +130,44 @@ void Connection::readData() // прием данных
             }
             if (strList.first() == "2") // подтверждение связи
             {
-                for (int i = 0; i < table.size(); i++)
-                {
-                    if (table.at(i).port == port) // выбор нужной записи
-                    {
-                        table[i].lostSignal = 0; // обновление тайм-аута
-                        break;
-                    }
-                }
+                table[numb].lostSignal = 0; // обновление тайм-аута
             }
-
 
             if (strList.first() == "3") // атака
             {
-                for (int i = 0; i < table.size(); i++)
+
+                if (table.at(numb).useful == 0) // если пользы нет
                 {
-                    if (table.at(i).port == port) // выбор нужной записи
+                    table[numb].relationship-=6; // снижение отношений
+                    if (table.at(numb).relationship < -50)
+                        table[numb].relationship = -50;
+                }
+                else // сначала снижается польза
+                {
+                    table[numb].useful-=20;
+                    if (table.at(numb).useful < 0)
                     {
-                        if (table.at(i).useful == 0) // если пользы нет
-                        {
-                            table[i].relationship--; // снижение отношений
-                            if (table.at(i).relationship < -5)
-                                table[i].relationship = -5;
-                        }
-                        else // сначала снижается польза
-                        {
-                            table[i].useful--;
-                            if (table.at(i).useful < 0)
-                                table[i].useful = 0;
-                        }
-
-
-                        break;
+                        table[numb].relationship+=table[numb].useful/2;
+                        if (table.at(numb).relationship < -50)
+                            table[numb].relationship = -50;
+                        table[numb].useful = 0;
                     }
                 }
             }
-
-            if (strList.first() == "4" || strList.first() == "6") // помощь (памятью или боевая)
+            /*if (strList.first() == "4") // помощь памятью
             {
-                for (int i = 0; i < table.size(); i++)
-                {
-                    if (table.at(i).port == port) // выбор нужной записи
-                    {
-                        table[i].useful += 2; // добро увеличивается ^^
-                        if (table.at(i).useful > 10)  table[i].useful = 10;
-                        table[i].relationship++; // улучшение отношений
-                        if (table.at(i).relationship > 5) table[i].relationship = 5;
-                        break;
-                    }
-                }
-
+                table[numb].useful += 7; // добро увеличивается ^^
+                if (table.at(numb).useful > 50)  table[numb].useful = 50;
+                table[numb].relationship+=5; // улучшение отношений
+                if (table.at(numb).relationship > 50) table[numb].relationship = 50;
+            }*/
+            if (strList.first() == "6") // ответ на запрос помощи в бою (успешная атака)
+            {
+                table[numb].useful += 15; // добро увеличивается ^^
+                if (table.at(numb).useful > 50)  table[numb].useful = 50;
+                table[numb].relationship+=7; // улучшение отношений
+                if (table.at(numb).relationship > 50) table[numb].relationship = 50;
             }
-
 
         }
         else // такого соединения нет
@@ -238,7 +224,7 @@ void Connection::readData() // прием данных
                     break;
                 }
 
-                emit died(strList.at(1).toInt()); // 0 - прога, 1 - юзер, 2 - бот, 3 - троян
+                emit died(strList.at(1).toInt()); // 0 - прога, 1 - юзер, 2 - бот, 3 - Сервер
             }
         }
     }
