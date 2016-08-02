@@ -16,6 +16,7 @@ struct connectTable
     int lostSignal; // "мертвая" связь
     int type; // -1 - лаунчер, 0 - норм, 1 - юзер, 2 - юзер, 3 - Сервер
     bool silent; // режим радиомолчания
+    bool selected; // выбрано в списке
 };
 
 class Connection : public QObject
@@ -39,6 +40,9 @@ private:
 
     QUdpSocket* udpSocket; // сокет
 
+public:
+    bool ignoreConnectionChange;
+
 private slots:
 
     void readData(); // считывание с порта
@@ -51,13 +55,13 @@ public:
 
     void sendData(quint16 port, int Mtype); // запись на порт
     void sendData(quint16 port, int Mtype, int amount); // передача данных
-    void deleteTable(int pos) { table.removeAt(pos); }
+    void deleteTable(int pos);
     void setLostSignal(int pos, int n) { table[pos].lostSignal = n; }
     void setRelationship(int pos, int n) { table[pos].relationship = n; }
     void setUseful(int pos, int n) { n>0?table[pos].useful=n:table[pos].useful=0; }
     void setTemper(int _temper) { temper = _temper; }
     void createTable(connectTable _table);
-    void setSelectedConnection(int index) { selectedConnection = index; }
+    void setSelectedConnection(int index);
     void setSilent(bool _silent) { silent = _silent; }
     void setFoundTableAtInc(int index) { (foundTable[index])++; }
 

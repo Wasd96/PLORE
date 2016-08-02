@@ -7,6 +7,7 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QMouseEvent>
+#include <QListWidgetItem>
 
 #include <QShowEvent>
 
@@ -45,13 +46,13 @@ private slots:
     void on_start_clicked();
     void on_attack_clicked();
     void on_help_clicked();
-    void on_connections_itemSelectionChanged();
     void on_request_clicked();
     void on_find_state_toggled(bool checked);
     void on_up_c_clicked();
     void on_up_d_clicked();
     void on_up_i_clicked();
     void on_launcherTab_currentChanged(int index);
+    void on_connections_currentRowChanged(int currentRow);
 
 private:
     Ui::Widget *ui;
@@ -91,6 +92,12 @@ private:
 
     bool moving; // флаг-костыль для перемещения окон
     int movingX, movingY; // смещения от угла
+
+    int reviveTimer; // таймер восстановления
+    int reviveCountdown; // время восстановления
+    QWidget* revWid; // указатель на воскрешаемый виджет
+    int revWidAnalog; // номер модуля, невидимые у неюзера
+    bool modules[9];
 };
 
 #endif // WIDGET_H

@@ -29,12 +29,19 @@ Widget::Widget(QWidget *parent) :
     level = 0;
     timer = 0;
     timerIncrease = 0;
-    deathTimer = 0;
+    deathTimer = -1;
     maxLevel = 0;
 
     userAlive = 0;
     botAlive = 0;
     normAlive = 0;
+
+    reviveTimer = 0;
+    reviveCountdown = 0;
+    revWid = NULL;
+    revWidAnalog = -1;
+    for (int i = 0; i < 9; i++)
+        modules[i] = true;
 
     core = NULL;
     connection = NULL;
@@ -174,13 +181,35 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
     if (t->timerId() == timerIncrease) // увеличение ресурсов
     {
+        if (troyanProgram && education > 0) education--;
+
         core->deathRecountRealloc(); // обработка смерти, подсчетов, перевыделений
+        if (core->getDead()) // смерть программы естественным путем
+        {
+            if (deathTimer == -1)
+            {
+                deathTimer = startTimer(300);
+                revWid = NULL; // восстановление при смерти - глупость
+                revWidAnalog = -1;
+                reviveCountdown = 0;
+                ui->reviveBar->setVisible(0);
+                killTimer(reviveTimer);
+            }
+        }
+        else if (deathTimer != -1)
+        {
+            ui->console->append("stop dying");
+            killTimer(deathTimer);
+            deathTimer = -1;
+            reviveTimer = startTimer(50);
+            this->setWindowOpacity(1.0);
+        }
+
 
         //обновление интерфейса
         double speed = 1000.0/((double)(50-period))/20.0;
         ui->I->setText(QString("Доступная память: " +
                                QString::number(core->getI()) +
-                               " УБ"+
                                " "+QString::number((double)core->getIi()*20*speed)));
         ui->D->setText(QString("Быстродействие: " +
                                QString::number(period)+
@@ -191,30 +220,48 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
         if (userProgram)
         {
-            ui->bar_i->setMaximum(core->getINextRequire() + 5); // 100% возможность улучшения
-            if (core->getC() >= core->getINextRequire()+5)
-                ui->bar_i->setValue(core->getINextRequire()+5);
+            if (core->getC() >= ui->bar_i->maximum())
+            {
+                ui->bar_i->setValue(ui->bar_i->maximum());
+                ui->up_i->setEnabled(true);
+            }
             else
+            {
                 ui->bar_i->setValue(core->getC());
+                ui->up_i->setEnabled(false);
+            }
 
-            ui->bar_d->setMaximum(core->getDNextRequire() + 5); // 100% возможность улучшения
-            if (core->getC() >= core->getDNextRequire()+5)
-                ui->bar_d->setValue(core->getDNextRequire()+5);
+            if (core->getC() >= ui->bar_d->maximum())
+            {
+                ui->bar_d->setValue(ui->bar_d->maximum());
+                ui->up_d->setEnabled(true);
+            }
             else
+            {
                 ui->bar_d->setValue(core->getC());
+                ui->up_d->setEnabled(false);
+            }
 
-            ui->bar_c->setMaximum(core->getCNextRequire() + 5); // 100% возможность улучшения
-            if (core->getC() >= core->getCNextRequire()+5)
-                ui->bar_c->setValue(core->getCNextRequire()+5);
+            if (core->getC() >= ui->bar_c->maximum())
+            {
+                ui->bar_c->setValue(ui->bar_c->maximum());
+                ui->up_c->setEnabled(true);
+            }
             else
+            {
                 ui->bar_c->setValue(core->getC());
-        }
+                ui->up_c->setEnabled(false);
+            }
 
+            ui->bar_i->update();
+            ui->bar_d->update();
+            ui->bar_c->update();
+        }
     }
 
     if (t->timerId() == timer) // таймер для программ
     {
-
+        // обновление всех процессов
         if (userProgram)
             core->updateUser();
         if (wormProgram)
@@ -226,22 +273,12 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             core->getConnection()->read(); // избавление от фриза сокета
 
         if (invisProgram && isVisible())
-        {
             hide();
-        }
 
-        // обновление всех процессов
-
-        if (core->getDead()) // смерть программы естественным путем
-        {
-            killTimer(timer);
-            timer = -1;
-            deathTimer = startTimer(300);
-            return;
-        }
 
         QString str;
         Connection* connection = core->getConnection();
+        connection->ignoreConnectionChange = true;
         ui->connections->clear(); // заполнение таблицы связей
         for(int i = 0; i < connection->getTableSize(); i++)
         {
@@ -252,9 +289,12 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                     QString::number(table.useful) + " тип: "  +
                     QString::number(table.type);
             ui->connections->addItem(str);
+            if (table.selected)
+            {
+                ui->connections->setCurrentRow(i);
+            }
         }
-        //выделяем предыдущее значение
-        ui->connections->setCurrentRow(core->getConnection()->getSelectedConnection());
+        connection->ignoreConnectionChange = false;
 
 
         while(core->hasMessages())
@@ -280,7 +320,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 }
                 continue;
             }
-            else if (str.contains(" за "))
+            else if (str.contains(" за "))  // улучшение
                 ui->console->setTextColor(QColor(0,0,255));
             else if (str.contains("Запрос"))
                 ui->console->setTextColor(QColor(125,225,225));
@@ -296,12 +336,8 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             }
         }
 
-
         if (userProgram)
         {
-            ui->up_i->setEnabled(true);
-            ui->up_d->setEnabled(true);
-            ui->up_c->setEnabled(true);
             ui->attack->setEnabled(true);
             ui->help->setEnabled(true);
             ui->request->setEnabled(true);
@@ -361,8 +397,12 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
     if (t->timerId() == deathTimer) // смерть
     {
-        int disappear = 0;
-        disappear = rand()%100;
+        if (core->getDead() == false) // программу спасли
+        {
+            ui->console->append("wow i am alive");
+            return;
+        }
+
         QList<QWidget*> uiWidgets;
         uiWidgets.clear();
         QWidget* tempWid;
@@ -399,11 +439,23 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         }
         ui->console->append(QString(uiWidgets.size())+" "+fakeOutput);
 
-
+        int disappear = 0;
         if (uiWidgets.size() > 0)
         {
-            disappear = disappear % uiWidgets.size();
+            disappear = rand()%50 % uiWidgets.size();
             uiWidgets.at(disappear)->setVisible(false);
+            if (uiWidgets.at(disappear) == ui->attack || ((normalProgram || troyanProgram) && rand()%(uiWidgets.size()+1) == 0))
+                modules[0] = false;
+            if (uiWidgets.at(disappear) == ui->help || ((normalProgram || troyanProgram) && rand()%(uiWidgets.size()+1) == 0))
+                modules[1] = false;
+            if (uiWidgets.at(disappear) == ui->request || ((normalProgram || troyanProgram) && rand()%(uiWidgets.size()+1) == 0))
+                modules[2] = false;
+            if (uiWidgets.at(disappear) == ui->connections)
+                modules[3] = false;
+            if (uiWidgets.at(disappear) == ui->console)
+                modules[4] = false;
+            if (uiWidgets.at(disappear) == ui->find_state || ((normalProgram || troyanProgram) && rand()%(uiWidgets.size()+1) == 0))
+                modules[5] = false;
             setWindowOpacity(windowOpacity()-0.015);
         }
         else
@@ -426,9 +478,163 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 {
                     core->send(45454, 1, core->getType()); // сообщение лаунчеру о своей смерти
                     killTimer(deathTimer);
+                    killTimer(timer);
+                    killTimer(timerIncrease);
                     close();
                 }
             }
+        }
+    }
+
+    if (t->timerId() == reviveTimer) // восстановление
+    {
+        if (reviveCountdown == 0) // модуль починен (или начало процесса починки)
+        {
+            if (revWidAnalog == -1) // начало
+            {
+                if (userProgram || normalProgram || troyanProgram) // восстановление незначащих элементов
+                {
+                    if (!ui->myPort->isVisible()) ui->myPort->setVisible(1);
+                    if (!ui->I->isVisible()) ui->I->setVisible(1);
+                    if (!ui->D->isVisible()) ui->D->setVisible(1);
+                    if (!ui->C->isVisible()) ui->C->setVisible(1);
+                    if (!ui->temper->isVisible()) ui->temper->setVisible(1);
+                }
+
+                if (userProgram)
+                {
+                    if (!ui->up_c->isVisible()) ui->up_c->setVisible(1);
+                    if (!ui->up_d->isVisible()) ui->up_d->setVisible(1);
+                    if (!ui->up_i->isVisible()) ui->up_i->setVisible(1);
+                    if (!ui->bar_c->isVisible()) ui->bar_c->setVisible(1);
+                    if (!ui->bar_d->isVisible()) ui->bar_d->setVisible(1);
+                    if (!ui->bar_i->isVisible()) ui->bar_i->setVisible(1);
+                    if (!ui->attack_count->isVisible()) ui->attack_count->setVisible(1);
+                    if (!ui->help_count->isVisible()) ui->help_count->setVisible(1);
+                    if (!ui->request_number->isVisible()) ui->request_number->setVisible(1);
+                    if (!ui->label_help->isVisible()) ui->label_help->setVisible(1);
+                    if (!ui->label_help_2->isVisible()) ui->label_help_2->setVisible(1);
+                    if (!ui->label_help_3->isVisible()) ui->label_help_3->setVisible(1);
+                }
+            }
+            if (revWidAnalog >= 0) // модуль починен
+            {
+                if (revWid != NULL)
+                {
+                    revWid->setVisible(1);
+                    revWid = NULL;
+                }
+                switch (revWidAnalog)
+                {
+                case 0:
+                    ui->console->append("атака в норме");
+                    break;
+                case 1:
+                    ui->console->append("помощь в норме");
+                    break;
+                case 2:
+                    ui->console->append("запрос в норме");
+                    break;
+                case 3:
+                    ui->console->append("связи в норме");
+                    break;
+                case 4:
+                    ui->console->append("лог в норме");
+                    break;
+                case 5:
+                    ui->console->append("поиск в норме");
+                    break;
+                case 6:
+                    ui->console->append("прирост памяти в норме");
+                    break;
+                case 7:
+                    ui->console->append("прирост ресурса в норме");
+                    break;
+                case 8:
+                    ui->console->append("быстродействие в норме");
+                    break;
+                default:
+                    break;
+                }
+                modules[revWidAnalog] = true;
+            }
+
+            int brokens = 0; // кол-во сломанных модулей
+            for (int i = 0; i < 9; i++)
+                if (modules[i] == false) brokens++;
+            if (brokens > 0) // есть сломанные модули
+            {
+                ui->console->append(QString::number(brokens));
+                bool choosed = false;
+                while (!choosed) // выбираем модуль
+                {
+                    for (int i = 0; i < 9; i++)
+                    {
+                        if (modules[i] == false && rand()%(brokens+1) == 0)
+                        {
+                            if (userProgram || normalProgram || troyanProgram)
+                            {
+                                switch (i)
+                                {
+                                case 3:
+                                    revWid = ui->connections;
+                                    break;
+                                case 4:
+                                    revWid = ui->console;
+                                    break;
+                                default:
+                                    break;
+                                }
+                            }
+                            if (userProgram)
+                            {
+                                switch (i)
+                                {
+                                case 0:
+                                    revWid = ui->attack;
+                                    break;
+                                case 1:
+                                    revWid = ui->help;
+                                    break;
+                                case 2:
+                                    revWid = ui->request;
+                                    break;
+                                case 5:
+                                    revWid = ui->find_state;
+                                    break;
+                                default:
+                                    break;
+                                }
+                            }
+                            revWidAnalog = i;
+                            choosed = true;
+                            break;
+                        }
+                    }
+                }
+                reviveCountdown = 100 - core->getD()*5 + rand()%20;
+                if (reviveCountdown < 10) reviveCountdown = 10;
+                ui->reviveBar->setMaximum(reviveCountdown);
+                ui->reviveBar->setValue(0);
+                ui->reviveBar->setVisible(1);
+            }
+            else
+            {
+                ui->console->append("end heal");
+                revWid = NULL;
+                revWidAnalog = -1;
+                reviveCountdown = 0;
+                ui->reviveBar->setVisible(0);
+                killTimer(reviveTimer);
+                deathTimer = -1;
+            }
+
+
+        }
+        else
+        {
+            reviveCountdown--;
+            ui->reviveBar->setValue(ui->reviveBar->maximum() - reviveCountdown);
         }
     }
 
@@ -568,7 +774,6 @@ void Widget::mouseMoveEvent(QMouseEvent *mEv)
 
 void Widget::mousePressEvent(QMouseEvent *mEv)
 {
-
     if (width() == 700 && mEv->button() == Qt::LeftButton)
     {
         particles.setSpawn(mEv->x(), mEv->y());
@@ -578,6 +783,18 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
     {
         education++;
         educate();
+    }
+
+    if (education == 0 && troyanProgram)
+    {
+        ui->console->setTextColor(Qt::red);
+        qreal ps = ui->console->fontPointSize();
+        ui->console->setFontPointSize(16);
+        ui->console->setFontItalic(1);
+        ui->console->append("НЕ СМЕЙ ТРОГАТЬ МЕНЯ!");
+        ui->console->setFontPointSize(ps);
+        ui->console->setFontItalic(0);
+        education = 2000;
     }
 
     if (mEv->button() == Qt::LeftButton)
@@ -593,7 +810,6 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
     {
         exit(0);
     }
-
 
 
 }
@@ -932,15 +1148,12 @@ void Widget::initGUI()
             ui->request_number->setEnabled(1);
 
             ui->up_i->setVisible(1);
-            ui->up_i->setEnabled(1);
             ui->bar_i->setVisible(1);
 
             ui->up_c->setVisible(1);
-            ui->up_c->setEnabled(1);
             ui->bar_c->setVisible(1);
 
             ui->up_d->setVisible(1);
-            ui->up_d->setEnabled(1);
             ui->bar_d->setVisible(1);
 
             ui->find_state->setEnabled(1);
@@ -1097,6 +1310,8 @@ void Widget::disableGUI()
     ui->label_help->setVisible(0);
     ui->label_help_2->setVisible(0);
     ui->label_help_3->setVisible(0);
+
+    ui->reviveBar->setVisible(0);
 }
 
 void Widget::setAlive(int norm, int user, int bot)
@@ -1632,7 +1847,7 @@ void Widget::on_help_clicked() // помощь пользователя выбр
     if (index > -1) //если выбрано
     {
         int i = ui->help_count->text().toInt();
-        if (core->getI() >= i &&
+        if (core->getI() > i+1 &&
                 core->getConnection()->getTable(index).useful >= 1 &&
                 i > 0) // если достаточно
         {
@@ -1694,18 +1909,6 @@ void Widget::on_request_clicked()
 }
 
 
-void Widget::on_connections_itemSelectionChanged() // выбран другой элемент
-{
-    if (core != NULL) // если класс Core создан
-    {
-        // запоминаем новое выделение
-        core->getConnection()->setSelectedConnection(ui->connections->currentRow());
-        // не работает как надо! на alpha 0.3.6 по прежнему не понимаю
-    }
-}
-
-
-
 void Widget::on_find_state_toggled(bool checked) // переключен автопоиск (пользователь)
 {
     core->setSearch(checked);
@@ -1726,7 +1929,6 @@ void Widget::on_up_c_clicked()
         return;
     }
 
-
     if (!ui->up_d->isVisible()) // если это кнопка конца уровня
     {               // ^ костыль - если не видна кнопка другого улучшения, то это точно не юзер
         if (connection != NULL) // если связь подключена
@@ -1745,6 +1947,7 @@ void Widget::on_up_c_clicked()
             ui->console->append("Недостаточно ресурсов");
         }
         ui->up_c->setEnabled(false);
+        ui->bar_c->setMaximum(core->getCNextRequire() + 5);
     }
 }
 
@@ -1769,6 +1972,7 @@ void Widget::on_up_d_clicked()
             ui->console->append("Недостаточно ресурсов");
         }
         ui->up_d->setEnabled(false);
+        ui->bar_d->setMaximum(core->getDNextRequire() + 5);
     }
 }
 
@@ -1790,6 +1994,7 @@ void Widget::on_up_i_clicked()
             ui->console->append("Недостаточно ресурсов");
         }
         ui->up_i->setEnabled(false);
+        ui->bar_i->setMaximum(core->getINextRequire() + 5);
     }
 }
 
@@ -1824,5 +2029,14 @@ void Widget::on_launcherTab_currentChanged(int index)
                                  "которые раньше подавлялись Сервером. Тупо угарнуть, пройти пока нельзя. Можно придумать тут миниквест, но я вообще думаю над тем,"
                                  " чтобы убрать этот режим в другую игру в другом виде. Идеи уже есть...");
         }
+    }
+}
+
+
+void Widget::on_connections_currentRowChanged(int currentRow)
+{
+    if (!core->getConnection()->ignoreConnectionChange)
+    {
+        core->getConnection()->setSelectedConnection(currentRow);
     }
 }

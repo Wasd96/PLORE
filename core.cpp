@@ -26,6 +26,8 @@ Core::Core()
 
     requestAttack = -1;
     requestAttackSender = -1;
+
+    nextRecount();
 }
 
 Core::Core(double _I, int _D, double _C, int _temper, double _Ii, double _Ci, int _type, bool _silent)
@@ -53,6 +55,8 @@ Core::Core(double _I, int _D, double _C, int _temper, double _Ii, double _Ci, in
 
     requestAttack = -1;
     requestAttackSender = -1;
+
+    nextRecount();
 }
 
 Core::~Core()
@@ -135,6 +139,7 @@ void Core::upgradeI()
     if (timeToUpgrade >= (int)(coeff))
         messages.append("Все системы в норме.");
     timeToUpgrade = 0;
+    nextRecount();
 }
 
 void Core::upgradeD()
@@ -147,6 +152,7 @@ void Core::upgradeD()
     if (timeToUpgrade >= (int)(coeff))
         messages.append("Все системы в норме.");
     timeToUpgrade = 0;
+    nextRecount();
 }
 
 void Core::upgradeC()
@@ -158,32 +164,24 @@ void Core::upgradeC()
     if (timeToUpgrade >= (int)(coeff))
         messages.append("Все системы в норме.");
     timeToUpgrade = 0;
+    nextRecount();
 }
 
 void Core::deathRecountRealloc()
 {
-    if (In <= 0)
+    if (In < 1)
     {
         In = 0;
-        //messages.append("gonna die");
-        if (dead)
-            return;
-        else
-        {
-            dead = true; // смерть
-            //messages.append("died");
-            return;
-        }
+        dead = true; // смерть
+        return;
+    }
+    else if (dead && In > 0) // спасение
+    {
+        dead = false;
     }
 
     In += Ii; // прирост памяти
     Cn += Ci; // предел не нужен при динамичной игре
-    /*if (Cn < In) // предел ресурса
-    {
-        Cn += Ci; // прирост ресурса
-        if (Cn > In) // специально для Димы
-            Cn = In;
-    }*/
 
     I = (int*)realloc(I, In*sizeof(int)); // перевыделение памяти
     D = (double*)(realloc(D, Dn*sizeof(double))); // по факту незаметна разница
@@ -215,27 +213,11 @@ void Core::findConnections()
         }
         send(port+50000, 0); // отправка поискового сообщения
         Cn -= 1; // стоимость поиска
-        //messages.append("Поиск -> " + QString::number(port)); // отчет
         messages.append("Поиск...");
 
         searchTimeOut = 0;
     }
     searchTimeOut++;
-}
-
-int Core::getINextRequire()
-{
-    return (int)(pow((30*Ii+2),3)*2); // 30!
-}
-
-int Core::getDNextRequire()
-{
-    return (int)(pow(Dn, 1.8)*5 + 10);
-}
-
-int Core::getCNextRequire()
-{
-    return (int)(pow((10*Ci+1),2)*6); // 10!
 }
 
 void Core::connectionSupport() // проверка связи с существующими соединениями
@@ -246,10 +228,7 @@ void Core::connectionSupport() // проверка связи с существ�
         {
             messages.append("Соединение с " + QString::number(connection->getTable(i).port%1000) + " было потеряно.");
             connection->deleteTable(i); // удаление записи
-            if (connection->getTableSize() > 0)
-                connection->setSelectedConnection(connection->getTableSize()/2);
-            else
-                connection->setSelectedConnection(-1); // подумать над этим
+            break;
         }
         else
         {
@@ -342,7 +321,7 @@ void Core::operateDataFromConnection()
                 }
                 if (targetIndex == -1) // это новая связь
                 {
-                    connectTable table = {targetPort, -40, 0, 0, targetType, 0};
+                    connectTable table = {targetPort, -40, 0, 0, targetType, 0, false};
                     connection->createTable(table); // создание такой связь
                     send(targetPort, 0); // добавление себя в список цели
                     for (int i = 0; i < connection->getTableSize(); i++)
@@ -400,16 +379,20 @@ void Core::operateDataFromConnection()
                      strList.at(2) != "1" &&
                      strList.at(2) != "2" &&
                      strList.at(2) != "6" &&
-                     strList.at(2) != "88")
+                     strList.at(2) != "88" &&
+                     strList.at(2) != "70" &&
+                     strList.at(2) != "71")
             {
                 messages.append(str);
             }
         }
         else if (strList.at(2) != "0" &&
-                 strList.at(0) != "1" &&
-                 strList.at(0) != "2" &&
-                 strList.at(0) != "6" &&
-                 strList.at(0) != "88")
+                 strList.at(2) != "1" &&
+                 strList.at(2) != "2" &&
+                 strList.at(2) != "6" &&
+                 strList.at(2) != "88" &&
+                 strList.at(2) != "70" &&
+                 strList.at(2) != "71")
         {
             messages.append(str);
         }
@@ -419,6 +402,13 @@ void Core::operateDataFromConnection()
 void Core::coeffRecount()
 {
     coeff = (20*Ii+20*Ci+Dn)*20.0; // коэффициент желания апгрейда
+}
+
+void Core::nextRecount()
+{
+    INextRequired = pow((30*Ii+2),3)*2; // 30!
+    DNextRequired = pow(Dn, 1.8)*5 + 10;
+    CNextRequired = pow((10*Ci+1),2)*6; // 10!
 }
 
 void Core::update()
@@ -500,29 +490,6 @@ void Core::update()
             && type != 3 // сервер не помогает
             && rand()%20 == 0) // запрос боевой помощи
     {
-        /*int enemyIndex = -1;
-        int friendIndex = -1;
-
-        for (int i = 0; i < connection->getTableSize()/2; i++) // выбор врага
-            if (connection->getTable(i).relationship <= -20) // к врагу нужно относиться плохо
-                if (rand()%(2+4*(5+connection->getTable(i).relationship/10)) == 0)
-                {        // ^ 2 - если отношение -50, 6 - если отн. -40, 10 при -30
-                    enemyIndex = i;
-                    break;
-                }
-        for (int i = connection->getTableSize()-1; i > connection->getTableSize()/2; i--) // выбор помощника
-            if (connection->getTable(i).relationship >= 20) // друг должен быть дургом
-                if (rand()%(2+4*(5-connection->getTable(i).relationship/10)) == 0)
-                {        // ^ 2 - если отношение 50, 6 - если отн. 40, 10 при 30
-                    friendIndex = i;
-                    break;
-                }
-        if (friendIndex > -1 && enemyIndex > -1) // найдены враг и друг
-        {
-            request(connection->getTable(friendIndex).port, connection->getTable(enemyIndex).port);
-        }*/
-
-        // ^ старый способ, пусть лучше берут злейшего врага и лучшего друга
         if (connection->getTableSize() >= 2)
         {
             if (connection->getTable(0).relationship <= -20
@@ -535,7 +502,6 @@ void Core::update()
 
 
     }
-
 
 
     if (!op && Cn >= connection->getTableSize()*50+50
@@ -558,7 +524,6 @@ void Core::update()
 
     connectionSupport(); // поддержка связи
     operateDataFromConnection(); // обработка сообщений
-
 
     if (timeToUpgrade == (int)(1.0*coeff))
         messages.append("Желательна оптимизация: атака неактивна.");

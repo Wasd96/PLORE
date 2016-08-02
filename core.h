@@ -30,6 +30,9 @@ private:
     int requestAttack; // порт, который просили атаковать (для юзера)
     int requestAttackSender; // порт просящего атаку
 
+
+    double INextRequired, DNextRequired, CNextRequired;
+
     QList<QString> messages;
 
 public:
@@ -43,6 +46,7 @@ public:
     void connectionSupport();
     void operateDataFromConnection();
     void coeffRecount();
+    void nextRecount();
 
     void send(quint16 port, int _type);
     void send(quint16 port, int _type, int amount);
@@ -71,9 +75,9 @@ public:
     double getCi() { return Ci; }
     int getType() { return type; }
     bool getDead() { return dead; }
-    int getINextRequire();
-    int getDNextRequire();
-    int getCNextRequire();
+    int getINextRequire() { return INextRequired; }
+    int getDNextRequire() { return DNextRequired; }
+    int getCNextRequire() { return CNextRequired; }
     QString getMessage() { return messages.takeFirst(); }
 };
 

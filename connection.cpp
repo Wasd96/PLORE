@@ -90,6 +90,7 @@ void Connection::sendData(quint16 port, int Mtype, int amount)
 }
 
 
+
 void Connection::readData() // прием данных
 {
     QHostAddress host;
@@ -122,14 +123,17 @@ void Connection::readData() // прием данных
             }
         }
 
+
         if (numb != -1) // если было
         {
             if (strList.first() == "1") // проверка связи
             {
+                //data.append("proverka svyazi " + QString::number(port));
                 sendData(port, 2);
             }
             if (strList.first() == "2") // подтверждение связи
             {
+                //data.append("podtverzhdenie svyazi " + QString::number(numb));
                 table[numb].lostSignal = 0; // обновление тайм-аута
             }
 
@@ -154,13 +158,8 @@ void Connection::readData() // прием данных
                     }
                 }
             }
-            /*if (strList.first() == "4") // помощь памятью
-            {
-                table[numb].useful += 7; // добро увеличивается ^^
-                if (table.at(numb).useful > 50)  table[numb].useful = 50;
-                table[numb].relationship+=5; // улучшение отношений
-                if (table.at(numb).relationship > 50) table[numb].relationship = 50;
-            }*/
+            // помощь памятью обрабатывается в core, так как нужно кол-во "памяти"
+
             if (strList.first() == "6") // ответ на запрос помощи в бою (успешная атака)
             {
                 table[numb].useful += 15; // добро увеличивается ^^
@@ -180,9 +179,9 @@ void Connection::readData() // прием данных
                 newTable.useful = rand()%2;
                 newTable.port = port;
                 newTable.lostSignal = 0;
+                newTable.selected = false;
 
-                table.append(newTable); // добавление в таблицу
-                sortTable();
+                createTable(newTable); // добавление в таблицу
                 sendData(port, 0); // ответное соединение
                                    //(чтобы отправитель знал о существовании принявшего)
 
@@ -237,6 +236,28 @@ void Connection::createTable(connectTable _table)
     sortTable();
 }
 
+void Connection::deleteTable(int pos)
+{
+    if (table.at(pos).selected == true)
+        setSelectedConnection(-1);
+    ignoreConnectionChange = true;
+    table.removeAt(pos);
+    ignoreConnectionChange = false;
+}
+
+
+void Connection::setSelectedConnection(int index)
+{
+    for (int i = 0; i < table.size(); i++)
+        table[i].selected = false;
+
+    if (index >= 0 && index < table.size() && !ignoreConnectionChange)
+    {
+        table[index].selected = true;
+
+    }
+}
+
 void Connection::sortTable() // сортировка по возрастанию
 {
     bool change = true;
@@ -247,8 +268,8 @@ void Connection::sortTable() // сортировка по возрастанию
         {
             if (table.at(i).relationship > table.at(i+1).relationship)
             {
-                if (selectedConnection == i) selectedConnection = i+1;
-                else if (selectedConnection == i+1) selectedConnection = i; //так же сдвигаем и выбранную строку
+                //if (table.at(i).selected) setSelectedConnection(i+1);
+                //else if (table.at(i+1).selected) setSelectedConnection(i); //так же сдвигаем и выбранную строку
                 table.swap(i, i+1);
                 change = true;
             }
@@ -258,8 +279,8 @@ void Connection::sortTable() // сортировка по возрастанию
                 {
                     if (table.at(i).useful > table.at(i+1).useful) // то сортировка по пользе
                     {
-                        if (selectedConnection == i) selectedConnection = i+1;
-                        else if (selectedConnection == i+1) selectedConnection = i;
+                        //if (table.at(i).selected) setSelectedConnection(i+1);
+                        //else if (table.at(i+1).selected) setSelectedConnection(i);
                         table.swap(i, i+1);
                         change = true;
                     } // аттракцион - скатись по горке!
