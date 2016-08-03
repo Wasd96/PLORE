@@ -27,6 +27,9 @@ Core::Core()
     requestAttack = -1;
     requestAttackSender = -1;
 
+    for (int i =0; i < 9; i++)
+        modules[i] = true;
+
     nextRecount();
 }
 
@@ -56,6 +59,9 @@ Core::Core(double _I, int _D, double _C, int _temper, double _Ii, double _Ci, in
     requestAttack = -1;
     requestAttackSender = -1;
 
+    for (int i =0; i < 9; i++)
+        modules[i] = true;
+
     nextRecount();
 }
 
@@ -82,8 +88,8 @@ void Core::attack(quint16 port, int amount)
     QString str;
     send(port, 3, amount);
     Cn -= amount;
-    str = "Атака -> " +QString::number(port%1000)+
-          " (" + QString::number(amount) + " ресурса).";
+    str = "Атака " +QString::number(port%1000)+
+          " мощностью в " + QString::number(amount) + " ресурса";
     if (port == requestAttack && type == 1)
     {
         send(requestAttackSender, 6);
@@ -106,7 +112,7 @@ void Core::help(quint16 port, int amount)
     connection->setUseful(index, connection->getTable(index).useful-5);
     Cn -= amount/5;
     In -= amount;
-    str = "Помощь -> "+ QString::number(connection->getTable(index).port%1000)+ " ("+QString::number(amount) + " памяти).";
+    str = "Отправлено " + QString::number(amount) + " памяти к "+ QString::number(connection->getTable(index).port%1000);
     messages.append(str);
 
 }
@@ -123,7 +129,7 @@ void Core::request(quint16 portHelper, quint16 portEnemy)
             index = i; // номер помощника в таблице
     }
     connection->setUseful(index, connection->getTable(index).useful-10);
-    str = "Запрос боевой помощи -> "+
+    str = "Запрос боевой помощи у "+
             QString::number(portHelper%1000) +
             " в борьбе с " +
             QString::number(portEnemy%1000);
@@ -135,9 +141,9 @@ void Core::upgradeI()
     int decrease = rand()%5 + getINextRequire();
     Cn -= decrease;
     Ii += 0.05;
-    messages.append("Убраны утечки памяти (прирост памяти +1) за " + QString::number(decrease) +" ресурса");
+    messages.append("Убраны утечки памяти (выделение памяти +1 за " + QString::number(decrease) +")");
     if (timeToUpgrade >= (int)(coeff))
-        messages.append("Все системы в норме.");
+        messages.append("Оптимизация не требуется.");
     timeToUpgrade = 0;
     nextRecount();
 }
@@ -148,9 +154,9 @@ void Core::upgradeD()
     int decrease = getDNextRequire(); // стоимость
     Cn -= decrease;
     Dn += 1;
-    messages.append("Оптимизированы команды процессора (+"+QString::number(1)+") за " +QString::number(decrease) +" ресурса");
+    messages.append("Оптимизированы команды процессора (+"+QString::number(1)+" за " +QString::number(decrease) +")");
     if (timeToUpgrade >= (int)(coeff))
-        messages.append("Все системы в норме.");
+        messages.append("Оптимизация не требуется.");
     timeToUpgrade = 0;
     nextRecount();
 }
@@ -160,9 +166,9 @@ void Core::upgradeC()
     int decrease = rand()%5 + getCNextRequire();
     Cn -= decrease;
     Ci += 0.1;
-    messages.append("Улучшены алгоритмы (прирост ресурса +2) за " + QString::number(decrease) +" ресурса");
+    messages.append("Улучшены алгоритмы (генерация ресурса +2 за " + QString::number(decrease) + ")");
     if (timeToUpgrade >= (int)(coeff))
-        messages.append("Все системы в норме.");
+        messages.append("Оптимизация не требуется.");
     timeToUpgrade = 0;
     nextRecount();
 }
@@ -180,8 +186,8 @@ void Core::deathRecountRealloc()
         dead = false;
     }
 
-    In += Ii; // прирост памяти
-    Cn += Ci; // предел не нужен при динамичной игре
+    if (modules[6] == true) In += Ii; // прирост памяти, если модуль в порядке
+    if (modules[7] == true) Cn += Ci; // прирост ресурса, если модуль в порядке
 
     I = (int*)realloc(I, In*sizeof(int)); // перевыделение памяти
     D = (double*)(realloc(D, Dn*sizeof(double))); // по факту незаметна разница
@@ -265,14 +271,23 @@ void Core::operateDataFromConnection()
                     decreaseC = amount*cof;
                     decreaseI = amount*(1-cof);
                 }
+
+                int percentage = (double)(decreaseC)/Cn*100;
+                if (percentage > 100) percentage = 100;
+                for (int i = 0; i < 9; i++)
+                {
+                    if (rand()%(105-percentage) < 3)
+                        modules[i] = false;
+                }
+
                 Cn -= decreaseC;
                 In -= decreaseI;
                 str = QString::number(port%1000) +
-                        "-> Атака! (-" +
+                        " -> Атака! Потеряно " +
                         QString::number(decreaseC) +
-                        " ресурса, -" +
+                        " ресурса, " +
                         QString::number(decreaseI) +
-                        " памяти).";
+                        " памяти";
                 messages.append(str);
             }
 
@@ -299,9 +314,9 @@ void Core::operateDataFromConnection()
                 if (connection->getTable(i).relationship > 50) connection->setRelationship(i, 50);;
 
                 str = QString::number(port%1000) +
-                        "-> Помощь (+" +
+                        " -> Помощь. Принято " +
                         QString::number((int)amount) +
-                        " памяти).";
+                        " памяти";
                 messages.append(str);
             }
 
@@ -338,7 +353,7 @@ void Core::operateDataFromConnection()
                     if (type != 1) // если это не человек
                     {
                         str = QString::number(senderPort%1000) +
-                              "-> просит помощи в борьбе с " +
+                              " -> просит помощи в борьбе с " +
                               QString::number(targetPort%1000);
                         messages.append(str);
 
@@ -356,18 +371,18 @@ void Core::operateDataFromConnection()
                             }
                             else
                             {
-                                messages.append("Запрос отклонен - Недостаточно ресурсов для атаки.");
+                                messages.append("Запрос отклонен - недостаточно ресурсов для атаки");
                             }
                         }
                         else
                         {
-                            messages.append("Запрос отклонен - плохое отношение с отправителем.");
+                            messages.append("Запрос отклонен - плохое отношение с отправителем");
                         }
                     }
                     else // если человек
                     {
                         str = QString::number(senderPort%1000) +
-                              "-> просит помощи в борьбе с " +
+                              " -> просит помощи в борьбе с " +
                               QString::number(targetPort%1000);
                         requestAttack = targetPort;
                         requestAttackSender = senderPort;
@@ -386,13 +401,13 @@ void Core::operateDataFromConnection()
                 messages.append(str);
             }
         }
-        else if (strList.at(2) != "0" &&
+        else /*if (strList.at(2) != "0" &&
                  strList.at(2) != "1" &&
                  strList.at(2) != "2" &&
                  strList.at(2) != "6" &&
                  strList.at(2) != "88" &&
                  strList.at(2) != "70" &&
-                 strList.at(2) != "71")
+                 strList.at(2) != "71")*/
         {
             messages.append(str);
         }
@@ -436,7 +451,8 @@ void Core::update()
     if (!op && Cn > In/20
             && In > 100
             && timeToUpgrade < (int)(1.4*coeff)
-            && rand()%10 == 0) // помощь
+            && rand()%10 == 0
+            && modules[1] == true) // помощь
     {
         for (int i = 0; i < connection->getTableSize(); i++)
         {
@@ -462,7 +478,8 @@ void Core::update()
     if (!op && Cn > In/10
             && In > 40
             && timeToUpgrade < (int)(1.0*coeff)
-            && rand()%10 == 0) // атака
+            && rand()%10 == 0
+            && modules[0] == true) // атака
     {
         for (int i = 0; i < connection->getTableSize(); i++)
         {
@@ -488,7 +505,8 @@ void Core::update()
     if (!op && Cn > 20
             && timeToUpgrade < (int)(1.4*coeff)
             && type != 3 // сервер не помогает
-            && rand()%20 == 0) // запрос боевой помощи
+            && rand()%20 == 0
+            && modules[2] == true) // запрос боевой помощи
     {
         if (connection->getTableSize() >= 2)
         {
@@ -505,7 +523,8 @@ void Core::update()
 
 
     if (!op && Cn >= connection->getTableSize()*50+50
-            && timeToUpgrade < (int)(1.7*coeff))    // поиск связей
+            && timeToUpgrade < (int)(1.7*coeff)
+            && modules[5] == true)    // поиск связей
     {
         findConnections();
         op = true;
@@ -518,7 +537,7 @@ void Core::update()
             In -= 25;
             Cn -= 50;
             send(45454, 80);
-            messages.append("Скомпилирован новый червь! (-25 памяти, -100 ресурса)");
+            messages.append("Скомпилирован новый червь за 25 памяти, 50 ресурса");
         }
     }
 
@@ -526,11 +545,11 @@ void Core::update()
     operateDataFromConnection(); // обработка сообщений
 
     if (timeToUpgrade == (int)(1.0*coeff))
-        messages.append("Желательна оптимизация: атака неактивна.");
+        messages.append("Желательна оптимизация: атака неактивна");
     if (timeToUpgrade == (int)(1.4*coeff))
-        messages.append("Требуется оптимизация: помощь неактивна.");
+        messages.append("Требуется оптимизация: помощь неактивна");
     if (timeToUpgrade == (int)(1.7*coeff))
-        messages.append("Необходима оптимизация: поиск портов отключен.");
+        messages.append("Необходима оптимизация: поиск портов отключен");
     timeToUpgrade++;
 }
 
@@ -538,7 +557,7 @@ void Core::updateUser() // пользовательский апдейт
 {
     connection->sortTable();
 
-    if (search && Cn > 1) // поиск
+    if (search && Cn > 1 && modules[5] == true) // поиск
     {
         findConnections();
     }
@@ -552,7 +571,7 @@ void Core::updateWorm()
     connection->sortTable();
     bool op = false;
 
-    if (!op) // помощь
+    if (!op && modules[1] == true) // помощь
     {
         for (int i = 0; i < connection->getTableSize(); i++)
         {
@@ -568,7 +587,7 @@ void Core::updateWorm()
         }
     }
 
-    if (!op && Cn > 10) // атака
+    if (!op && Cn > 10 && modules[0] == true) // атака
     {
         for (int i = 0; i < connection->getTableSize(); i++)
         {
@@ -582,7 +601,7 @@ void Core::updateWorm()
         }
     }
 
-    if (Cn > 1) // поиск
+    if (Cn > 1 && modules[5] == true) // поиск
     {
         findConnections();
     }

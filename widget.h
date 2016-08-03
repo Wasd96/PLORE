@@ -97,7 +97,8 @@ private:
     int reviveCountdown; // время восстановления
     QWidget* revWid; // указатель на воскрешаемый виджет
     int revWidAnalog; // номер модуля, невидимые у неюзера
-    bool modules[9];
+    int realD; // сохранение реального быстродействия
+    bool signedModules[9]; // уже описанные повреждения
 };
 
 #endif // WIDGET_H

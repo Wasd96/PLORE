@@ -36,6 +36,9 @@ private:
     QList<QString> messages;
 
 public:
+    bool modules[9];
+
+public:
     Core();
     Core(double _I, int _D, double _C, int _temper, double _Ii, double _Ci, int _type, bool _silent);
     ~Core();

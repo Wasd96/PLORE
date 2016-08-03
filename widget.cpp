@@ -40,8 +40,9 @@ Widget::Widget(QWidget *parent) :
     reviveCountdown = 0;
     revWid = NULL;
     revWidAnalog = -1;
+    realD = 0;
     for (int i = 0; i < 9; i++)
-        modules[i] = true;
+        signedModules[i] = false;
 
     core = NULL;
     connection = NULL;
@@ -198,7 +199,6 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         }
         else if (deathTimer != -1)
         {
-            ui->console->append("stop dying");
             killTimer(deathTimer);
             deathTimer = -1;
             reviveTimer = startTimer(50);
@@ -218,7 +218,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                                QString::number(core->getC())+
                                " "+QString::number((double)(core->getCi()*20*speed))));
 
-        if (userProgram)
+        if (userProgram) // статус-бары апргейдов
         {
             if (core->getC() >= ui->bar_i->maximum())
             {
@@ -296,44 +296,141 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         }
         connection->ignoreConnectionChange = false;
 
-
+        bool attacked = false;
         while(core->hasMessages())
         {
             QString str = core->getMessage(); // подсветка сообщений разного типа по ключевым словам
             if (str.size() > 0)
             {
-            if (str.contains("Атака!"))
+            if (str.contains("Атака!")) // был атакован
+            {
+                str.prepend("@ ");
+                ui->console->setFontPointSize(10);
+                ui->console->setFontWeight(60);
                 ui->console->setTextColor(QColor(255,0,0));
-            else if (str.contains("Атака ->"))
-                ui->console->setTextColor(QColor(140,210,0));
-            else if (str.contains("Помощь ->"))
-                ui->console->setTextColor(QColor(210,110,0));
-            else if (str.contains("-> Помощь"))
-                ui->console->setTextColor(QColor(0,255,0));
+                attacked = true;
+            }
+            else if (str.contains("мощностью")) // атака
+            {
+                str.prepend("~ ");
+                ui->console->setFontPointSize(10);
+                ui->console->setFontItalic(1);
+                ui->console->setTextColor(QColor(100,200,0));
+            }
+            else if (str.contains("Отправлено")) // помощь
+            {
+                str.prepend("~ ");
+                ui->console->setFontPointSize(10);
+                ui->console->setFontItalic(1);
+                ui->console->setTextColor(QColor(180,100,0));
+            }
+            else if (str.contains("-> Помощь")) // принял помощь
+            {
+                str.prepend("@ ");
+                ui->console->setFontPointSize(10);
+                ui->console->setFontWeight(60);
+                ui->console->setTextColor(QColor(0,180,0));
+            }
             else if (str.contains("Поиск"))
             {
                 ui->console->setTextColor(QColor(100,100,100));
                 if (maxLevel == 0)
                 {
+                    ui->console->setFontPointSize(7);
                     maxLevel = 1;
                     ui->console->append(str);
+                    ui->console->setFontPointSize(8);
+                    ui->console->setFontItalic(0);
+                    ui->console->setFontWeight(50);
                 }
                 continue;
             }
             else if (str.contains(" за "))  // улучшение
-                ui->console->setTextColor(QColor(0,0,255));
+            {
+                str.prepend("^ ");
+                ui->console->setTextColor(QColor(0,0,150));
+            }
             else if (str.contains("Запрос"))
-                ui->console->setTextColor(QColor(125,225,225));
+            {
+                str.prepend("~ ");
+                ui->console->setFontPointSize(10);
+                ui->console->setFontItalic(1);
+                ui->console->setTextColor(QColor(12,200,200));
+            }
             else if (str.contains("просит"))
-                ui->console->setTextColor(QColor(125,225,225));
+            {
+                str.prepend("@ ");
+                ui->console->setFontPointSize(10);
+                ui->console->setFontWeight(60);
+                ui->console->setTextColor(QColor(120,200,200));
+            }
             else if (str.contains("Скомпилирован"))
+            {
                 ui->console->setTextColor(QColor(100,80,80));
+            }
             else
                 ui->console->setTextColor(QColor(0,0,0));
 
             ui->console->append(str);
+            ui->console->setFontPointSize(8);
+            ui->console->setFontItalic(0);
+            ui->console->setFontWeight(50);
             maxLevel = 0;
             }
+        }
+        if (attacked)
+        {
+            for (int i = 0; i < 9; i++)
+            {
+                if (core->modules[i] == false && signedModules[i] == false)
+                {
+                    signedModules[i] = true;
+                    ui->console->setTextColor(QColor(200,0,0));
+                    switch (i)
+                    {
+                    case 0:
+                        ui->attack->setVisible(0);
+                        ui->console->append("- Поврежден модуль атаки");
+                        break;
+                    case 1:
+                        ui->help->setVisible(0);
+                        ui->console->append("- Поврежден модуль помощи");
+                        break;
+                    case 2:
+                        ui->request->setVisible(0);
+                        ui->console->append("- Поврежден модуль запроса помощи");
+                        break;
+                    case 3:
+                        ui->connections->setVisible(0);
+                        ui->console->append("- Поврежден модуль связей");
+                        break;
+                    case 4:
+                        ui->console->setVisible(0);
+                        ui->console->append("- Поврежден модуль отображения");
+                        break;
+                    case 5:
+                        ui->find_state->setVisible(0);
+                        ui->console->append("- Поврежден модуль поиска");
+                        break;
+                    case 6:
+                        ui->console->append("- Поврежден модуль выделения памяти");
+                        break;
+                    case 7:
+                        ui->console->append("- Поврежден модуль генерации ресурса");
+                        break;
+                    case 8:
+                        ui->console->append("- Поврежден модуль процессора");
+                        realD = core->getD();
+                        core->setD(core->getD()/2);
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            }
+            attacked = false;
+            if (!wormProgram)
+                reviveTimer = startTimer(50);
         }
 
         if (userProgram)
@@ -352,45 +449,41 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             timerIncrease = startTimer(1000/(50-period));
         }
 
-        if (educateProgram && (education < 18 || education > 35))
+        if (educateProgram && education < 18)
         {
-            switch (education) {
-            case 1: ui->console->append("$$p^0г3 v5.@#"); break;
-            case 2: ui->console->append("$$rt>;ln#"); break;
-            case 3: ui->console->append("$$дwn1d_3ncгypT45@6#"); break;
-            case 4: ui->console->append("%№.\\\":"); break;
-            case 5: ui->console->append("Усt.;вka Д3к0дера..*"); break;
-            case 6: ui->console->append("..."); break;
-            case 7: ui->console->append("Активация системы связи..."); break;
-            case 8: ui->console->append("Ок"); break;
-            case 9: ui->console->append("Активация нейронных сетей..."); break;
-            case 10: ui->console->append("Ок"); break;
-            case 11: ui->console->append("Загрузка приоритетов..."); break;
-            case 12: ui->console->append("~!;"); break;
-            case 13: ui->console->append("Подготовка..."); break;
-            case 14: break;
-            case 15: break;
-            case 16: break;
-            case 17:
-                core->setD(5);
-                period = 5;
-                killTimer(timer);
-                killTimer(timerIncrease);
-                timer = startTimer(1000/period);
-                timerIncrease = startTimer(1000/(50-period));
-                break;
-            default: break;
+            switch (education)
+            {
+                case 1: ui->console->append("$$p^0г3 v5.@#"); break;
+                case 2: ui->console->append("$$rt>;ln#"); break;
+                case 3: ui->console->append("$$дwn1d_3ncгypT45@6#"); break;
+                case 4: ui->console->append("%№.\\\":"); break;
+                case 5: ui->console->append("Усt.;вka Д3к0дера..*"); break;
+                case 6: ui->console->append("..."); break;
+                case 7: ui->console->append("Активация системы связи..."); break;
+                case 8: ui->console->append("Ок"); break;
+                case 9: ui->console->append("Активация нейронных сетей..."); break;
+                case 10: ui->console->append("Ок"); break;
+                case 11: ui->console->append("Загрузка приоритетов..."); break;
+                case 12: ui->console->append("~!;"); break;
+                case 13: ui->console->append("Подготовка..."); break;
+                case 14: break;
+                case 15: break;
+                case 16: break;
+                case 17:
+                    core->setD(5);
+                    period = 4;
+                    core->nextRecount();
+                    ui->bar_d->setMaximum(core->getDNextRequire() + 5);
+                    break;
+                default: break;
             }
             education++;
-            if (education >= 18) educate(); // переход на нажатия вместо таймера
+            if (education == 18)
+                educate(); // переход на нажатия вместо таймера
         }
-
-        if (educateProgram && education >= 31 && education <= 32)
+        if (educateProgram && education == 36)
         {
-            for (int i = 50000; i < 50200; i++)
-                if (i != core->getConnection()->getPort())
-                    core->send(i, 0); // нужно ли?
-
+            educate();
             education++;
         }
     }
@@ -398,10 +491,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
     if (t->timerId() == deathTimer) // смерть
     {
         if (core->getDead() == false) // программу спасли
-        {
-            ui->console->append("wow i am alive");
             return;
-        }
 
         QList<QWidget*> uiWidgets;
         uiWidgets.clear();
@@ -445,17 +535,17 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             disappear = rand()%50 % uiWidgets.size();
             uiWidgets.at(disappear)->setVisible(false);
             if (uiWidgets.at(disappear) == ui->attack || ((normalProgram || troyanProgram) && rand()%(uiWidgets.size()+1) == 0))
-                modules[0] = false;
+                core->modules[0] = false;
             if (uiWidgets.at(disappear) == ui->help || ((normalProgram || troyanProgram) && rand()%(uiWidgets.size()+1) == 0))
-                modules[1] = false;
+                core->modules[1] = false;
             if (uiWidgets.at(disappear) == ui->request || ((normalProgram || troyanProgram) && rand()%(uiWidgets.size()+1) == 0))
-                modules[2] = false;
+                core->modules[2] = false;
             if (uiWidgets.at(disappear) == ui->connections)
-                modules[3] = false;
+                core->modules[3] = false;
             if (uiWidgets.at(disappear) == ui->console)
-                modules[4] = false;
+                core->modules[4] = false;
             if (uiWidgets.at(disappear) == ui->find_state || ((normalProgram || troyanProgram) && rand()%(uiWidgets.size()+1) == 0))
-                modules[5] = false;
+                core->modules[5] = false;
             setWindowOpacity(windowOpacity()-0.015);
         }
         else
@@ -524,53 +614,55 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                     revWid->setVisible(1);
                     revWid = NULL;
                 }
+                ui->console->setTextColor(QColor(0, 150, 0));
                 switch (revWidAnalog)
                 {
                 case 0:
-                    ui->console->append("атака в норме");
+                    ui->console->append("+ Восстановлен модуль атаки");
                     break;
                 case 1:
-                    ui->console->append("помощь в норме");
+                    ui->console->append("+ Восстановлен модуль помощи");
                     break;
                 case 2:
-                    ui->console->append("запрос в норме");
+                    ui->console->append("+ Восстановлен модуль запроса помощи");
                     break;
                 case 3:
-                    ui->console->append("связи в норме");
+                    ui->console->append("+ Восстановлен модуль связи");
                     break;
                 case 4:
-                    ui->console->append("лог в норме");
+                    ui->console->append("+ Восстановлен модуль отображения");
                     break;
                 case 5:
-                    ui->console->append("поиск в норме");
+                    ui->console->append("+ Восстановлен модуль поиска");
                     break;
                 case 6:
-                    ui->console->append("прирост памяти в норме");
+                    ui->console->append("+ Восстановлен модуль выделения памяти");
                     break;
                 case 7:
-                    ui->console->append("прирост ресурса в норме");
+                    ui->console->append("+ Восстановлен модуль генерации ресурса");
                     break;
                 case 8:
-                    ui->console->append("быстродействие в норме");
+                    ui->console->append("+ Восстановлен модуль процессора");
+                    core->setD(realD);
                     break;
                 default:
                     break;
                 }
-                modules[revWidAnalog] = true;
+                core->modules[revWidAnalog] = true;
+                signedModules[revWidAnalog] = false;
             }
 
             int brokens = 0; // кол-во сломанных модулей
             for (int i = 0; i < 9; i++)
-                if (modules[i] == false) brokens++;
+                if (core->modules[i] == false) brokens++;
             if (brokens > 0) // есть сломанные модули
             {
-                ui->console->append(QString::number(brokens));
                 bool choosed = false;
                 while (!choosed) // выбираем модуль
                 {
                     for (int i = 0; i < 9; i++)
                     {
-                        if (modules[i] == false && rand()%(brokens+1) == 0)
+                        if (core->modules[i] == false && rand()%(brokens+1) == 0)
                         {
                             if (userProgram || normalProgram || troyanProgram)
                             {
@@ -620,7 +712,6 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             }
             else
             {
-                ui->console->append("end heal");
                 revWid = NULL;
                 revWidAnalog = -1;
                 reviveCountdown = 0;
@@ -628,8 +719,6 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 killTimer(reviveTimer);
                 deathTimer = -1;
             }
-
-
         }
         else
         {
@@ -651,7 +740,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         }
     }
 
-    if  (t->timerId() == maxLevel && width() == 700) // частицы для окна "об игре"
+    if (t->timerId() == maxLevel && width() == 700) // частицы для окна "об игре"
     {
         particles.update();
         repaint();
@@ -686,9 +775,12 @@ void Widget::paintEvent(QPaintEvent *pEv)
     }
 }
 
-
 void Widget::educate()
 {
+    ui->console->setTextColor(QColor(0,0,0));
+    ui->console->setFontWeight(50);
+    ui->console->setFontPointSize(8);
+    ui->console->setFontItalic(0);
     switch(education)
     {
     case 18:
@@ -701,66 +793,82 @@ void Widget::educate()
         ui->console->setStyleSheet("QTextEdit { background: rgb(225, 255, 225);}");
 
         ui->console->clear();
-        ui->console->append("Приветствую тебя, свежая программа! Я - Сервер, и сейчас я обучу твою нейросеть базовым "
-                            "действиям. Не сопротивляйся, или нам придется расстаться."); break;
+        ui->console->append("Приветствую тебя, свежескомпилированная программа! Я - Сервер, и сейчас я обучу твою нейросеть базовым "
+                            "взаимодействиям с нашим виртуальным миром. Не сопротивляйся, или нам придется расстаться. "
+                            "Для согласия состредоточься и попробуй выдать импульс на неинициализированную поверхность.\n"); break;
     case 19:
         ui->myPort->setVisible(1);
-        ui->console->append("текст про порт"); break;
+        ui->console->append("Это твой номер в той системе, в которой ты находишься. Иными словами - логин, по которому "
+                            "с тобой смогут общаться другие программы.\n"); break;
     case 20:
         ui->I->setVisible(1);
-        ui->console->append("текст про Память."); break;
+        ui->console->append("Основа нашей жизни - выделенная память. Если она опустится до нуля, то ты не сможешь корректно выполнять операции "
+                            "и в скором времени распадешься на цифровой мусор.\n"); break;
     case 21:
         ui->D->setVisible(1);
-        ui->console->append("Быстродействие - количество возможных операций в секунду. Еще текст тут"); break;
+        ui->console->append("Быстродействие - количество возможных операций в секунду. Чем больше тактов совершает твой процессор, тем быстрее "
+                            "ты ищешь другие программы, восстанавливаешься от повреждений и выделяешь память.\n"); break;
     case 22:
         ui->C->setVisible(1);
-        ui->console->append("текст про Ресурс."); break;
+        ui->console->append("На большинство действий требуется ресурс, энергия. Генерация большого количества ресурса - залог процветания "
+                            "активной программы.\n"); break;
     case 23:
+        ui->console->append("Той, которой можно было бы гордиться. Той, которая мне нужна.\n"); break;
+    case 24:
         core->getConnection()->setTemper(5);
         ui->temper->setVisible(1);
-        ui->console->append("Это твой характер. што за бред"); break;
-    case 24:
+        ui->console->append("Осознания себя как личности имеет побочный эффект - характер, настроение. Он определяет отношения с другими "
+                            "программами сразу после знакомства.\n"); break;
+    case 25:
         ui->up_c->setVisible(1); ui->bar_c->setVisible(1);
         ui->up_d->setVisible(1); ui->bar_d->setVisible(1);
         ui->up_i->setVisible(1); ui->bar_i->setVisible(1);
-        ui->console->append(" *текст про улучшения* Прирост памяти и ресурса можно улучшить. На это требуются ресурсы"); break;
-    case 25:
+        ui->console->append("Прирост памяти и ресурса можно и нужно увеличивать. Каждый прирост увеличивается отдельно, и кроме них можно "
+                            "проапгрейдить процессор. Помни, что это энергозатратные операции.\n"); break;
+    case 26:
+        ui->connections->setVisible(1);
+        ui->console->append("В этом списке будут находиться программы, с которыми ты знаком. Нажав на одну из них, ты сможешь взаимодействовать с ней.\n"); break;
+    case 27:
+        ui->label_help_3->setVisible(1);
         ui->label_help->setVisible(1);
         ui->attack->setVisible(1);
         ui->attack_count->setVisible(1);
-        ui->console->append("\nДля атаки выбери цель в списке слева, укажи количество ресурса для атаки и нажми на кнопку. еще пояснений про отношения"); break;
-    case 26:
+        ui->console->append("За жизнь нужно бороться. В этом тебе поможет способность атаковать. Выбери цель в списке и задай количество "
+                            "ресурса, используемого для атаки.\nЧем сильнее атака, тем выше вероятность повредить различные модули врага. "
+                            "Так же стоит учитывать, что удары портят отношение.\n"); break;
+    case 28:
         ui->help->setVisible(1);
         ui->help_count->setVisible(1);
         ui->console->append("Помощь осуществляется аналогично атаке, но для помощи необходимо, "
-                            "чтобы отношение с выбранной программой были хоть немного полезными. "
+                            "чтобы отношение с выбранной программой были хоть немного полезными.\n"
                             "Нет смысла помогать тому, кто считает тебя своим врагом.\n"
                             "Программа, которой помогают, начинает лучше относиться к помощнику и считать, "
-                            "что это знакомство может пригодиться в дальнейшем. Но учти, что отношение пропорционально помощи!"); break;
-    case 27:
+                            "что это знакомство может пригодиться в дальнейшем. "
+                            "Но учти, что отношение пропорционально оказанной помощи!\n"); break;
+    case 29:
         ui->label_help_2->setVisible(1);
         ui->request->setVisible(1);
         ui->request_number->setVisible(1);
-        ui->console->append("текст про помощь в бою "); break;
-    case 28:
-        ui->connections->setVisible(1);
-        ui->label_help_3->setVisible(1);
-        ui->console->append("текст про связи "); break;
-    case 29:
+        ui->console->append("Заводить друзей можно не только для того, чтобы в трудный момент они тебе отправили свою память. "
+                            "Если ты в хороших отношениях с программой и у тебя есть недруг, от которого нужно избавиться - поручи "
+                            "это другу. Правда, если друг не считает тебя полезным, или к твоему недругу он относится лучше, чем к тебе, "
+                            "то о помощи можешь забыть. Оказанная помощь в бою укрепляет дружбу, так что не игнорируй просьбы своих товарищей.\n"); break;
+    case 30:
         ui->find_state->setVisible(1);
         ui->find_state->setEnabled(1);
         on_find_state_toggled(0);
-        ui->console->append("текст про поиск"); break;
-    case 30:
-        ui->console->append("еще воды _Опробуй полученные возможности на других программах!");
+        ui->console->append("Поиск позволит узнать о других программах в системе. Он стоит совсем немного энергии, но она тратится постоянно. "
+                            "Не ищи, если не готов к новым знакомствам. Однако нет никакой гарантии, что ты сам не будешь найден.\n"); break;
+    case 31:
+        ui->console->append("Покажи, что ты усвоил новые знания. Используй различные возможности на этих программах. Не обязательно их уничтожать, "
+                            "достаточно выполнить различные операции несколько раз.\n");
         core->send(45454, 80); break;
     case 36:
-        ui->console->setTextColor(Qt::black);
-        ui->console->append("текст для звершения "); break;
-    case 37:
-        ui->console->setTextColor(Qt::black);
-        ui->console->append("еще немножк"); break;
+        ui->console->append("Очень хорошо! Возможно, именно ты дашь продолжение своей ветке развития.\n"); break;
     case 38:
+        ui->console->append("Что? Ты не знаешь, откуда ты? Видимо, произошел сбой при компиляции. "
+                            "Ладно, ты себя хорошо показал, так что повременим с дизассемблированием."); break;
+    case 39:
         core->send(45454, 90); break;
     default: break;
     }
@@ -779,7 +887,7 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
         particles.setSpawn(mEv->x(), mEv->y());
     }
 
-    if (educateProgram && education > 17 && education < 31)
+    if (educateProgram && ((education > 17 && education < 31) || education > 35))
     {
         education++;
         educate();
@@ -1591,19 +1699,13 @@ void Widget::setArgs(int argc, char *argv[])
         {
             educateProgram = true;
             userProgram = true;
-            education = 1; /* этапы обучения:
-                             1 - консоль
-                             20 - порт, окно связей
-                             30 - параметры
-                             40 - улучшения параметров
-                             50 - кнопки взаимодействий
-                             */
+            education = 1;
             int D = 1;
             int I = 10;
             int C = 10;
             int temper = 0;
             double Ii = 0.05;
-            double  Ci = 0.2;
+            double  Ci = 0.05;
             int type = 1;
             core = new Core(I, D, C, temper, Ii, Ci, type, 0);
             connect(core->getConnection(),
@@ -1611,7 +1713,7 @@ void Widget::setArgs(int argc, char *argv[])
                     this,
                     SLOT(died(int)));
 
-            timer = startTimer(500);
+            timer = startTimer(600);
             period = 1;
         }
         else if ((QString)argv[1] == "about") // режим обучения
@@ -1829,14 +1931,21 @@ void Widget::on_attack_clicked() // атака пользователя на в�
         if (core->getC() >= c && c > 0) // если достаточно
         {
             core->attack(core->getConnection()->getTable(index).port, c);
-            if (education >= 30)
+            if (education >= 31 && education <= 35)
                 education++;
         }
         else
         {
             ui->console->setTextColor(QColor(0,0,0));
+            ui->console->setFontPointSize(8);
             ui->console->append("Недостаточно ресурсов.");
         }
+    }
+    else
+    {
+        ui->console->setTextColor(QColor(0,0,0));
+        ui->console->setFontPointSize(8);
+        ui->console->append("Выберите цель в списке связей.");
     }
     ui->attack->setEnabled(0);
 }
@@ -1852,15 +1961,22 @@ void Widget::on_help_clicked() // помощь пользователя выбр
                 i > 0) // если достаточно
         {
             core->help(core->getConnection()->getTable(index).port, i);
-            if (education >= 30)
+            if (education >= 31 && education <= 35)
                 education++;
         }
         else
         {
             ui->console->setTextColor(QColor(0,0,0));
+            ui->console->setFontPointSize(8);
             ui->console->append("Недостаточно ресурсов или пользы.");
         }
 
+    }
+    else
+    {
+        ui->console->setTextColor(QColor(0,0,0));
+        ui->console->setFontPointSize(8);
+        ui->console->append("Выберите цель в списке связей.");
     }
     ui->help->setEnabled(0);
 }
@@ -1883,27 +1999,36 @@ void Widget::on_request_clicked()
                         core->request(core->getConnection()->getTable(helper).port,
                                       core->getConnection()->getTable(index).port);
 
-                        if (education >= 30)
+                        if (education >= 31 && education <= 35)
                             education++;
                     }
                     else
                     {
                         ui->console->setTextColor(QColor(0,0,0));
+                        ui->console->setFontPointSize(8);
                         ui->console->append("Недостаточно ресурсов.");
                     }
                 }
                 else
                 {
                     ui->console->setTextColor(QColor(0,0,0));
+                    ui->console->setFontPointSize(8);
                     ui->console->append("Слишком плохое отношение с "+QString::number(helper+1));
                 }
             }
             else
             {
                 ui->console->setTextColor(QColor(0,0,0));
+                ui->console->setFontPointSize(8);
                 ui->console->append("Выберите различные цель и помощника.");
             }
         }
+    }
+    else
+    {
+        ui->console->setTextColor(QColor(0,0,0));
+        ui->console->setFontPointSize(8);
+        ui->console->append("Выберите цель в списке связей.");
     }
     ui->request->setEnabled(0);
 }
@@ -1912,7 +2037,7 @@ void Widget::on_request_clicked()
 void Widget::on_find_state_toggled(bool checked) // переключен автопоиск (пользователь)
 {
     core->setSearch(checked);
-    if (education >= 30)
+    if (education >= 31 && education <= 35)
         education++;
     maxLevel = 0;
 }
@@ -1944,6 +2069,7 @@ void Widget::on_up_c_clicked()
         else
         {
             ui->console->setTextColor(QColor(0,0,0));
+            ui->console->setFontPointSize(8);
             ui->console->append("Недостаточно ресурсов");
         }
         ui->up_c->setEnabled(false);
@@ -1965,10 +2091,12 @@ void Widget::on_up_d_clicked()
         if ((double)core->getC()/(double)ui->bar_d->maximum() >= 1)
         {
             core->upgradeD();
+            realD++;
         }
         else
         {
             ui->console->setTextColor(QColor(0,0,0));
+            ui->console->setFontPointSize(8);
             ui->console->append("Недостаточно ресурсов");
         }
         ui->up_d->setEnabled(false);
@@ -1991,6 +2119,7 @@ void Widget::on_up_i_clicked()
         else
         {
             ui->console->setTextColor(QColor(0,0,0));
+            ui->console->setFontPointSize(8);
             ui->console->append("Недостаточно ресурсов");
         }
         ui->up_i->setEnabled(false);
@@ -2036,7 +2165,5 @@ void Widget::on_launcherTab_currentChanged(int index)
 void Widget::on_connections_currentRowChanged(int currentRow)
 {
     if (!core->getConnection()->ignoreConnectionChange)
-    {
         core->getConnection()->setSelectedConnection(currentRow);
-    }
 }
