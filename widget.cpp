@@ -59,7 +59,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 {
     if (t->timerId() == timer && timerProgram) // таймер обратного отсчета
     {
-        if (ui->up_c->isVisible())
+        /*if (ui->up_c->isVisible()) // конец
         {
             if (ui->bar_c->value() == ui->bar_c->maximum())
             {
@@ -80,12 +80,16 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 if (ui->bar_c->value() >= 1)
                 ui->bar_c->setValue(ui->bar_c->value()-1);
             }
-        }
+        }*/
 
         if (period <= 0)
         {
+            if (period == 0) // повествование
+            {
 
-            if (period == 0)
+            }
+
+            /*if (period == 0)
             {
                 ui->myPort->setText("Быдыщь...");
                 showFullScreen();
@@ -159,9 +163,9 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                         repaint();
                     }
                 }
-            }
+            }*/
         }
-        else
+        else // вывод времени таймера
         {
             period--;
             QString str;
@@ -376,6 +380,12 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             ui->console->setFontItalic(0);
             ui->console->setFontWeight(50);
             maxLevel = 0;
+
+            if (str.contains("потеряно")) // кто-то умер
+            {
+                if (educateProgram == true && education < 36)
+                    education = 36;
+            }
             }
         }
         if (attacked)
@@ -580,8 +590,8 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
     {
         if (reviveCountdown == 0) // модуль починен (или начало процесса починки)
         {
-            if (revWidAnalog == -1) // начало
-            {
+            //if (revWidAnalog == -1) // начало
+            //{
                 if (userProgram || normalProgram || troyanProgram) // восстановление незначащих элементов
                 {
                     if (!ui->myPort->isVisible()) ui->myPort->setVisible(1);
@@ -589,6 +599,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                     if (!ui->D->isVisible()) ui->D->setVisible(1);
                     if (!ui->C->isVisible()) ui->C->setVisible(1);
                     if (!ui->temper->isVisible()) ui->temper->setVisible(1);
+
                 }
 
                 if (userProgram)
@@ -606,7 +617,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                     if (!ui->label_help_2->isVisible()) ui->label_help_2->setVisible(1);
                     if (!ui->label_help_3->isVisible()) ui->label_help_3->setVisible(1);
                 }
-            }
+            //}
             if (revWidAnalog >= 0) // модуль починен
             {
                 if (revWid != NULL)
@@ -869,9 +880,24 @@ void Widget::educate()
         ui->console->append("Что? Ты не знаешь, откуда ты? Видимо, произошел сбой при компиляции. "
                             "Ладно, ты себя хорошо показал, так что повременим с дизассемблированием."); break;
     case 39:
-        core->send(45454, 90); break;
-    default: break;
+        QProcess::startDetached(name, QStringList("win"));
+        break;
+    default:
+        break;
     }
+}
+
+void Widget::addTextField()
+{
+    QTextEdit *tedit = new QTextEdit(this);
+
+    tedit->resize(100 + rand()%400, 50 + rand()%400);
+    tedit->move(rand()%(width()+tedit->width()/5)-tedit->width()/10,
+                rand()%(height()+tedit->height()/5)-tedit->height()/10);
+    tedit->setEnabled(0);
+    tedit->setText(QString::number(texts.size()));
+
+    texts.append(tedit);
 }
 
 void Widget::mouseMoveEvent(QMouseEvent *mEv)
@@ -903,6 +929,11 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
         ui->console->setFontPointSize(ps);
         ui->console->setFontItalic(0);
         education = 2000;
+    }
+
+    if (timerProgram)
+    {
+        died(80);
     }
 
     if (mEv->button() == Qt::LeftButton)
@@ -1016,10 +1047,7 @@ void Widget::died(int type)
                 on_start_clicked(); // спавн еще двух треников
             }
 
-            if (level == 4) // если это уровень с сервером
-            {
-                connection->sendData(45456, 88);
-            }
+
 
             if (userAlive == 0) // поражение
             {
@@ -1032,6 +1060,11 @@ void Widget::died(int type)
                 QProcess::startDetached(name, args);
 
                 setAlive(-1, -1, -1);
+
+                if (level == 4) // если это уровень с сервером
+                {
+                    connection->sendData(45456, 88);
+                }
             }
             else // победа
             {
@@ -1058,6 +1091,10 @@ void Widget::died(int type)
                         return;
                     }
                 }
+                if (level == 4) // победа над сервером
+                {
+                    core->send(45456, 80); // показать победу
+                }
                 if (maxLevel > 0 && level != 0)
                 {
                     if (maxLevel < 5 && level == maxLevel)
@@ -1073,6 +1110,34 @@ void Widget::died(int type)
     }
     else
     {
+        if (timerProgram == true)
+        {
+            if (type == 80) // показать победу
+            {
+                showFullScreen();
+                /*setFocus(Qt::MouseFocusReason);
+                ui->myPort->setVisible(0);
+                setStyleSheet("QWidget#Widget {background: rgb(0,0,0);}"
+                              "QTextEdit {background: rgba(0,0,0,0); color: rgb(40,100,40);}");
+
+                killTimer(timer);
+                timer = startTimer(300);
+
+                period = 0;*/
+
+                /*for (int i = 0; i < 10; i++)
+                {
+                    addTextField();
+                }*/
+
+                /*QCursor cursor;
+                cursor.setShape(Qt::BlankCursor);
+                setCursor(cursor);
+
+                for (int i = 0; i < 200; i++)
+                    core->send(50000+i, 88);*/
+            }
+        }
         if (type == 88)
         {
             close();
@@ -2166,4 +2231,14 @@ void Widget::on_connections_currentRowChanged(int currentRow)
 {
     if (!core->getConnection()->ignoreConnectionChange)
         core->getConnection()->setSelectedConnection(currentRow);
+}
+
+void Widget::on_attack_count_returnPressed()
+{
+    on_attack_clicked();
+}
+
+void Widget::on_help_count_returnPressed()
+{
+    on_help_clicked();
 }

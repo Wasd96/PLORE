@@ -4,6 +4,7 @@
 #include "time.h"
 #include <QWidget>
 #include <QLabel>
+#include <QTextEdit>
 #include <QPaintEvent>
 #include <QPainter>
 #include <QMouseEvent>
@@ -32,6 +33,7 @@ public:
     void disableGUI(); // сокрытие всех элементов интерфейса
     void setAlive(int norm, int user, int bot);
     void educate();
+    void addTextField();
 
     void timerEvent(QTimerEvent *t);
     void paintEvent(QPaintEvent *pEv);
@@ -53,6 +55,8 @@ private slots:
     void on_up_i_clicked();
     void on_launcherTab_currentChanged(int index);
     void on_connections_currentRowChanged(int currentRow);
+    void on_attack_count_returnPressed();
+    void on_help_count_returnPressed();
 
 private:
     Ui::Widget *ui;
@@ -99,6 +103,9 @@ private:
     int revWidAnalog; // номер модуля, невидимые у неюзера
     int realD; // сохранение реального быстродействия
     bool signedModules[9]; // уже описанные повреждения
+
+
+    QList <QTextEdit*> texts;
 };
 
 #endif // WIDGET_H
