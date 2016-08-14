@@ -59,111 +59,64 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 {
     if (t->timerId() == timer && timerProgram) // таймер обратного отсчета
     {
-        /*if (ui->up_c->isVisible()) // конец
-        {
-            if (ui->bar_c->value() == ui->bar_c->maximum())
-            {
-                period = -3;
-                level = 400;
-
-                ui->up_c->setVisible(0);
-                ui->bar_c->setVisible(0);
-                ui->myPort->setVisible(0);
-
-                for (int i = 0; i < 200; i++)
-                {
-                    connection->sendData(50000+i, 88); // всем умереть
-                }
-            }
-            else
-            {
-                if (ui->bar_c->value() >= 1)
-                ui->bar_c->setValue(ui->bar_c->value()-1);
-            }
-        }*/
-
         if (period <= 0)
         {
-            if (period == 0) // повествование
+            if (period == 0 || period == -1)
             {
-
-            }
-
-            /*if (period == 0)
-            {
-                ui->myPort->setText("Быдыщь...");
+                bord->setVisible(0); // забыл :(
                 showFullScreen();
                 setFocus(Qt::MouseFocusReason);
-                ui->myPort->resize(width(), height());
-                QString CSS;
-                CSS = "QLabel { color: rgb("+QString::number(level)+",0,0); font-size: "+QString::number(100+level/2)+"px; border: 0px;}";
-                ui->myPort->setStyleSheet(CSS);
-                repaint();
+                ui->myPort->setVisible(false);
 
                 killTimer(timer);
-                timer = startTimer(20);
+                timer = startTimer(300);
+                level = 0;
 
-                level = -50;
-                period = -1;
+                for (int i = 0; i < 10; i++)
+                    addTextField();
 
                 QCursor cursor;
                 cursor.setShape(Qt::BlankCursor);
                 setCursor(cursor);
+
+                for (int i = 0; i < 200; i++)
+                    connection->sendData(50000+i, 88);
+
+                if (period == 0) // проигрыш
+                {
+                    setStyleSheet("QWidget#Widget {background: qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, "
+                                  "stop:0 rgba(0, 0, 0, 255), stop:1 rgba(30, 0, 0, 255));}"
+                                  "QTextEdit {background: rgba(0,0,0,0); color: rgb(25,40,20);"
+                                  "border: 0px;}");
+                }
+                if (period == -1) // победа
+                {
+                    setStyleSheet("QWidget#Widget {background: qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, "
+                                  "stop:0 rgba(0, 0, 0, 255), stop:1 rgba(0, 0, 30, 255));}"
+                                  "QTextEdit {background: rgba(0,0,0,0); color: rgb(20,50,20);"
+                                  "border: 0px;}");
+                }
+                period -= 2;
             }
-            else
+
+            if (period == -2 || period == -3) // повествование
             {
-                if (level < 300 && period >= -1)
+                foreach (QTextEdit* te, texts)  // модный форич
                 {
-
-                    level++;
-                    if (level <= 255)
+                    if (rand()%3 == 0)
+                        te->setText(getNewText());
+                    if (rand()%20 == 0)
                     {
-                        QString CSS;
-                        CSS = "QLabel { color: rgb("+QString::number(level)+",0,0); font-size: "+QString::number(100+level/2)+"px; border: 0px;}";
-                        ui->myPort->setStyleSheet(CSS);
-                    }
-                    repaint();
-                }
-                else
-                {
-                    if (period == -1)
-                    {
-                        ui->bar_c->resize(width()/3, 60);
-                        ui->bar_c->move(width()/2-ui->bar_c->width()/2, height()/4*1);
-                        ui->bar_c->setVisible(1);
-                        ui->bar_c->setValue(0);
-                        ui->bar_c->setMaximum(200);
-
-                        ui->up_c->resize(width()/3, 100);
-                        ui->up_c->move(width()/2-ui->up_c->width()/2, height()/4*3);
-                        ui->up_c->setVisible(1);
-                        ui->up_c->setEnabled(1);
-                        ui->up_c->setText("Попячьте!");
-
-                        QCursor cursor;
-                        cursor.setShape(Qt::OpenHandCursor);
-                        setCursor(cursor);
-
-                        period = -2;
-                    }
-
-                    if (period == -3) // конец, закрытие окна
-                    {
-                        level -= 2;
-                        setWindowOpacity((double)level/255.0);
-
-                        if (level <= 0)
-                        {
-                            QStringList args;
-                            args << "lose";
-                            QProcess::startDetached(name, args);
-
-                            close();
-                        }
-                        repaint();
+                        te->setVisible(0);
+                        texts.removeOne(te);
                     }
                 }
-            }*/
+                if (rand()%(texts.size()) < 5)
+                    addTextField();
+
+                repaint();
+            }
+
         }
         else // вывод времени таймера
         {
@@ -500,6 +453,43 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
     if (t->timerId() == deathTimer) // смерть
     {
+        if (timerProgram) // конец диалога с сервером
+        {
+            if (period == -11 || period == -12)
+            {
+                level+=5;
+                if (level >= 256)
+                {
+                    killTimer(timer);
+                    killTimer(deathTimer);
+                    deathTimer = startTimer(60);
+                    period = -13;
+                    level = 256;
+
+                }
+                update();
+            }
+            if (period == -13)
+            {
+                level-=3;
+                if (level < 0)
+                {
+                    killTimer(deathTimer);
+                    deathTimer = -1;
+
+                    QStringList args;
+                    args << "lose";
+                    QProcess::startDetached(name, args);
+
+                    close();
+                }
+                setWindowOpacity((double)level/255.0);
+                update();
+            }
+
+            return;
+        }
+
         if (core->getDead() == false) // программу спасли
             return;
 
@@ -590,8 +580,8 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
     {
         if (reviveCountdown == 0) // модуль починен (или начало процесса починки)
         {
-            //if (revWidAnalog == -1) // начало
-            //{
+            if (deathTimer == -1)
+            {
                 if (userProgram || normalProgram || troyanProgram) // восстановление незначащих элементов
                 {
                     if (!ui->myPort->isVisible()) ui->myPort->setVisible(1);
@@ -617,7 +607,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                     if (!ui->label_help_2->isVisible()) ui->label_help_2->setVisible(1);
                     if (!ui->label_help_3->isVisible()) ui->label_help_3->setVisible(1);
                 }
-            //}
+            }
             if (revWidAnalog >= 0) // модуль починен
             {
                 if (revWid != NULL)
@@ -655,6 +645,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 case 8:
                     ui->console->append("+ Восстановлен модуль процессора");
                     core->setD(realD);
+                    core->nextRecount();
                     break;
                 default:
                     break;
@@ -763,10 +754,91 @@ void Widget::paintEvent(QPaintEvent *pEv)
     if (timerProgram && isFullScreen())
     {
         QPainter p(this);
-        if (period == -3)
-            p.fillRect(0,0,width(),height(),Qt::white);
-        else
-            p.fillRect(0,0,width(),height(),Qt::black);
+        QPen pen;
+        QFont font;
+
+        for (int j = 0; j < texts.size(); j++)
+        {
+            font.setPixelSize(texts.at(j)->fontPointSize()+2);
+            pen.setColor(QColor(20,50,20));
+            p.setPen(pen);
+            p.setFont(font);
+            QString str = texts.at(j)->toPlainText();
+            QStringList strlist = str.split('\n');
+            for (int i = 0; i < strlist.size(); i++)
+            {
+                p.drawText(texts.at(j)->x(), texts.at(j)->y()+font.pixelSize()*1.6*i, strlist.at(i));
+            }
+        }
+
+        if (period == -2 || period == -11)
+        {
+            switch (education)
+            {
+            case 5:
+                period = -11;
+                deathTimer = startTimer(40);
+            case 4:
+                font.setPixelSize(20);
+                pen.setColor(QColor(200, 00, 0));
+                p.setPen(pen);
+                p.setFont(font);
+                p.drawText(100,250,"ничего больше нет");
+                font.setPixelSize(20);
+                pen.setColor(QColor(200, 250, 0, 128));
+                p.setPen(pen);
+                p.setFont(font);
+                p.drawText(100,250,"Подари любовь");
+            case 3:
+                font.setPixelSize(20);
+                pen.setColor(QColor(200, 250, 0));
+                p.setPen(pen);
+                p.setFont(font);
+                p.drawText(100,200,"Подари мне ласку");
+            case 2:
+                font.setPixelSize(20);
+                pen.setColor(QColor(250, 250, 0));
+                p.setPen(pen);
+                p.setFont(font);
+                p.drawText(100,150,"Подари мне счастье");
+            case 1:
+                font.setPixelSize(25);
+                pen.setColor(QColor(250, 250, 0));
+                p.setPen(pen);
+                p.setFont(font);
+                p.drawText(100,100,"Настя!");
+            default:
+                break;
+            }
+        }
+        if (period == -3 || period == -12)
+        {
+            switch (education) {
+            case 3:
+                period = -12;
+                deathTimer = startTimer(40);
+            case 2:
+                font.setPixelSize(25);
+                pen.setColor(QColor(250, 250, 0));
+                p.setPen(pen);
+                p.setFont(font);
+                p.drawText(100,150,"В последний путь");
+            case 1:
+                font.setPixelSize(20);
+                pen.setColor(QColor(250, 250, 0));
+                p.setPen(pen);
+                p.setFont(font);
+                p.drawText(100,100,"Танцуя с огнем");
+            default:
+                break;
+            }
+        }
+
+        if (level > 0 && (period == -11 || period == -12))
+            p.fillRect(0,0,width(),height(),QColor(255,255,255,level));
+        if (period == -13)
+            p.fillRect(0,0,width(),height(),QColor(255,255,255));
+
     }
 
     if (width() == 700 && !userProgram)
@@ -891,14 +963,56 @@ void Widget::addTextField()
 {
     QTextEdit *tedit = new QTextEdit(this);
 
-    tedit->resize(100 + rand()%400, 50 + rand()%400);
-    tedit->move(rand()%(width()+tedit->width()/5)-tedit->width()/10,
-                rand()%(height()+tedit->height()/5)-tedit->height()/10);
     tedit->setEnabled(0);
-    tedit->setText(QString::number(texts.size()));
+    tedit->setFontPointSize(8+rand()%12);
+    tedit->setFontItalic(!(rand()%5));
+    tedit->setFontWeight(40+rand()%20);
+    tedit->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    tedit->resize(250 + rand()%400, 1000);
+
+    bool moved = true;
+    tedit->move(rand()%width()-tedit->width()/2,
+                rand()%height()-200);
+    while (moved && texts.size() > 0)
+    {
+        moved = false;
+        for (int i = 0; i < texts.size(); i++)
+        {
+            int centralXi = texts.at(i)->x()+texts.at(i)->width()/2;
+            int centralYi = texts.at(i)->y()+texts.at(i)->height()/2;
+            int centralX = tedit->x()+tedit->width()/2;
+            int centralY = tedit->y()+tedit->height()/2;
+            if (sqrt(pow(centralXi-centralX,2) + pow(centralYi-centralY,2)) < (200-texts.size()*5))
+            {
+                tedit->move(rand()%width()-tedit->width()/2,
+                            rand()%height()-200);
+                moved = true;
+                break;
+            }
+        }
+
+
+    }
+
+
+    tedit->setText(getNewText());
 
     texts.append(tedit);
+    this->raise();
 }
+
+QString Widget::getNewText()
+{
+    QString str;
+    int max = 80+rand()%150;
+    for (int i = 0; i < max; i++)
+    {
+        str.append('0'+rand()%75);
+        if (rand()%(15) == 0) str.append('\n');
+    }
+    return str;
+}
+
 
 void Widget::mouseMoveEvent(QMouseEvent *mEv)
 {
@@ -921,6 +1035,10 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
 
     if (education == 0 && troyanProgram)
     {
+        QDesktopWidget qdw; // получение размеров экрана
+        int cur_w = qdw.width();
+        int cur_h = qdw.height();
+        QCursor::setPos(50+rand()%(cur_w-400), 50+rand()%(cur_h-400));
         ui->console->setTextColor(Qt::red);
         qreal ps = ui->console->fontPointSize();
         ui->console->setFontPointSize(16);
@@ -933,7 +1051,15 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
 
     if (timerProgram)
     {
-        died(80);
+        if (period > 0)
+            died(80);
+        else
+        {
+            education++;
+            repaint();
+        }
+
+        return;
     }
 
     if (mEv->button() == Qt::LeftButton)
@@ -950,13 +1076,18 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
         exit(0);
     }
 
-
 }
 
 void Widget::mouseReleaseEvent(QMouseEvent *mEv)
 {
     moving = false;
     particles.deleteSpawn();
+}
+
+void Widget::keyReleaseEvent(QKeyEvent *kEv)
+{
+    ui->console->append("released");
+    moving = false;
 }
 
 
@@ -1114,28 +1245,7 @@ void Widget::died(int type)
         {
             if (type == 80) // показать победу
             {
-                showFullScreen();
-                /*setFocus(Qt::MouseFocusReason);
-                ui->myPort->setVisible(0);
-                setStyleSheet("QWidget#Widget {background: rgb(0,0,0);}"
-                              "QTextEdit {background: rgba(0,0,0,0); color: rgb(40,100,40);}");
-
-                killTimer(timer);
-                timer = startTimer(300);
-
-                period = 0;*/
-
-                /*for (int i = 0; i < 10; i++)
-                {
-                    addTextField();
-                }*/
-
-                /*QCursor cursor;
-                cursor.setShape(Qt::BlankCursor);
-                setCursor(cursor);
-
-                for (int i = 0; i < 200; i++)
-                    core->send(50000+i, 88);*/
+                period = -1;
             }
         }
         if (type == 88)
@@ -1181,7 +1291,6 @@ void Widget::initGUI()
         ui->up_i->setEnabled(1);
         ui->up_i->move(width()-10-ui->up_d->width(), 260);
         ui->up_i->setText("Выход");
-
 
 
         ui->launcherTab->setVisible(1);
@@ -1672,7 +1781,7 @@ void Widget::setArgs(int argc, char *argv[])
             timer = startTimer(1000/period);
             timerIncrease = startTimer(1000/(50-period));
 
-            connect(connection,
+            connect(core->getConnection(),
                     SIGNAL(died(int)),
                     this,
                     SLOT(died(int)));
@@ -1705,7 +1814,7 @@ void Widget::setArgs(int argc, char *argv[])
                     this,
                     SLOT(died(int)));
             timer = startTimer(1000);
-            period = 900; // 900 секунд для победы
+            period = 300; // 300 секунд для победы
         }
 
         else if ((QString)argv[1] == "win") // окно победы
@@ -1843,6 +1952,7 @@ Widget::~Widget()
         delete core;
     if (connection != NULL)
         delete connection;
+
     delete ui;
 }
 
@@ -2235,10 +2345,18 @@ void Widget::on_connections_currentRowChanged(int currentRow)
 
 void Widget::on_attack_count_returnPressed()
 {
-    on_attack_clicked();
+    if (!moving && ui->attack->isVisible() && ui->attack->isEnabled())
+    {
+        on_attack_clicked();
+        moving = true;
+    }
 }
 
 void Widget::on_help_count_returnPressed()
 {
-    on_help_clicked();
+    if (!moving && ui->help->isVisible() && ui->help->isEnabled())
+    {
+        on_help_clicked();
+        moving = true;
+    }
 }

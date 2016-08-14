@@ -8,7 +8,9 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QMouseEvent>
+#include <QScreen>
 #include <QListWidgetItem>
+#include <QKeyEvent>
 
 #include <QShowEvent>
 
@@ -34,12 +36,14 @@ public:
     void setAlive(int norm, int user, int bot);
     void educate();
     void addTextField();
+    QString getNewText();
 
     void timerEvent(QTimerEvent *t);
     void paintEvent(QPaintEvent *pEv);
     void mouseMoveEvent(QMouseEvent *mEv);
     void mousePressEvent(QMouseEvent *mEv);
     void mouseReleaseEvent(QMouseEvent *mEv);
+    void keyReleaseEvent(QKeyEvent *kEv);
 
 private slots:
     void died(int type); // прием лаунчера о смерти
@@ -103,7 +107,6 @@ private:
     int revWidAnalog; // номер модуля, невидимые у неюзера
     int realD; // сохранение реального быстродействия
     bool signedModules[9]; // уже описанные повреждения
-
 
     QList <QTextEdit*> texts;
 };
