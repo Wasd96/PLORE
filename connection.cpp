@@ -128,18 +128,15 @@ void Connection::readData() // прием данных
         {
             if (strList.first() == "1") // проверка связи
             {
-                //data.append("proverka svyazi " + QString::number(port));
                 sendData(port, 2);
             }
             if (strList.first() == "2") // подтверждение связи
             {
-                //data.append("podtverzhdenie svyazi " + QString::number(numb));
                 table[numb].lostSignal = 0; // обновление тайм-аута
             }
 
             if (strList.first() == "3") // атака
             {
-
                 if (table.at(numb).useful == 0) // если пользы нет
                 {
                     table[numb].relationship-=6; // снижение отношений
@@ -176,7 +173,10 @@ void Connection::readData() // прием данных
                 connectTable newTable;
                 newTable.relationship = (strList.at(1).toInt() + temper)/2; // отношение
                 newTable.type = (strList.at(2).toInt()); // тип проги
-                newTable.useful = rand()%2;
+                if (newTable.relationship > 0)
+                    newTable.useful = rand()%(newTable.relationship+1);
+                else
+                    newTable.useful = rand()%2;
                 newTable.port = port;
                 newTable.lostSignal = 0;
                 newTable.selected = false;
@@ -185,8 +185,8 @@ void Connection::readData() // прием данных
                 sendData(port, 0); // ответное соединение
                                    //(чтобы отправитель знал о существовании принявшего)
 
-                str = "Новое соединение: " + QString::number(port%1000);
-                data.append(str);
+                str = "Новое соединение: " + QString::number(port%1000); // из-за этой строчки были багованные
+                data.append(str);                                        // порты с номерами команд
             }
 
             if (strList.first() != "0") // системное сообщение

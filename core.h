@@ -30,13 +30,14 @@ private:
     int requestAttack; // порт, который просили атаковать (для юзера)
     int requestAttackSender; // порт просящего атаку
 
-
     double INextRequired, DNextRequired, CNextRequired;
 
-    QList<QString> messages;
+    QList<QString> messages; // лог сообщений
+
+    int requestHelpTimeOut; // время задержки для запроса помощи (от спама)
 
 public:
-    bool modules[9];
+    bool modules[9]; // "модули", функционал
 
 public:
     Core();

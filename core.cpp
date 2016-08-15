@@ -26,8 +26,9 @@ Core::Core()
 
     requestAttack = -1;
     requestAttackSender = -1;
+    requestHelpTimeOut = 0;
 
-    for (int i =0; i < 9; i++)
+    for (int i = 0; i < 9; i++)
         modules[i] = true;
 
     nextRecount();
@@ -58,8 +59,9 @@ Core::Core(double _I, int _D, double _C, int _temper, double _Ii, double _Ci, in
 
     requestAttack = -1;
     requestAttackSender = -1;
+    requestHelpTimeOut = 0;
 
-    for (int i =0; i < 9; i++)
+    for (int i = 0; i < 9; i++)
         modules[i] = true;
 
     nextRecount();
@@ -121,6 +123,7 @@ void Core::request(quint16 portHelper, quint16 portEnemy)
 {
     QString str;
     Cn -= 10;
+    requestHelpTimeOut = 0;
     send(portHelper, 5, portEnemy);
     int index = -1;
     for (int i = 0; i < connection->getTableSize(); i++)
@@ -251,12 +254,12 @@ void Core::operateDataFromConnection()
     {
         str = connection->getData();
         QStringList strList = str.split(" ");
-        if (strList.size() > 1)
+        if (strList.first().toInt() >= 50000 && strList.first().toInt() <= 50200)
         {
             if (strList.at(2) == "3") // если это атака
             {
                 quint16 port = strList.at(0).toInt(); //порт атакующего
-                double amount = strList.at(3).toInt(); // сколько пришло ресурса
+                double amount = strList.at(3).toInt(); // сколько пришло атаки
 
                 int decreaseI = 0;
                 int decreaseC = 0;
@@ -267,7 +270,7 @@ void Core::operateDataFromConnection()
                     decreaseI = amount - decreaseC; // то память получает остаток урона
                 }
                 else
-                {     
+                {
                     decreaseC = amount*cof;
                     decreaseI = amount*(1-cof);
                 }
@@ -276,7 +279,7 @@ void Core::operateDataFromConnection()
                 if (percentage > 100) percentage = 100;
                 for (int i = 0; i < 9; i++)
                 {
-                    if (rand()%(105-percentage) < 3)
+                    if (rand()%(105-percentage) < 3 && percentage > 5 && modules[i] == true)
                         modules[i] = false;
                 }
 
@@ -390,24 +393,8 @@ void Core::operateDataFromConnection()
                     }
                 }
             }
-            else if (strList.at(2) != "0" &&
-                     strList.at(2) != "1" &&
-                     strList.at(2) != "2" &&
-                     strList.at(2) != "6" &&
-                     strList.at(2) != "88" &&
-                     strList.at(2) != "70" &&
-                     strList.at(2) != "71")
-            {
-                messages.append(str);
-            }
         }
-        else /*if (strList.at(2) != "0" &&
-                 strList.at(2) != "1" &&
-                 strList.at(2) != "2" &&
-                 strList.at(2) != "6" &&
-                 strList.at(2) != "88" &&
-                 strList.at(2) != "70" &&
-                 strList.at(2) != "71")*/
+        else
         {
             messages.append(str);
         }
@@ -506,7 +493,8 @@ void Core::update()
             && timeToUpgrade < (int)(1.4*coeff)
             && type != 3 // сервер не помогает
             && rand()%20 == 0
-            && modules[2] == true) // запрос боевой помощи
+            && modules[2] == true
+            && requestHelpTimeOut > Dn*10) // запрос боевой помощи
     {
         if (connection->getTableSize() >= 2)
         {
@@ -551,6 +539,7 @@ void Core::update()
     if (timeToUpgrade == (int)(1.7*coeff))
         messages.append("Необходима оптимизация: поиск портов отключен");
     timeToUpgrade++;
+    requestHelpTimeOut++;
 }
 
 void Core::updateUser() // пользовательский апдейт

@@ -85,15 +85,15 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 if (period == 0) // проигрыш
                 {
                     setStyleSheet("QWidget#Widget {background: qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, "
-                                  "stop:0 rgba(0, 0, 0, 255), stop:1 rgba(30, 0, 0, 255));}"
-                                  "QTextEdit {background: rgba(0,0,0,0); color: rgb(25,40,20);"
+                                  "stop:0 rgba(0, 0, 0, 255), stop:1 rgba(50, 0, 0, 255));}"
+                                  "QTextEdit {background: rgba(0,0,0,0); color: rgb(35,50,30);"
                                   "border: 0px;}");
                 }
                 if (period == -1) // победа
                 {
                     setStyleSheet("QWidget#Widget {background: qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, "
-                                  "stop:0 rgba(0, 0, 0, 255), stop:1 rgba(0, 0, 30, 255));}"
-                                  "QTextEdit {background: rgba(0,0,0,0); color: rgb(20,50,20);"
+                                  "stop:0 rgba(0, 0, 0, 255), stop:1 rgba(0, 0, 50, 255));}"
+                                  "QTextEdit {background: rgba(0,0,0,0); color: rgb(30,60,30);"
                                   "border: 0px;}");
                 }
                 period -= 2;
@@ -250,6 +250,13 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             {
                 ui->connections->setCurrentRow(i);
             }
+            if (table.type == 1 && bord->isEnabled()) // юзер
+            {
+                bord->setEnabled(0);
+                bord->lower();
+                bord->setStyleSheet("border: 1px solid black; background: rgba(0,0,0,0); color: rgba(0,0,0,0);");
+                bord->setText(" ");
+            }
         }
         connection->ignoreConnectionChange = false;
 
@@ -385,6 +392,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                         ui->console->append("- Поврежден модуль процессора");
                         realD = core->getD();
                         core->setD(core->getD()/2);
+                        core->nextRecount();
                         break;
                     default:
                         break;
@@ -392,7 +400,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 }
             }
             attacked = false;
-            if (!wormProgram)
+            if (!wormProgram && !core->getDead())
                 reviveTimer = startTimer(50);
         }
 
@@ -881,7 +889,7 @@ void Widget::educate()
                             "Для согласия состредоточься и попробуй выдать импульс на неинициализированную поверхность.\n"); break;
     case 19:
         ui->myPort->setVisible(1);
-        ui->console->append("Это твой номер в той системе, в которой ты находишься. Иными словами - логин, по которому "
+        ui->console->append("Это твой логин в той системе, в которой ты находишься. Иными словами - имя, по которому "
                             "с тобой смогут общаться другие программы.\n"); break;
     case 20:
         ui->I->setVisible(1);
@@ -894,7 +902,7 @@ void Widget::educate()
     case 22:
         ui->C->setVisible(1);
         ui->console->append("На большинство действий требуется ресурс, энергия. Генерация большого количества ресурса - залог процветания "
-                            "активной программы.\n"); break;
+                            "активной программы."); break;
     case 23:
         ui->console->append("Той, которой можно было бы гордиться. Той, которая мне нужна.\n"); break;
     case 24:
@@ -927,7 +935,7 @@ void Widget::educate()
                             "Нет смысла помогать тому, кто считает тебя своим врагом.\n"
                             "Программа, которой помогают, начинает лучше относиться к помощнику и считать, "
                             "что это знакомство может пригодиться в дальнейшем. "
-                            "Но учти, что отношение пропорционально оказанной помощи!\n"); break;
+                            "Но не забывай, что отношение пропорционально оказанной помощи!\n"); break;
     case 29:
         ui->label_help_2->setVisible(1);
         ui->request->setVisible(1);
@@ -1047,13 +1055,17 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
         ui->console->setFontPointSize(ps);
         ui->console->setFontItalic(0);
         education = 2000;
+        bord->setEnabled(0);
+        bord->lower();
+        bord->setStyleSheet("border: 1px solid black; background: rgba(0,0,0,0); color: rgba(0,0,0,0);");
+        bord->setText(" ");
     }
 
     if (timerProgram)
     {
         if (period > 0)
             died(80);
-        else
+        else if (period > -5) // случайное число!
         {
             education++;
             repaint();
@@ -1084,10 +1096,21 @@ void Widget::mouseReleaseEvent(QMouseEvent *mEv)
     particles.deleteSpawn();
 }
 
+
+
 void Widget::keyReleaseEvent(QKeyEvent *kEv)
 {
-    ui->console->append("released");
-    moving = false;
+    if(!kEv->isAutoRepeat())
+    {
+        //ui->console->append("released " + QString::number(kEv->key()));
+        moving = false;
+    }
+}
+
+void Widget::keyPressEvent(QKeyEvent *kEv)
+{
+
+    //ui->console->append("pressed " + QString::number(kEv->key()));
 }
 
 
@@ -1362,7 +1385,6 @@ void Widget::initGUI()
         ui->temper->setVisible(1);
         ui->temper->setText(QString("Дружелюбность: " + QString::number(core->getConnection()->getTemper())));
 
-
         if (normalProgram || troyanProgram)
         {
             ui->console->resize(280, 290);
@@ -1534,6 +1556,17 @@ void Widget::initGUI()
     bord->move(0,0);
     bord->lower();
 
+
+    if (normalProgram || troyanProgram || wormProgram)
+    {
+        bord->raise();
+        bord->setText("Нет данных.");
+        bord->setStyleSheet("QLabel { background: rgb(180,180,180); color: black;"
+                            "border: 1px solid black; font: "+QString::number(width()/10)+"px;}");
+        bord->setAlignment(Qt::AlignCenter);
+        bord->setEnabled(1);
+    }
+
 }
 
 
@@ -1609,7 +1642,7 @@ void Widget::setAlive(int norm, int user, int bot)
 
 void Widget::setArgs(int argc, char *argv[])
 {
-    rand()%10; // костыль для рандома...
+    char shittyCode = rand()%10; // костыль для рандома...
     qDebug() << argc;
     /*ui->console->append(QString::number(argc));
     for (int i = 0; i < argc; i++)
@@ -2308,7 +2341,7 @@ void Widget::on_launcherTab_currentChanged(int index)
     {
         if (index == 0)
         {
-        ui->console->setText("тут должно быть нормальное описание для вступления, предыстория.");
+        ui->console->setText("Вспышка.");
         }
         if (index == 1)
         {

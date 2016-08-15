@@ -44,6 +44,7 @@ public:
     void mousePressEvent(QMouseEvent *mEv);
     void mouseReleaseEvent(QMouseEvent *mEv);
     void keyReleaseEvent(QKeyEvent *kEv);
+    void keyPressEvent(QKeyEvent *kEv);
 
 private slots:
     void died(int type); // прием лаунчера о смерти

@@ -88,7 +88,7 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical{background: none;}<
     <number>0</number>
    </property>
    <property name="textInteractionFlags">
-    <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+    <set>Qt::NoTextInteraction</set>
    </property>
   </widget>
   <widget class="QTabWidget" name="launcherTab">
