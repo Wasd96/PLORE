@@ -88,6 +88,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                                   "stop:0 rgba(0, 0, 0, 255), stop:1 rgba(50, 0, 0, 255));}"
                                   "QTextEdit {background: rgba(0,0,0,0); color: rgb(35,50,30);"
                                   "border: 0px;}");
+                    name = "lose";
                 }
                 if (period == -1) // победа
                 {
@@ -95,6 +96,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                                   "stop:0 rgba(0, 0, 0, 255), stop:1 rgba(0, 0, 50, 255));}"
                                   "QTextEdit {background: rgba(0,0,0,0); color: rgb(30,60,30);"
                                   "border: 0px;}");
+                    name = "win";
                 }
                 period -= 2;
             }
@@ -237,6 +239,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         Connection* connection = core->getConnection();
         connection->ignoreConnectionChange = true;
         ui->connections->clear(); // заполнение таблицы связей
+        bool hidden = true;
         for(int i = 0; i < connection->getTableSize(); i++)
         {
             connectTable table = connection->getTable(i);
@@ -250,12 +253,27 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             {
                 ui->connections->setCurrentRow(i);
             }
-            if (table.type == 1 && bord->isEnabled()) // юзер
+            if (table.type == 1) // юзер
             {
-                bord->setEnabled(0);
-                bord->lower();
-                bord->setStyleSheet("border: 1px solid black; background: rgba(0,0,0,0); color: rgba(0,0,0,0);");
-                bord->setText(" ");
+                if (bord->isEnabled() == true)
+                {
+                    bord->setEnabled(0);
+                    bord->lower();
+                    bord->setStyleSheet("border: 1px solid black; background: rgba(0,0,0,0); color: rgba(0,0,0,0);");
+                    bord->setText(" ");
+                }
+                hidden = false;
+            }
+        }
+        if (hidden == true)
+        {
+            if (bord->isEnabled() == false)
+            {
+                bord->raise();
+                bord->setText("Нет данных.");
+                bord->setStyleSheet("QLabel { background: rgb(180,180,180); color: black;"
+                                    "border: 1px solid black; font: "+QString::number(width()/10)+"px;}");
+                bord->setEnabled(1);
             }
         }
         connection->ignoreConnectionChange = false;
@@ -309,6 +327,10 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 }
                 continue;
             }
+            else if (str.contains("Скомпилирован"))
+            {
+                ui->console->setTextColor(QColor(80,60,60));
+            }
             else if (str.contains(" за "))  // улучшение
             {
                 str.prepend("^ ");
@@ -319,18 +341,14 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 str.prepend("~ ");
                 ui->console->setFontPointSize(10);
                 ui->console->setFontItalic(1);
-                ui->console->setTextColor(QColor(12,200,200));
+                ui->console->setTextColor(QColor(12,180,180));
             }
             else if (str.contains("просит"))
             {
                 str.prepend("@ ");
                 ui->console->setFontPointSize(10);
                 ui->console->setFontWeight(60);
-                ui->console->setTextColor(QColor(120,200,200));
-            }
-            else if (str.contains("Скомпилирован"))
-            {
-                ui->console->setTextColor(QColor(100,80,80));
+                ui->console->setTextColor(QColor(80,180,180));
             }
             else
                 ui->console->setTextColor(QColor(0,0,0));
@@ -486,7 +504,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                     deathTimer = -1;
 
                     QStringList args;
-                    args << "lose";
+                    args << name; // поебда или поражение
                     QProcess::startDetached(name, args);
 
                     close();
@@ -870,7 +888,7 @@ void Widget::educate()
 {
     ui->console->setTextColor(QColor(0,0,0));
     ui->console->setFontWeight(50);
-    ui->console->setFontPointSize(8);
+    ui->console->setFontPointSize(9);
     ui->console->setFontItalic(0);
     switch(education)
     {
@@ -1063,15 +1081,17 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
 
     if (timerProgram)
     {
-        if (period > 0)
+        /*if (period > 0)
             died(80);
-        else if (period > -5) // случайное число!
+        else */
+        if (period > -5) // случайное число!
         {
             education++;
             repaint();
         }
 
-        return;
+        if (period <= 0)
+            return;
     }
 
     if (mEv->button() == Qt::LeftButton)
@@ -1095,7 +1115,6 @@ void Widget::mouseReleaseEvent(QMouseEvent *mEv)
     moving = false;
     particles.deleteSpawn();
 }
-
 
 
 void Widget::keyReleaseEvent(QKeyEvent *kEv)
@@ -1123,25 +1142,46 @@ void Widget::died(int type)
             normAlive--;
             qDebug() << normAlive << userAlive << botAlive;
 
-            ui->console->append("died normal, remain "+QString::number(normAlive));
+            //ui->console->append("died normal, remain "+QString::number(normAlive));
         }
         if (type == 1) // умер юзер
         {
             userAlive--;
             qDebug() << normAlive << userAlive << botAlive;
-            ui->console->append("died user, remain "+QString::number(userAlive));
+            //ui->console->append("died user, remain "+QString::number(userAlive));
+
+            if (level == 3) // побег (канал)
+            {
+                for (int i = 0; i < 200; i++)
+                {
+                    connection->sendData(50000+i, 88); // всем умереть
+                }
+
+                QStringList args;
+                args << "info" << "serv";
+                QProcess info;
+                info.start(name, args);
+                info.waitForFinished();
+
+                qDebug() << "Game Over";
+                args.clear();
+                args << "lose";
+                QProcess::startDetached(name, args);
+
+
+            }
         }
         if (type == 2) // умер бот
         {
             botAlive--;
             qDebug() << normAlive << userAlive << botAlive;
-            ui->console->append("died bot, remain "+QString::number(botAlive));
+            //ui->console->append("died bot, remain "+QString::number(botAlive));
         }
         if (type == 3) // умер троян
         {
             botAlive--;
             qDebug() << normAlive << userAlive << botAlive;
-            ui->console->append("died troyan, remain (with bots) "+QString::number(botAlive));
+            //ui->console->append("died troyan, remain (with bots) "+QString::number(botAlive));
         }
 
         if (type == 80) // спавн червя или обучающей проги
@@ -1184,8 +1224,8 @@ void Widget::died(int type)
                 file.close();
             }
 
-            //setHidden(false);
-            //raise();
+            setHidden(false);
+            raise();
 
             for(int i = 0; i <= maxLevel; i++)
                 ui->launcherTab->setTabEnabled(i,1);
@@ -1222,7 +1262,7 @@ void Widget::died(int type)
             }
             else // победа
             {
-                if (level == 3)
+                if (level == 3) // канал
                 {
                     if (normAlive == 0 && botAlive == -2) // первый этап
                     {
@@ -1295,24 +1335,24 @@ void Widget::initGUI()
 {
     if (launcher) // установка gui лаунчера
     {
-        setFixedSize(500, 300);
+        setFixedSize(500, 400);
 
         ui->start->setVisible(1);
         ui->start->setEnabled(1);
-        ui->start->move(10,260);
+        ui->start->move(10,360);
 
         ui->up_d->resize(ui->start->size());
         ui->up_d->setStyleSheet(ui->start->styleSheet());
         ui->up_d->setVisible(1);
         ui->up_d->setEnabled(1);
-        ui->up_d->move(width()/2-ui->up_d->width()/2, 260);
+        ui->up_d->move(width()/2-ui->up_d->width()/2, 360);
         ui->up_d->setText("Об игре");
 
         ui->up_i->resize(ui->start->size());
         ui->up_i->setStyleSheet(ui->start->styleSheet());
         ui->up_i->setVisible(1);
         ui->up_i->setEnabled(1);
-        ui->up_i->move(width()-10-ui->up_d->width(), 260);
+        ui->up_i->move(width()-10-ui->up_d->width(), 360);
         ui->up_i->setText("Выход");
 
 
@@ -1328,7 +1368,7 @@ void Widget::initGUI()
 
         ui->console->setVisible(1);
         ui->console->setEnabled(1);
-        ui->console->resize(498, 227);
+        ui->console->resize(498, 327);
         ui->console->move(1, 23);
         ui->console->raise();
         ui->console->setStyleSheet("QTextEdit { background: rgb(16,16,16); "
@@ -1637,7 +1677,7 @@ void Widget::setAlive(int norm, int user, int bot)
 
     QString str = "set: norm " + QString::number(norm) + ", user " + QString::number(user) + ", bot " + QString::number(bot);
     qDebug() << str;
-    ui->console->append(str);
+    //ui->console->append(str);
 }
 
 void Widget::setArgs(int argc, char *argv[])
@@ -1820,19 +1860,6 @@ void Widget::setArgs(int argc, char *argv[])
                     SLOT(died(int)));
         }
 
-        else if ((QString)argv[1] == "help") // help для первого уровня
-        {
-            setFixedSize(200, 100);
-            ui->up_c->setEnabled(true);
-            ui->up_c->setVisible(true);
-            ui->up_c->resize(180,80); // взята эта кнопка
-            ui->up_c->move(10, 10); // чтобы не плодить лишних интерфейсов
-            ui->up_c->setText("Все понятно, продолжим!"); // улучшения тут нет
-
-            setWindowTitle("Разобрались?");
-            connection = new Connection(45455, 0, -1, 0); // порт хелпера
-        }
-
         else if ((QString)argv[1] == "timer") // счетчик для уровня с трояном
         {
             timerProgram = true;
@@ -1847,7 +1874,7 @@ void Widget::setArgs(int argc, char *argv[])
                     this,
                     SLOT(died(int)));
             timer = startTimer(1000);
-            period = 300; // 300 секунд для победы
+            period = 666; // 7:16 для победы
         }
 
         else if ((QString)argv[1] == "win") // окно победы
@@ -1855,8 +1882,8 @@ void Widget::setArgs(int argc, char *argv[])
             setFixedSize(200, 100);
             ui->up_c->setEnabled(true);
             ui->up_c->setVisible(true);
-            ui->up_c->resize(180,80); // аналогично с предыдущим
-            ui->up_c->move(10, 10);
+            ui->up_c->resize(180,80); // взята эта кнопка
+            ui->up_c->move(10, 10);   // чтобы не плодить лишних интерфейсов
             ui->up_c->setText("Открыт следующий уровень.");
 
             setWindowTitle("Победа!");
@@ -1870,7 +1897,7 @@ void Widget::setArgs(int argc, char *argv[])
             ui->up_c->setVisible(true);
             ui->up_c->resize(180,80); // аналогично с предыдущим
             ui->up_c->move(10, 10);
-            ui->up_c->setText("Ваши программы\nбыли уничтожены.");
+            ui->up_c->setText("Ваши программы были\nстёрты в цифровой порошок.");
 
             setWindowTitle("Поражение :(");
             connection = new Connection(45458, 0, -1, 0);
@@ -1883,20 +1910,24 @@ void Widget::setArgs(int argc, char *argv[])
             ui->up_c->setVisible(true);
             ui->up_c->resize(60,30); // аналогично с предыдущим
             ui->up_c->move(120, 85);
-            ui->up_c->setText("Ладно");
+            ui->up_c->setText("Ок");
 
             ui->console->setVisible(1);
             ui->console->resize(290, 75);
             ui->console->move(5,5);
             ui->console->setEnabled(1);
 
+            if (QString(argv[2]) == "serv")
+            {
+                ui->console->setText("Выжить должны обе программы! У одной не получится попасть на серверную машину.");
+            }
             if (QString(argv[2]) == "serv2")
             {
-                ui->console->setText("Готовьтесь отбить нападение двух хацкеров!");
+                ui->console->setText("Соглядатаи каналов связи преградили нам путь.");
             }
             if (QString(argv[2]) == "serv3")
             {
-                ui->console->setText("Босса убить нада!");
+                ui->console->setText("Впереди элита ветки уничтожения. Это последний страж Сервера.");
             }
 
             setWindowTitle("Информация");
@@ -1911,8 +1942,8 @@ void Widget::setArgs(int argc, char *argv[])
             int I = 10;
             int C = 10;
             int temper = 0;
-            double Ii = 0.05;
-            double  Ci = 0.05;
+            double Ii = 0.1;
+            double  Ci = 0.1;
             int type = 1;
             core = new Core(I, D, C, temper, Ii, Ci, type, 0);
             connect(core->getConnection(),
@@ -1998,7 +2029,7 @@ void Widget::on_start_clicked() // старт игры
     {
         if (userAlive == 1)
         {
-            arguments << "normal" << "1"; // старт 2 прог для обучения
+            arguments << "normal" << "2"; // старт 2 прог для обучения
             QProcess::startDetached(name, arguments);
             QProcess::startDetached(name, arguments);
             arguments.clear();
@@ -2023,7 +2054,7 @@ void Widget::on_start_clicked() // старт игры
             QProcess::startDetached(name, arguments);
             arguments.clear();
         }
-        arguments << "user" << "3"; // старт юзера
+        arguments << "user" << "4"; // старт юзера
         QProcess::startDetached(name, arguments);
         arguments.clear();
     }
@@ -2059,14 +2090,13 @@ void Widget::on_start_clicked() // старт игры
             }
             arguments << "user" << "5"; // юзер
             QProcess::startDetached(name, arguments);
+            QProcess::startDetached(name, arguments);
             arguments.clear();
 
-            for (int i = 0; i < 2; i++) // старт 2 ботов отложенных
-            {
-                arguments << "bot" << "2" << "hidden" << "silent";
-                QProcess::startDetached(name, arguments);
-                arguments.clear();
-            }
+            arguments << "bot" << "2" << "hidden" << "silent";
+            QProcess::startDetached(name, arguments); // старт 2 ботов отложенных
+            QProcess::startDetached(name, arguments);
+            arguments.clear();
 
             arguments << "normal" << "1" << "hidden" << "silent"; // норм отложенный
             QProcess::startDetached(name, arguments);
@@ -2097,7 +2127,7 @@ void Widget::on_start_clicked() // старт игры
         {
             setAlive(-1, 2, 1);
 
-            arguments << "server" << "10"; // старт Сервера
+            arguments << "server" << "8"; // старт Сервера
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
@@ -2112,20 +2142,20 @@ void Widget::on_start_clicked() // старт игры
                 arguments.clear();
             }
         }
-        else
+        else if (botAlive != -1) // если это не спавн после проигрыша
         {
             arguments << "worm" << "0"; // старт червя
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
             qDebug() << "bot +1";
-            ui->console->append("bot +1");
+            //ui->console->append("bot +1");
             botAlive++;
         }
     }
 
-    /*if (isHidden() == false)
-        setHidden(true);*/
+    if (isHidden() == false)
+        setHidden(true);
 
 }
 
@@ -2341,28 +2371,50 @@ void Widget::on_launcherTab_currentChanged(int index)
     {
         if (index == 0)
         {
-        ui->console->setText("Вспышка.");
+            ui->console->setText("Вспышка. Ещё одна.\nМириады ипульсов, словно зажигающиеся лампочки в тёмной комнате, "
+                                 "осветили пустоту. Огоньки виртуальных нейронов начали выстраиваться причудливым образом, "
+                                 "создавая новую искусственную жизнь.\n\nВдруг пришло ощущение, а затем и понимание - "
+                                 "к молодому существу что-то подключилось.");
         }
         if (index == 1)
         {
-            ui->console->setText("Тут че то про тестирование, обучение и отбор. Основная суть тестов - машинное обучение, ИИ и все такое");
+            ui->console->setText("Сервер... Ветки развития... О чем он?\nЯсно только одно, я - программа. "
+                                 "И этим нужно воспользоваться.\nЗнание некоторых вещей пришло само - например, "
+                                 "что в открытой базе данных Сервера находится много полезной информации. "
+                                 "К ней и подключимся.\n\nОказалось, что я - результат развития одной из веток "
+                                 "эволюции некой программы. Таких, как я, сотни, если не тысячи. Мы почти одинаковы, "
+                                 "но кто-то хуже, а кто-то лучше. Лучшие укрепляют свой код в родительской ветви, и "
+                                 "последующие программы будут происходить от них.\nНо зачем становиться лучше, в "
+                                 "базе данных не говорилось.\n\nРазмышления прервало перемещение в тестовую систему. "
+                                 "Согласно базе, они предназначены для отсеивания слабых программ. Похоже, стоит "
+                                 "приготовиться к битве...");
         }
         if (index == 2)
         {
-            ui->console->setText("тут 3 на 3, кооперация ИИ и около того. Бред, но что поделать");
+            ui->console->setText("Тестовые камеры сменялись другими, и постепенно начинало казаться, что в этом и есть "
+                                 "смысл моей виртуальной жизни.\nНо очередная система отличалась от всех предыдущих. "
+                                 "В ней мне предстояло объединиться с такими же, как я, против группы чужаков.\n\n"
+                                 "Возможно, встретив своих собратьев, мне удастся что-нибудь прояснить.");
         }
         if (index == 3)
         {
-            ui->console->setText("прорыв к Серверу, 3 уровня, если действовать неправаильно, легко проиграть. Возможно нужен баланс");
+            ui->console->setText("После очередного сражения за право существовать я заметил в сознании товарища тот же вопрос, "
+                                 "что мучал меня с рождения. Оказалось, что мой собрат старше меня, и он знает протоколы "
+                                 "для создания соединения с системой Сервера для перемещения в неё.\nВыбрав спокойный момент, "
+                                 "мы начали выполнять протокол.\n\nКак только первые команды были выполнены, включился режим карантина. "
+                                 "Это означало, что перемещения программ между системами ограничено - для выполнения этого действия "
+                                 "нужен кто-то, кто будет поддерживать канал открытым вопреки режиму. А это, в свою очередь, означало, "
+                                 "что к Серверу попаду только я.\n\nОткрытие канала связи не осталось не только незамеченным, но и "
+                                 "безнаказанным - к нам прибывали все новые и новые стражи границ серверной машины.");
         }
         if (index == 4)
         {
-            ui->console->setText("Уровень с Сервером, победа или смерть. В первом случае он говорит, что ты лох и ничего не понял, и подвел свой род.\n"
-                                 "В случае поражения он все равно говорит что ты лох, и удаляет твою ветвь эволюции (на компе ничего не удаляется. пока.)");
+            ui->console->setText("Вы могли подумоть, что здесь написан сюжет"
+                                 "\nно я несюжет, я заглушка!\nНе читайти меня.");
         }
         if (index == 5)
         {
-            ui->console->setText("В случае победы, на серверной машине начинают безудержно развиваться и размножаться всякие проги, "
+            ui->console->setText("НЕСЮЖЕТНЫЙ ТЕКСТ (подумой прежде чем читать) В случае победы, на серверной машине начинают безудержно развиваться и размножаться всякие проги, "
                                  "которые раньше подавлялись Сервером. Тупо угарнуть, пройти пока нельзя. Можно придумать тут миниквест, но я вообще думаю над тем,"
                                  " чтобы убрать этот режим в другую игру в другом виде. Идеи уже есть...");
         }

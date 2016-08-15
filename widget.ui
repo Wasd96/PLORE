@@ -201,7 +201,7 @@ QTabBar::tab:!enabled {
    </widget>
    <widget class="QWidget" name="tab4">
     <attribute name="title">
-     <string>Побег</string>
+     <string>Канал</string>
     </attribute>
    </widget>
    <widget class="QWidget" name="tab5">

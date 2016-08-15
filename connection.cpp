@@ -180,6 +180,8 @@ void Connection::readData() // прием данных
                 newTable.port = port;
                 newTable.lostSignal = 0;
                 newTable.selected = false;
+                if (table.size() == 0)
+                    newTable.selected = true;
 
                 createTable(newTable); // добавление в таблицу
                 sendData(port, 0); // ответное соединение
