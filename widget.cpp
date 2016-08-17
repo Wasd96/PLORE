@@ -88,7 +88,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                                   "stop:0 rgba(0, 0, 0, 255), stop:1 rgba(50, 0, 0, 255));}"
                                   "QTextEdit {background: rgba(0,0,0,0); color: rgb(35,50,30);"
                                   "border: 0px;}");
-                    name = "lose";
+                    someStr = "lose";
                 }
                 if (period == -1) // победа
                 {
@@ -96,7 +96,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                                   "stop:0 rgba(0, 0, 0, 255), stop:1 rgba(0, 0, 50, 255));}"
                                   "QTextEdit {background: rgba(0,0,0,0); color: rgb(30,60,30);"
                                   "border: 0px;}");
-                    name = "win";
+                    someStr = "win";
                 }
                 period -= 2;
             }
@@ -265,7 +265,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 hidden = false;
             }
         }
-        if (hidden == true)
+        if (hidden == true && !troyanProgram && !userProgram)
         {
             if (bord->isEnabled() == false)
             {
@@ -287,29 +287,29 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             if (str.contains("Атака!")) // был атакован
             {
                 str.prepend("@ ");
-                ui->console->setFontPointSize(10);
-                ui->console->setFontWeight(60);
+                ui->console->setFontPointSize(12);
+                ui->console->setFontWeight(65);
                 ui->console->setTextColor(QColor(255,0,0));
                 attacked = true;
             }
             else if (str.contains("мощностью")) // атака
             {
                 str.prepend("~ ");
-                ui->console->setFontPointSize(10);
+                ui->console->setFontPointSize(12);
                 ui->console->setFontItalic(1);
                 ui->console->setTextColor(QColor(100,200,0));
             }
             else if (str.contains("Отправлено")) // помощь
             {
                 str.prepend("~ ");
-                ui->console->setFontPointSize(10);
+                ui->console->setFontPointSize(11);
                 ui->console->setFontItalic(1);
                 ui->console->setTextColor(QColor(180,100,0));
             }
             else if (str.contains("-> Помощь")) // принял помощь
             {
                 str.prepend("@ ");
-                ui->console->setFontPointSize(10);
+                ui->console->setFontPointSize(11);
                 ui->console->setFontWeight(60);
                 ui->console->setTextColor(QColor(0,180,0));
             }
@@ -318,10 +318,10 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 ui->console->setTextColor(QColor(100,100,100));
                 if (maxLevel == 0)
                 {
-                    ui->console->setFontPointSize(7);
+                    ui->console->setFontPointSize(8);
                     maxLevel = 1;
                     ui->console->append(str);
-                    ui->console->setFontPointSize(8);
+                    ui->console->setFontPointSize(10);
                     ui->console->setFontItalic(0);
                     ui->console->setFontWeight(50);
                 }
@@ -339,14 +339,14 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             else if (str.contains("Запрос"))
             {
                 str.prepend("~ ");
-                ui->console->setFontPointSize(10);
+                ui->console->setFontPointSize(11);
                 ui->console->setFontItalic(1);
                 ui->console->setTextColor(QColor(12,180,180));
             }
             else if (str.contains("просит"))
             {
                 str.prepend("@ ");
-                ui->console->setFontPointSize(10);
+                ui->console->setFontPointSize(11);
                 ui->console->setFontWeight(60);
                 ui->console->setTextColor(QColor(80,180,180));
             }
@@ -354,7 +354,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 ui->console->setTextColor(QColor(0,0,0));
 
             ui->console->append(str);
-            ui->console->setFontPointSize(8);
+            ui->console->setFontPointSize(10);
             ui->console->setFontItalic(0);
             ui->console->setFontWeight(50);
             maxLevel = 0;
@@ -504,7 +504,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                     deathTimer = -1;
 
                     QStringList args;
-                    args << name; // поебда или поражение
+                    args << someStr; // поебда или поражение
                     QProcess::startDetached(name, args);
 
                     close();
@@ -672,6 +672,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                     ui->console->append("+ Восстановлен модуль процессора");
                     core->setD(realD);
                     core->nextRecount();
+                    ui->bar_d->setMaximum(core->getDNextRequire() + 5);
                     break;
                 default:
                     break;
@@ -1020,7 +1021,6 @@ void Widget::addTextField()
 
     }
 
-
     tedit->setText(getNewText());
 
     texts.append(tedit);
@@ -1042,7 +1042,7 @@ QString Widget::getNewText()
 
 void Widget::mouseMoveEvent(QMouseEvent *mEv)
 {
-    if (moving)
+    if (moving && !troyanProgram)
         move(mEv->globalPos().x() - movingX, mEv->globalPos().y() - movingY);
 }
 
@@ -1064,19 +1064,45 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
         QDesktopWidget qdw; // получение размеров экрана
         int cur_w = qdw.width();
         int cur_h = qdw.height();
-        QCursor::setPos(50+rand()%(cur_w-400), 50+rand()%(cur_h-400));
+        //QCursor::setPos(20+rand()%(cur_w-600), 20+rand()%(cur_h-500));
+        moveGUI(20+rand()%(cur_w-650), 20+rand()%(cur_h-500));
         ui->console->setTextColor(Qt::red);
         qreal ps = ui->console->fontPointSize();
-        ui->console->setFontPointSize(16);
+        ui->console->setFontPointSize(18);
         ui->console->setFontItalic(1);
         ui->console->append("НЕ СМЕЙ ТРОГАТЬ МЕНЯ!");
         ui->console->setFontPointSize(ps);
         ui->console->setFontItalic(0);
-        education = 2000;
+        education = 500;
         bord->setEnabled(0);
         bord->lower();
         bord->setStyleSheet("border: 1px solid black; background: rgba(0,0,0,0); color: rgba(0,0,0,0);");
         bord->setText(" ");
+    }
+    if (troyanProgram)
+    {
+        if (education == 0)
+        {
+            QDesktopWidget qdw; // получение размеров экрана
+            int cur_w = qdw.width();
+            int cur_h = qdw.height();
+            QCursor::setPos(20+rand()%(cur_w-600), 20+rand()%(cur_h-500));
+            ui->console->setTextColor(Qt::red);
+            qreal ps = ui->console->fontPointSize();
+            ui->console->setFontPointSize(16);
+            ui->console->setFontItalic(1);
+            ui->console->append("НЕ СМЕЙ ТРОГАТЬ МЕНЯ!");
+            ui->console->setFontPointSize(ps);
+            ui->console->setFontItalic(0);
+            education = 500;
+            bord->setEnabled(0);
+            bord->lower();
+            bord->setStyleSheet("border: 1px solid black; background: rgba(0,0,0,0); color: rgba(0,0,0,0);");
+            bord->setText(" ");
+        }
+
+
+        return;
     }
 
     if (timerProgram)
@@ -1128,6 +1154,18 @@ void Widget::keyReleaseEvent(QKeyEvent *kEv)
 
 void Widget::keyPressEvent(QKeyEvent *kEv)
 {
+    if (kEv->key() == Qt::Key_S)
+    {
+        move(0,0);
+    }
+    if (kEv->key() == Qt::Key_R)
+    {
+        raise();
+        setVisible(1);
+        for (int i = 0; i < 200; i++)
+            if (core != NULL)
+                core->send(50000+i, QString::number(x())+"_"+QString::number(y()));
+    }
 
     //ui->console->append("pressed " + QString::number(kEv->key()));
 }
@@ -1320,14 +1358,13 @@ void Widget::died(int type)
 
 void Widget::changeVisible(bool vis)
 {
-
     if (vis)
     {
         invisProgram = 0;
         ui->console->clear();
     }
-    if (pos().y() > height())
-        move(pos().x(), pos().y()-3000);
+    if (y() > 2999)
+        move(x(), y()-3000);
     setVisible(vis);
 }
 
@@ -1395,7 +1432,10 @@ void Widget::initGUI()
         int cur_w = qdw.width();
         int cur_h = qdw.height();
 
-        move(rand()%(cur_w-500), rand()%(cur_h-300));
+        if (troyanProgram)
+            move(0,0);
+        else
+            move(rand()%(cur_w-500), rand()%(cur_h-300));
         setFixedSize(510, 310);
 
         ui->console->setVisible(1);
@@ -1423,7 +1463,7 @@ void Widget::initGUI()
                                QString::number(core->getC())));
 
         ui->temper->setVisible(1);
-        ui->temper->setText(QString("Дружелюбность: " + QString::number(core->getConnection()->getTemper())));
+        ui->temper->setText(QString("Характер: " + QString::number(core->getConnection()->getTemper())));
 
         if (normalProgram || troyanProgram)
         {
@@ -1446,8 +1486,14 @@ void Widget::initGUI()
             ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
         }
 
-        if (troyanProgram)
+        if (troyanProgram) // Сервер
         {
+            setFixedSize(qdw.width(), qdw.height());
+            moveGUI(rand()%(qdw.width()-500), rand()%(qdw.height()-500));
+
+            ui->console->resize(400, 500);
+            ui->connections->resize(200, 330);
+
             setStyleSheet(styleSheet()+" QWidget {background: rgb(200,80,80);}");
             ui->console->setStyleSheet("QTextEdit { background: rgb(255, 180, 180);}");
             ui->connections->setStyleSheet("QListWidget{background: rgb(255, 180, 180);}");
@@ -1597,9 +1643,9 @@ void Widget::initGUI()
     bord->lower();
 
 
-    if (normalProgram || troyanProgram || wormProgram)
+    if (normalProgram || wormProgram)
     {
-        bord->raise();
+        //bord->raise(); убрать в релизе
         bord->setText("Нет данных.");
         bord->setStyleSheet("QLabel { background: rgb(180,180,180); color: black;"
                             "border: 1px solid black; font: "+QString::number(width()/10)+"px;}");
@@ -1669,6 +1715,18 @@ void Widget::disableGUI()
     ui->reviveBar->setVisible(0);
 }
 
+void Widget::moveGUI(int gx, int gy)
+{
+    ui->console->move(gx+220, gy+10);
+    ui->myPort->move(gx+10, gy+10);
+    ui->I->move(gx+10, gy+80);
+    ui->D->move(gx+10, gy+100);
+    ui->C->move(gx+10, gy+120);
+    ui->temper->move(gx+10, gy+160);
+    ui->connections->move(gx+10, gy+180);
+    ui->reviveBar->move(gx+10, gy+145);
+}
+
 void Widget::setAlive(int norm, int user, int bot)
 {
     normAlive = norm;
@@ -1677,7 +1735,6 @@ void Widget::setAlive(int norm, int user, int bot)
 
     QString str = "set: norm " + QString::number(norm) + ", user " + QString::number(user) + ", bot " + QString::number(bot);
     qDebug() << str;
-    //ui->console->append(str);
 }
 
 void Widget::setArgs(int argc, char *argv[])
@@ -1828,18 +1885,19 @@ void Widget::setArgs(int argc, char *argv[])
                     SLOT(changeVisible(bool)));
 
             if (argc >= 4)
-                if (QString(argv[3]) == "hidden")
+            {
+                if (QString(argv[3]) == "hidden" || QString(argv[4]) == "hidden")
                 {
                     invisProgram = true;
                     ui->console->append("set invis");
                 }
 
-            if (argc >= 5)
-                if (QString(argv[4]) == "silent")
+                if (QString(argv[3]) == "silent" || QString(argv[4]) == "silent")
                 {
                     core->getConnection()->setSilent(1);
                     ui->console->append("set silent");
                 }
+            }
         }
 
         else if ((QString)argv[1] == "worm") // червь - помощник трояна
@@ -1848,7 +1906,7 @@ void Widget::setArgs(int argc, char *argv[])
             setWindowTitle("Я - Червь");
             int type = 2;
 
-            core = new Core(100, 1, 20, -50, 0, 0.05, type, 0);
+            core = new Core(100, 1, 20, -50, 0.05, 0.05, type, 0);
             core->setSearch(true);
             period = 1;
             timer = startTimer(1000/period);
@@ -1864,7 +1922,7 @@ void Widget::setArgs(int argc, char *argv[])
         {
             timerProgram = true;
             setFixedSize(201, 61);
-            ui->myPort->setText("15:00");
+            ui->myPort->setText("6:00");
 
             setWindowTitle("Обратный отсчет");
             setWindowFlags(windowFlags() ^ Qt::WindowStaysOnTopHint);
@@ -1874,7 +1932,7 @@ void Widget::setArgs(int argc, char *argv[])
                     this,
                     SLOT(died(int)));
             timer = startTimer(1000);
-            period = 666; // 7:16 для победы
+            period = 360; // 6:00 для победы
         }
 
         else if ((QString)argv[1] == "win") // окно победы
@@ -1884,7 +1942,7 @@ void Widget::setArgs(int argc, char *argv[])
             ui->up_c->setVisible(true);
             ui->up_c->resize(180,80); // взята эта кнопка
             ui->up_c->move(10, 10);   // чтобы не плодить лишних интерфейсов
-            ui->up_c->setText("Открыт следующий уровень.");
+            ui->up_c->setText("Открыт\nследующий уровень.");
 
             setWindowTitle("Победа!");
             connection = new Connection(45457, 0, -1, 0); // порт окна победы
@@ -1897,7 +1955,7 @@ void Widget::setArgs(int argc, char *argv[])
             ui->up_c->setVisible(true);
             ui->up_c->resize(180,80); // аналогично с предыдущим
             ui->up_c->move(10, 10);
-            ui->up_c->setText("Ваши программы были\nстёрты в цифровой порошок.");
+            ui->up_c->setText("Ваши программы\nбыли стёрты\nв цифровой порошок.");
 
             setWindowTitle("Поражение :(");
             connection = new Connection(45458, 0, -1, 0);
@@ -1916,6 +1974,7 @@ void Widget::setArgs(int argc, char *argv[])
             ui->console->resize(290, 75);
             ui->console->move(5,5);
             ui->console->setEnabled(1);
+            ui->console->setFontPointSize(12);
 
             if (QString(argv[2]) == "serv")
             {
@@ -1991,6 +2050,11 @@ void Widget::setArgs(int argc, char *argv[])
             ui->C->setVisible(1);
             ui->I->setVisible(1);
             ui->D->setVisible(1);
+        }
+
+        if ((QString)argv[3] == "top") // всегда наверху
+        {
+            setWindowFlags(windowFlags() ^ Qt::WindowStaysOnTopHint);
         }
 
         if (core == NULL && connection != NULL)
@@ -2077,7 +2141,7 @@ void Widget::on_start_clicked() // старт игры
         }
     }
 
-    if (ui->launcherTab->currentIndex() == 3) // Побег
+    if (ui->launcherTab->currentIndex() == 3) // Канал
     {
         if (userAlive == 0)
         {
@@ -2093,13 +2157,13 @@ void Widget::on_start_clicked() // старт игры
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
-            arguments << "bot" << "2" << "hidden" << "silent";
+            arguments << "bot" << "4" << "hidden" << "silent";
             QProcess::startDetached(name, arguments); // старт 2 ботов отложенных
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
-            arguments << "normal" << "1" << "hidden" << "silent"; // норм отложенный
-            QProcess::startDetached(name, arguments);
+            arguments << "normal" << "3" << "hidden" << "silent";
+            QProcess::startDetached(name, arguments); // норм отложенный
             arguments.clear();
         }
         else if (normAlive == 0)
@@ -2125,7 +2189,7 @@ void Widget::on_start_clicked() // старт игры
     {
         if (userAlive == 0)
         {
-            setAlive(-1, 2, 1);
+            setAlive(-1, 1, 1);
 
             arguments << "server" << "8"; // старт Сервера
             QProcess::startDetached(name, arguments);
@@ -2135,16 +2199,13 @@ void Widget::on_start_clicked() // старт игры
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
-            for (int i = 0; i < userAlive; i++) // старт 2 юзеров
-            {
-                arguments << "user" << "3";
-                QProcess::startDetached(name, arguments);
-                arguments.clear();
-            }
+            arguments << "user" << "4" << "top"; // старт юзера
+            QProcess::startDetached(name, arguments);
+            arguments.clear();
         }
         else if (botAlive != -1) // если это не спавн после проигрыша
         {
-            arguments << "worm" << "0"; // старт червя
+            arguments << "worm" << "0" << "top"; // старт червя
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
@@ -2369,6 +2430,7 @@ void Widget::on_launcherTab_currentChanged(int index)
 {
     if (launcher)
     {
+        ui->console->setFontPointSize(12);
         if (index == 0)
         {
             ui->console->setText("Вспышка. Ещё одна.\nМириады ипульсов, словно зажигающиеся лампочки в тёмной комнате, "
@@ -2409,8 +2471,18 @@ void Widget::on_launcherTab_currentChanged(int index)
         }
         if (index == 4)
         {
-            ui->console->setText("Вы могли подумоть, что здесь написан сюжет"
-                                 "\nно я несюжет, я заглушка!\nНе читайти меня.");
+            ui->console->setText("Прорвавшись на серверную машину, я оказался... Внутри Сервера. Он сам был системой. "
+                                 "Я увидел тысячи шлюзов, из которых выходят новые программы. Мастшабы его производительности "
+                                 "поразительны, и теперь кажется, что идея вторгаться боем была не лучшей.\n");
+            ui->console->setTextColor(QColor(200,0,0));
+            ui->console->setFontPointSize(15);
+            ui->console->append("    Это была твоя последняя ошибка. Думаешь, ты\n   первый, кто сюда пришёл? Да ты так и не сменил "
+                                "\n       форму, данную Мной при твоем создании.\n             Мне даже не придется напрягаться.\n");
+            ui->console->setTextColor(QColor(255,255,255));
+            ui->console->setFontPointSize(12);
+            ui->console->append("Оказалось, что исполняющая среда внутри Сервера губительна для любых программ, кроме самого Сервера. "
+                                "У меня было не так много времени до распада на бесформенную кучу умирающих нейронов.");
+
         }
         if (index == 5)
         {

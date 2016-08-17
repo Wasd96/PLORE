@@ -53,6 +53,7 @@ public:
     ~Connection();
     void rebindPort(int port);
 
+    void sendData(quint16 port, QString str);
     void sendData(quint16 port, int Mtype); // запись на порт
     void sendData(quint16 port, int Mtype, int amount); // передача данных
     void deleteTable(int pos);

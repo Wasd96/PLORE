@@ -18,7 +18,7 @@
     background-color: rgb(225, 255, 225);
     border: 2px outset darkgreen;
     border-radius: 2px;
-    font: 12px;
+    font: 14px;
 	color: black;
 /*	padding-left: 5px;*/
 }
@@ -41,7 +41,8 @@ border-style: solid;
 color: rgb(0,0,0);
 background-color: rgb(220, 250, 255);
 text-align: right;
-margin-right: 30px;
+margin-right: 40px;
+font: 14px;
 }
 QProgressBar:chunk  {
 background-color: qlineargradient(spread:pad, x1:0.017, y1:0.642045, x2:0.988636, y2:0.205, stop:0 rgba(0, 171, 0, 255), stop:1 rgba(52, 255, 54, 255));
@@ -279,6 +280,11 @@ QPushButton:hover {background-color: rgb(125, 135, 125);}
      <height>20</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
    <property name="text">
     <string>Доступная память:</string>
    </property>
@@ -291,6 +297,11 @@ QPushButton:hover {background-color: rgb(125, 135, 125);}
      <width>201</width>
      <height>20</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
    </property>
    <property name="text">
     <string>Быстродействие:</string>
@@ -305,6 +316,11 @@ QPushButton:hover {background-color: rgb(125, 135, 125);}
      <height>20</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
    <property name="text">
     <string>Активный ресурс:</string>
    </property>
@@ -314,9 +330,14 @@ QPushButton:hover {background-color: rgb(125, 135, 125);}
     <rect>
      <x>10</x>
      <y>160</y>
-     <width>141</width>
+     <width>151</width>
      <height>16</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
    </property>
    <property name="text">
     <string>Настроение (придумать)</string>
@@ -335,6 +356,7 @@ QPushButton:hover {background-color: rgb(125, 135, 125);}
     <string notr="true">QListWidget {
     /*show-decoration-selected: 1; /* make the selection span the entire width of the view */
 background: rgb(225, 255, 225);
+font: 14px;
 }
 
 QListWidget::item:alternate {
@@ -435,6 +457,14 @@ QListWidget::item:hover {
      <height>0</height>
     </size>
    </property>
+   <property name="font">
+    <font>
+     <pointsize>-1</pointsize>
+     <weight>50</weight>
+     <italic>false</italic>
+     <bold>false</bold>
+    </font>
+   </property>
    <property name="text">
     <string>Атаковать</string>
    </property>
@@ -486,6 +516,11 @@ QListWidget::item:hover {
      <height>20</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
    <property name="text">
     <string>Количество</string>
    </property>
@@ -506,11 +541,16 @@ QListWidget::item:hover {
   <widget class="QLabel" name="label_help_3">
    <property name="geometry">
     <rect>
-     <x>230</x>
+     <x>220</x>
      <y>170</y>
-     <width>121</width>
+     <width>131</width>
      <height>21</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
    </property>
    <property name="text">
     <string>На выбранный номер</string>
@@ -587,6 +627,11 @@ background-color: rgb(220, 250, 255);
      <width>70</width>
      <height>16</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
    </property>
    <property name="styleSheet">
     <string notr="true">
@@ -738,7 +783,10 @@ QCheckBox::indicator:checked:pressed {
    </property>
    <property name="font">
     <font>
-     <pointsize>1</pointsize>
+     <pointsize>-1</pointsize>
+     <weight>50</weight>
+     <italic>false</italic>
+     <bold>false</bold>
     </font>
    </property>
    <property name="styleSheet">

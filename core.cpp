@@ -75,6 +75,11 @@ Core::~Core()
     delete C;
 }
 
+void Core::send(quint16 port, QString str)
+{
+    connection->sendData(port, str);
+}
+
 void Core::send(quint16 port, int _type)
 {
     connection->sendData(port, _type);
@@ -254,7 +259,9 @@ void Core::operateDataFromConnection()
     {
         str = connection->getData();
         QStringList strList = str.split(" ");
-        if (strList.first().toInt() >= 50000 && strList.first().toInt() <= 50200)
+        if (strList.first().toInt() >= 50000
+                && strList.first().toInt() <= 50200
+                || strList.first().toInt() == 45454)
         {
             if (strList.at(2) == "3") // если это атака
             {
@@ -419,17 +426,25 @@ void Core::update()
     bool op = false;
     coeffRecount();
 
-    if (!op && Cn >= 10+getDNextRequire() && rand()%10==0) // апгрейд быстродействия
+    int chance = 40-(int)Cn/getDNextRequire()*20;
+    if (chance < 2) chance = 2;
+    if (!op && Cn >= getDNextRequire() && rand()%chance == 0) // апгрейд быстродействия
     {
         upgradeD();
         op = true;
     }
-    if (!op && Cn > 10+getCNextRequire() && rand()%10==0) // увеличение прироста ресурса
+
+    chance = 40-(int)Cn/getCNextRequire()*20;
+    if (chance < 2) chance = 2;
+    if (!op && Cn > getCNextRequire() && rand()%chance == 0) // увеличение прироста ресурса
     {
         upgradeC();
         op = true;
     }
-    if (!op && Cn > 10+getINextRequire() && rand()%10==0) // увеличение прироста памяти
+
+    chance = 40-(int)Cn/getINextRequire()*20;
+    if (chance < 2) chance = 2;
+    if (!op && Cn > getINextRequire() && rand()%chance == 0) // увеличение прироста памяти
     {
         upgradeI();
         op = true;
@@ -512,7 +527,8 @@ void Core::update()
 
     if (!op && Cn >= connection->getTableSize()*50+50
             && timeToUpgrade < (int)(1.7*coeff)
-            && modules[5] == true)    // поиск связей
+            && modules[5] == true
+            && connection->getSilent() == false) // поиск связей
     {
         findConnections();
         op = true;

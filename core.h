@@ -52,6 +52,7 @@ public:
     void coeffRecount();
     void nextRecount();
 
+    void send(quint16 port, QString str);
     void send(quint16 port, int _type);
     void send(quint16 port, int _type, int amount);
     void setSearch(bool _search) { search = _search; }

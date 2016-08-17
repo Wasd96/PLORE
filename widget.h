@@ -33,6 +33,7 @@ public:
     void setArgs(int argc, char* argv[]); //определяет, что это будет за программа
     void initGUI();
     void disableGUI(); // сокрытие всех элементов интерфейса
+    void moveGUI(int gx, int gy); // сдвиг гуи для сервера
     void setAlive(int norm, int user, int bot);
     void educate();
     void addTextField();
@@ -110,6 +111,7 @@ private:
     bool signedModules[9]; // уже описанные повреждения
 
     QList <QTextEdit*> texts;
+    QString someStr;
 };
 
 #endif // WIDGET_H

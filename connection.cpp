@@ -39,6 +39,15 @@ void Connection::rebindPort(int port) // попытка получить нуж�
     }
 }
 
+void Connection::sendData(quint16 port, QString str)
+{
+    QByteArray datagram = str.toUtf8();
+    udpSocket->writeDatagram(datagram.data(),
+                             datagram.size(),
+                             QHostAddress::Broadcast,
+                             port);
+}
+
 void Connection::sendData(quint16 port, int Mtype) //подготовка и отправка данных
 {
     QString outData;
@@ -225,7 +234,12 @@ void Connection::readData() // прием данных
                     break;
                 }
 
-                emit died(strList.at(1).toInt()); // 0 - прога, 1 - юзер, 2 - бот, 3 - Сервер
+                if (portRecieve == 45454) // это лаунчер
+                {
+                    emit died(strList.at(1).toInt()); // 0 - прога, 1 - юзер, 2 - бот, 3 - Сервер
+                    break;
+                }
+                data.append(str);
             }
         }
     }
