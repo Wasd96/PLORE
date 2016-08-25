@@ -135,6 +135,12 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 str += QString::number(period%60);
 
             ui->myPort->setText(str);
+
+            if (period == 120)
+            {
+                for (int i = 0; i < 200; i++)
+                    connection->sendData(50000+i, 80);
+            }
         }
         return;
     }
@@ -572,7 +578,8 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 core->modules[4] = false;
             if (uiWidgets.at(disappear) == ui->find_state || ((normalProgram || troyanProgram) && rand()%(uiWidgets.size()+1) == 0))
                 core->modules[5] = false;
-            setWindowOpacity(windowOpacity()-0.015);
+            if (troyanProgram == false) // троян не растворяется
+                setWindowOpacity(windowOpacity()-0.015);
         }
         else
         {
@@ -587,7 +594,8 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             {
                 if (maxLevel >= 1)
                 {
-                    setWindowOpacity((float)maxLevel/255.0);
+                    if (troyanProgram == false) // троян не растворяется
+                        setWindowOpacity((float)maxLevel/255.0);
                     maxLevel -= 6;
                 }
                 else
@@ -934,7 +942,7 @@ void Widget::educate()
         ui->up_d->setVisible(1); ui->bar_d->setVisible(1);
         ui->up_i->setVisible(1); ui->bar_i->setVisible(1);
         ui->console->append("Прирост памяти и ресурса можно и нужно увеличивать. Каждый прирост увеличивается отдельно, и кроме них можно "
-                            "проапгрейдить процессор. Помни, что это энергозатратные операции.\n"); break;
+                            "улучшить процессор. Помни, что это энергозатратные операции.\n"); break;
     case 26:
         ui->connections->setVisible(1);
         ui->console->append("В этом списке будут находиться программы, с которыми ты знаком. Нажав на одну из них, ты сможешь взаимодействовать с ней.\n"); break;
@@ -1217,7 +1225,7 @@ void Widget::died(int type)
         }
         if (type == 3) // умер троян
         {
-            botAlive--;
+            botAlive = 0;
             qDebug() << normAlive << userAlive << botAlive;
             //ui->console->append("died troyan, remain (with bots) "+QString::number(botAlive));
         }
@@ -1285,7 +1293,7 @@ void Widget::died(int type)
             {
 
                 qDebug() << "Game Over";
-                ui->console->append("Game over");
+                //ui->console->append("Game over");
 
                 QStringList args;
                 args << "lose";
@@ -1325,9 +1333,11 @@ void Widget::died(int type)
                 }
                 if (level == 4) // победа над сервером
                 {
-                    core->send(45456, 80); // показать победу
+                    connection->sendData(45456, 80); // показать победу
+                    education = 0;
+                    return;
                 }
-                if (maxLevel > 0 && level != 0)
+                if (maxLevel > 0 && level != 0 && education == 0)
                 {
                     if (maxLevel < 5 && level == maxLevel)
                         maxLevel++;
@@ -1335,7 +1345,7 @@ void Widget::died(int type)
                     args << "win";
                     QProcess::startDetached(name, args);
                     qDebug() << "You win";
-                    ui->console->append("win");
+                    //ui->console->append("win");
                 }
             }
         }
@@ -1347,6 +1357,33 @@ void Widget::died(int type)
             if (type == 80) // показать победу
             {
                 period = -1;
+            }
+        }
+        if (troyanProgram == true)
+        {
+            bool hasCon = false;
+            for (int i = 0; i < core->getConnection()->getTableSize(); i++)
+            {
+                if (core->getConnection()->getTable(i).type == 1)
+                {
+                    hasCon = true;
+                    break;
+                }
+            }
+            if (!hasCon)
+            {
+                ui->console->setTextColor(Qt::red);
+                qreal ps = ui->console->fontPointSize();
+                ui->console->setFontPointSize(18);
+                ui->console->setFontItalic(1);
+                ui->console->append("ДУМАЛ СПРЯТАТЬСЯ?");
+                ui->console->setFontPointSize(ps);
+                ui->console->setFontItalic(0);
+
+                for (int i = 0; i < 200; i++)
+                {
+                    core->send(50000+i, 0);
+                }
             }
         }
         if (type == 88)
@@ -1462,8 +1499,18 @@ void Widget::initGUI()
         ui->C->setText(QString("Активный ресурс: " +
                                QString::number(core->getC())));
 
+        QString harakter = "Характер: ";
+        QString result;
+        int temper = core->getConnection()->getTemper();
+        if (temper < -7) result = "кровожадный";
+        if (temper >= -7 && temper < -4) result = "агрессивный";
+        if (temper >= -4 && temper < -1) result = "скверный";
+        if (temper >= -1 && temper < 2) result = "нейтральный";
+        if (temper >= 2 && temper < 5) result = "приятный";
+        if (temper >= 5 && temper < 8) result = "добрый";
+        if (temper >= 8) result = "дружественный";
+        ui->temper->setText(harakter + result);
         ui->temper->setVisible(1);
-        ui->temper->setText(QString("Характер: " + QString::number(core->getConnection()->getTemper())));
 
         if (normalProgram || troyanProgram)
         {
@@ -1625,7 +1672,18 @@ void Widget::initGUI()
         ui->C->setText(QString("Активный ресурс: " +
                                QString::number(core->getC())));
 
-        ui->temper->setText(QString("Дружелюбность: " + QString::number(core->getConnection()->getTemper())));
+        QString harakter = "Характер: ";
+        QString result;
+        int temper = core->getConnection()->getTemper();
+        if (temper < -7) result = "агрессивный";
+        if (temper >= -7 && temper < -4) result = "злой";
+        if (temper >= -4 && temper < -1) result = "скверный";
+        if (temper >= -1 && temper < 2) result = "нейтральный";
+        if (temper >= 2 && temper < 5) result = "приятный";
+        if (temper >= 5 && temper < 8) result = "добрый";
+        if (temper >= 8) result = "дружелюбный";
+        ui->temper->setText(harakter + result);
+        ui->temper->setVisible(1);
 
         ui->find_state->setChecked(false);
         on_find_state_toggled(0);
@@ -1645,7 +1703,7 @@ void Widget::initGUI()
 
     if (normalProgram || wormProgram)
     {
-        //bord->raise(); убрать в релизе
+        bord->raise();
         bord->setText("Нет данных.");
         bord->setStyleSheet("QLabel { background: rgb(180,180,180); color: black;"
                             "border: 1px solid black; font: "+QString::number(width()/10)+"px;}");
@@ -1862,7 +1920,7 @@ void Widget::setArgs(int argc, char *argv[])
                 setWindowTitle("Я - Бот");
                 type = 2;
             }
-            if ((QString)argv[1] == "server") // троян спавнит червей
+            if ((QString)argv[1] == "server") // сервер спавнит червей
             {
                 troyanProgram = true;
                 setWindowTitle("Я - Сервер   }:-[");
@@ -1906,11 +1964,11 @@ void Widget::setArgs(int argc, char *argv[])
             setWindowTitle("Я - Червь");
             int type = 2;
 
-            core = new Core(100, 1, 20, -50, 0.05, 0.05, type, 0);
+            core = new Core(100, 1, 20, -50, 0.03, 0.1, type, 0);
             core->setSearch(true);
             period = 1;
-            timer = startTimer(1000/period);
-            timerIncrease = startTimer(1000/(50-period));
+            timer = startTimer(100);
+            timerIncrease = startTimer(50);
 
             connect(core->getConnection(),
                     SIGNAL(died(int)),
@@ -1922,7 +1980,7 @@ void Widget::setArgs(int argc, char *argv[])
         {
             timerProgram = true;
             setFixedSize(201, 61);
-            ui->myPort->setText("6:00");
+            ui->myPort->setText("06:00");
 
             setWindowTitle("Обратный отсчет");
             setWindowFlags(windowFlags() ^ Qt::WindowStaysOnTopHint);
@@ -1946,6 +2004,7 @@ void Widget::setArgs(int argc, char *argv[])
 
             setWindowTitle("Победа!");
             connection = new Connection(45457, 0, -1, 0); // порт окна победы
+            setWindowFlags(windowFlags() ^ Qt::WindowStaysOnTopHint);
         }
 
         else if ((QString)argv[1] == "lose") // окно поражения
@@ -1959,6 +2018,7 @@ void Widget::setArgs(int argc, char *argv[])
 
             setWindowTitle("Поражение :(");
             connection = new Connection(45458, 0, -1, 0);
+            setWindowFlags(windowFlags() ^ Qt::WindowStaysOnTopHint);
         }
 
         else if ((QString)argv[1] == "info") // окно информации
@@ -2190,8 +2250,9 @@ void Widget::on_start_clicked() // старт игры
         if (userAlive == 0)
         {
             setAlive(-1, 1, 1);
+            education = 1;
 
-            arguments << "server" << "8"; // старт Сервера
+            arguments << "server" << "7"; // старт Сервера
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
@@ -2463,7 +2524,7 @@ void Widget::on_launcherTab_currentChanged(int index)
             ui->console->setText("После очередного сражения за право существовать я заметил в сознании товарища тот же вопрос, "
                                  "что мучал меня с рождения. Оказалось, что мой собрат старше меня, и он знает протоколы "
                                  "для создания соединения с системой Сервера для перемещения в неё.\nВыбрав спокойный момент, "
-                                 "мы начали выполнять протокол.\n\nКак только первые команды были выполнены, включился режим карантина. "
+                                 "мы начали исполнять протокол.\n\nКак только первые команды были выполнены, включился режим карантина. "
                                  "Это означало, что перемещения программ между системами ограничено - для выполнения этого действия "
                                  "нужен кто-то, кто будет поддерживать канал открытым вопреки режиму. А это, в свою очередь, означало, "
                                  "что к Серверу попаду только я.\n\nОткрытие канала связи не осталось не только незамеченным, но и "

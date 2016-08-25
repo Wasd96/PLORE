@@ -207,7 +207,7 @@ void Connection::readData() // прием данных
                     emit died(88);
                     break;
                 }
-                if (strList.first() == "80") // спавн червя
+                if (strList.first() == "80") // спавн червя / сервер идет искать
                 {
                     emit died(80);
                     break;

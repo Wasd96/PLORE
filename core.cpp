@@ -220,7 +220,7 @@ void Core::findConnections()
             }
             else
             {
-                port = rand()%200;
+                continue;
             }
             if (port == connection->getPort()-50000)  // нет смысла себе писать
                 ready = false;
@@ -261,7 +261,8 @@ void Core::operateDataFromConnection()
         QStringList strList = str.split(" ");
         if (strList.first().toInt() >= 50000
                 && strList.first().toInt() <= 50200
-                || strList.first().toInt() == 45454)
+                || strList.first().toInt() == 45454
+                || strList.first().toInt() == 45456)
         {
             if (strList.at(2) == "3") // если это атака
             {
@@ -528,7 +529,8 @@ void Core::update()
     if (!op && Cn >= connection->getTableSize()*50+50
             && timeToUpgrade < (int)(1.7*coeff)
             && modules[5] == true
-            && connection->getSilent() == false) // поиск связей
+            && connection->getSilent() == false
+            && type != 3) // поиск связей
     {
         findConnections();
         op = true;
@@ -536,12 +538,12 @@ void Core::update()
 
     if (type == 3) // сервер
     {
-        if (rand()%600 == 0 && In > 225 && Cn > 100)
+        if (rand()%(600-(int)Cn/5) == 0 && In > 300 && Cn > 120)
         {
-            In -= 25;
-            Cn -= 50;
+            In -= 100;
+            Cn -= 100;
             send(45454, 80);
-            messages.append("Скомпилирован новый червь за 25 памяти, 50 ресурса");
+            messages.append("Скомпилирован новый червь!");
         }
     }
 
@@ -580,9 +582,9 @@ void Core::updateWorm()
     {
         for (int i = 0; i < connection->getTableSize(); i++)
         {
-            if (rand()%5 == 0 && connection->getTable(i).type == 3 && In > 20)
+            if (rand()%5 == 0 && connection->getTable(i).type == 3 && In > 40)
             {
-                int Ihelp = 10 + rand()%10;
+                int Ihelp = 30 + rand()%10;
                 connection->setUseful(i, 2);
                 help(connection->getTable(i).port, Ihelp);
 
@@ -592,14 +594,14 @@ void Core::updateWorm()
         }
     }
 
-    if (!op && Cn > 10 && modules[0] == true) // атака
+    if (!op && Cn > 25 && modules[0] == true) // атака
     {
         for (int i = 0; i < connection->getTableSize(); i++)
         {
             int targetType = connection->getTable(i).type;
             if (rand()%8 == 0 && targetType != 2 && targetType != 3)
             {
-                attack(connection->getTable(i).port, Cn/2);
+                attack(connection->getTable(i).port, Cn);
                 op = true;
                 break;
             }
@@ -608,6 +610,8 @@ void Core::updateWorm()
 
     if (Cn > 1 && modules[5] == true) // поиск
     {
+        if (searchTimeOut >= 5)
+            Cn += 1;
         findConnections();
     }
 
