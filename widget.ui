@@ -171,7 +171,7 @@ QTabBar::tab:!enabled {
     <enum>QTabWidget::Rounded</enum>
    </property>
    <property name="currentIndex">
-    <number>3</number>
+    <number>5</number>
    </property>
    <property name="usesScrollButtons">
     <bool>false</bool>
@@ -212,7 +212,7 @@ QTabBar::tab:!enabled {
    </widget>
    <widget class="QWidget" name="tab6">
     <attribute name="title">
-     <string>ExPlore</string>
+     <string>exPlore</string>
     </attribute>
    </widget>
   </widget>
@@ -330,7 +330,7 @@ QPushButton:hover {background-color: rgb(125, 135, 125);}
     <rect>
      <x>10</x>
      <y>160</y>
-     <width>151</width>
+     <width>191</width>
      <height>16</height>
     </rect>
    </property>
@@ -433,12 +433,12 @@ QListWidget::item:hover {
    </property>
    <item>
     <property name="text">
-     <string>1) test 1</string>
+     <string>1) 105 друг++, полезный++</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>2) test two its overcompilcated test be sure</string>
+     <string>2) 245 враг, бесполезный</string>
     </property>
    </item>
   </widget>

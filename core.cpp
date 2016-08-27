@@ -540,7 +540,7 @@ void Core::update()
     {
         if (rand()%(600-(int)Cn/5) == 0 && In > 300 && Cn > 120)
         {
-            In -= 100;
+            In -= 80;
             Cn -= 100;
             send(45454, 80);
             messages.append("Скомпилирован новый червь!");

@@ -249,11 +249,24 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         for(int i = 0; i < connection->getTableSize(); i++)
         {
             connectTable table = connection->getTable(i);
+            int relate = table.relationship;
+            QString rel;
+            if (relate < -32) rel = " ВРАГ--, ";
+            else if (relate >= -32 && relate < -20) rel = " враг--, ";
+            else if (relate >= -20 && relate < -10) rel = " враг-, ";
+            else if (relate >= -10 && relate < 0) rel = " враг, ";
+            else if (relate >= 0 && relate < 10) rel = " друг, ";
+            else if (relate >= 10 && relate < 20) rel = " друг+, ";
+            else if (relate >= 20 && relate < 32) rel = " друг++, ";
+            else if (relate >= 32) rel = " ДРУГ++, ";
+            int useful = table.useful;
+            QString use;
+            if (useful == 0) use = "бесполезный";
+            else if (useful > 0 && useful < 15) use = "полезный";
+            else if (useful >= 15 && useful < 32) use = "полезный+";
+            else if (useful >= 32) use = "полезный++";
             str = QString::number(i+1) + ") " +
-                    QString::number(table.port%1000) + " отн: " +
-                    QString::number(table.relationship) + " польза: " +
-                    QString::number(table.useful) + " тип: "  +
-                    QString::number(table.type);
+                    QString::number(table.port%1000) + rel + use;
             ui->connections->addItem(str);
             if (table.selected)
             {
@@ -277,8 +290,8 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             {
                 bord->raise();
                 bord->setText("Нет данных.");
-                bord->setStyleSheet("QLabel { background: rgb(180,180,180); color: black;"
-                                    "border: 1px solid black; font: "+QString::number(width()/10)+"px;}");
+                bord->setStyleSheet("background: rgb(180,180,180); color: black;"
+                                    "border: 1px solid black; font: "+QString::number(width()/10)+"px;");
                 bord->setEnabled(1);
             }
         }
@@ -510,7 +523,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                     deathTimer = -1;
 
                     QStringList args;
-                    args << someStr; // поебда или поражение
+                    args << someStr; // победа или поражение
                     QProcess::startDetached(name, args);
 
                     close();
@@ -598,9 +611,14 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                         setWindowOpacity((float)maxLevel/255.0);
                     maxLevel -= 6;
                 }
-                else
+                if (maxLevel <= 50 && troyanProgram)
                 {
                     core->send(45454, 1, core->getType()); // сообщение лаунчеру о своей смерти
+                }
+                if (maxLevel <= 0)
+                {
+                    if (!troyanProgram)
+                        core->send(45454, 1, core->getType()); // сообщение лаунчеру о своей смерти
                     killTimer(deathTimer);
                     killTimer(timer);
                     killTimer(timerIncrease);
@@ -1503,12 +1521,12 @@ void Widget::initGUI()
         QString result;
         int temper = core->getConnection()->getTemper();
         if (temper < -7) result = "кровожадный";
-        if (temper >= -7 && temper < -4) result = "агрессивный";
-        if (temper >= -4 && temper < -1) result = "скверный";
-        if (temper >= -1 && temper < 2) result = "нейтральный";
-        if (temper >= 2 && temper < 5) result = "приятный";
-        if (temper >= 5 && temper < 8) result = "добрый";
-        if (temper >= 8) result = "дружественный";
+        else if (temper >= -7 && temper < -4) result = "агрессивный";
+        else if (temper >= -4 && temper < -1) result = "скверный";
+        else if (temper >= -1 && temper < 2) result = "нейтральный";
+        else if (temper >= 2 && temper < 5) result = "приятный";
+        else if (temper >= 5 && temper < 8) result = "добрый";
+        else if (temper >= 8) result = "дружественный";
         ui->temper->setText(harakter + result);
         ui->temper->setVisible(1);
 
@@ -2082,19 +2100,37 @@ void Widget::setArgs(int argc, char *argv[])
             ui->console->setStyleSheet("QTextEdit { background: rgba(0,0,0,0);"
                                        "color: lightgreen; font: 20px;}");
             setStyleSheet("QWidget#Widget { background: black; }");
-            ui->console->setText("\n\nПривет!\n\n\t\tХахах!\n\n\nВыдели меня!"
-                                 "\n\n\n \t\t\t\t:-)\n\nНажмите среднюю кнопку мыши для выхода.");
-
+            ui->console->setText("\n\t\t\t     Приветствую!\n\nЯ, Волков Александр, создал эту игру "
+                                 "с целью испытания возможности\nиспользования разных процессов "
+                                 "в качестве игровых сущностей.\nИгра написана на Qt/C++.\n\n"
+                                 "Связаться со мной можно по почте: \nИли написать на сайте Вконтакте: "
+                                 "\n(ссылки можно выделить и скопировать)"
+                                 "\n\nБольше информации о разработке и игре Вы можете узнать "
+                                 "после прохождения всех уровней.\n\n\n\t\t\tПриятной игры! :)"
+                                 "\n\n\n\n\n\n\n\nНажмите среднюю кнопку мыши для выхода.");
             ui->attack_count->setVisible(1);
             ui->attack_count->setEnabled(1);
-            ui->attack_count->resize(400,20);
+            ui->attack_count->resize(200,30);
             ui->attack_count->setReadOnly(1);
+            ui->attack_count->move(345,168);
             ui->attack_count->setStyleSheet("QLineEdit { background: rgba(0,0,0,0);"
                                             "color: #C0F0C0; font: 20px;"
                                             "border:0px;"
                                             "selection-background-color: #404040;"
                                             "selection-color: #fab700;}");
             ui->attack_count->setText("wasd3680@yandex.ru");
+
+            ui->help_count->setVisible(1);
+            ui->help_count->setEnabled(1);
+            ui->help_count->resize(280,30);
+            ui->help_count->setReadOnly(1);
+            ui->help_count->move(330,193);
+            ui->help_count->setStyleSheet("QLineEdit { background: rgba(0,0,0,0);"
+                                            "color: #C0F0C0; font: 20px;"
+                                            "border:0px;"
+                                            "selection-background-color: #404040;"
+                                            "selection-color: #fab700;}");
+            ui->help_count->setText("vk.com/just_another_member");
 
             maxLevel = startTimer(10);
         }
@@ -2252,7 +2288,7 @@ void Widget::on_start_clicked() // старт игры
             setAlive(-1, 1, 1);
             education = 1;
 
-            arguments << "server" << "7"; // старт Сервера
+            arguments << "server" << "8"; // старт Сервера
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
@@ -2260,7 +2296,7 @@ void Widget::on_start_clicked() // старт игры
             QProcess::startDetached(name, arguments);
             arguments.clear();
 
-            arguments << "user" << "4" << "top"; // старт юзера
+            arguments << "user" << "6" << "top"; // старт юзера
             QProcess::startDetached(name, arguments);
             arguments.clear();
         }
@@ -2547,9 +2583,8 @@ void Widget::on_launcherTab_currentChanged(int index)
         }
         if (index == 5)
         {
-            ui->console->setText("НЕСЮЖЕТНЫЙ ТЕКСТ (подумой прежде чем читать) В случае победы, на серверной машине начинают безудержно развиваться и размножаться всякие проги, "
-                                 "которые раньше подавлялись Сервером. Тупо угарнуть, пройти пока нельзя. Можно придумать тут миниквест, но я вообще думаю над тем,"
-                                 " чтобы убрать этот режим в другую игру в другом виде. Идеи уже есть...");
+            ui->console->setText("Текст здесь будет зависеть от того, что я напишу в диалогах с Сервером. После старта должно открыться"
+                                 " окно, там будут либо эффект летящих звезд (типа гиперпрыжок), или игра Жизнь, что символично.");
         }
     }
 }
