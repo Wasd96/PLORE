@@ -53,6 +53,8 @@ Widget::Widget(QWidget *parent) :
     setFixedSize(200,100);
     move(200,200);
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint | Qt::FramelessWindowHint);
+
+
 }
 
 void Widget::timerEvent(QTimerEvent *t) // таймер, частота работы проги
@@ -272,13 +274,18 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
             {
                 ui->connections->setCurrentRow(i);
             }
-            if (table.type == 1) // юзер
+            if (table.type == 1) // юзер на связи
             {
                 if (bord->isEnabled() == true)
                 {
                     bord->setEnabled(0);
                     bord->lower();
-                    bord->setStyleSheet("border: 1px solid black; background: rgba(0,0,0,0); color: rgba(0,0,0,0);");
+                    if (normalProgram && core->getType() == 0)
+                        bord->setStyleSheet("background: rgb(200,200,250); border: 1px solid black; color: rgba(0,0,0,0);");
+                    if (normalProgram && core->getType() == 2)
+                        bord->setStyleSheet("background: rgb(250,200,200); border: 1px solid black; color: rgba(0,0,0,0);");
+                    if (wormProgram)
+                        bord->setStyleSheet("background: rgb(150,120,130); border: 1px solid black; color: rgba(0,0,0,0);");
                     bord->setText(" ");
                 }
                 hidden = false;
@@ -925,7 +932,7 @@ void Widget::educate()
         setFixedSize(760,310);
         bord->resize(this->size());
 
-        setStyleSheet(styleSheet()+" QWidget#Widget {background: rgb(200,255,200); }");
+        bord->setStyleSheet("background: rgb(200,255,200); border: 1px solid black; color: rgba(0,0,0,0);");
         ui->console->setStyleSheet("QTextEdit { background: rgb(225, 255, 225);}");
 
         ui->console->clear();
@@ -1476,7 +1483,10 @@ void Widget::initGUI()
         ui->C->setVisible(1);
         ui->C->raise();
 
-        setStyleSheet(styleSheet() + "QWidget#Widget {background: rgb(50,50,50);}");
+        setStyleSheet(styleSheet() + " QWidget#Widget {background: rgb(50,50,50);}");
+        /*this->setStyleSheet("QPushButton { background: red !important;}");*/
+        //ui->up_i->setStyleSheet("QPushButton { background: red;}");
+        ui->console->setText(styleSheet());
     }
     if (normalProgram ||
             (userProgram && !educateProgram) ||
@@ -1537,15 +1547,12 @@ void Widget::initGUI()
         }
         if (normalProgram && core->getType() == 2) // бот (своих не бьет)
         {
-            setStyleSheet(styleSheet()+" QWidget {background: rgb(250,200,200);}");
             ui->console->setStyleSheet("QTextEdit {background: rgb(255, 225, 225);}");
             ui->connections->setStyleSheet("QListWidget{background: rgb(255, 225, 225);}");
             ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
         }
         if (normalProgram && core->getType() == 0) // обычная прога
         {
-
-            setStyleSheet(styleSheet()+" QWidget {background: rgb(200,200,250);}");
             ui->console->setStyleSheet("QTextEdit {background: rgb(225, 225, 255);}");
             ui->connections->setStyleSheet("QListWidget{background: rgb(225, 225, 255);}");
             ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
@@ -1559,7 +1566,6 @@ void Widget::initGUI()
             ui->console->resize(400, 500);
             ui->connections->resize(200, 330);
 
-            setStyleSheet(styleSheet()+" QWidget {background: rgb(200,80,80);}");
             ui->console->setStyleSheet("QTextEdit { background: rgb(255, 180, 180);}");
             ui->connections->setStyleSheet("QListWidget{background: rgb(255, 180, 180);}");
             ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
@@ -1567,7 +1573,6 @@ void Widget::initGUI()
 
         if (userProgram)
         {
-            setStyleSheet(styleSheet()+" QWidget#Widget {background: rgb(200,255,200); }");
             ui->console->setStyleSheet("QTextEdit { background: rgb(225, 255, 225);}");
 
             ui->console->resize(280, 290);
@@ -1620,7 +1625,6 @@ void Widget::initGUI()
         }     
         if (wormProgram)
         {
-            setStyleSheet(styleSheet()+" QWidget {background: rgb(150,120,130);}");
             ui->console->setStyleSheet("QTextEdit { background: rgb(200, 180, 180);}");
             ui->connections->setStyleSheet("QListWidget{background: rgb(200, 180, 180);}");
             ui->connections->setSelectionMode(QAbstractItemView::NoSelection);
@@ -1701,7 +1705,6 @@ void Widget::initGUI()
         if (temper >= 5 && temper < 8) result = "добрый";
         if (temper >= 8) result = "дружелюбный";
         ui->temper->setText(harakter + result);
-        ui->temper->setVisible(1);
 
         ui->find_state->setChecked(false);
         on_find_state_toggled(0);
@@ -1718,6 +1721,12 @@ void Widget::initGUI()
     bord->move(0,0);
     bord->lower();
 
+    if (launcher)
+        bord->setStyleSheet("background: rgb(50,50,50); border: 1px solid black;");
+    if (userProgram && !educateProgram)
+        bord->setStyleSheet("background: rgb(200,255,200); border: 1px solid black;");
+    if (troyanProgram)
+        bord->setStyleSheet("background: rgb(200,80,80); border: 1px solid black; color: rgba(0,0,0,0);");
 
     if (normalProgram || wormProgram)
     {

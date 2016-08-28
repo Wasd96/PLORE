@@ -48,8 +48,6 @@ QProgressBar:chunk  {
 background-color: qlineargradient(spread:pad, x1:0.017, y1:0.642045, x2:0.988636, y2:0.205, stop:0 rgba(0, 171, 0, 255), stop:1 rgba(52, 255, 54, 255));
 }
 
-
-
 QScrollBar:horizontal {
     border: 1px solid grey;
     background: black;
@@ -74,7 +72,9 @@ QScrollBar::handle:vertical{
     border: 1px solid ;
     min-height: 20px;
 }
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical{background: none;}</string>
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical{background: none;}
+
+</string>
   </property>
   <widget class="QTextEdit" name="console">
    <property name="geometry">
@@ -228,7 +228,7 @@ QTabBar::tab:!enabled {
    <property name="styleSheet">
     <string notr="true">QPushButton  
 {
-background-color: rgb(80, 80, 80);                
+background-color: rgb(80, 80, 80);  
  border: 2px outset darkgreen;                             
  border-radius: 2px;                         
  font: 20px bold;
