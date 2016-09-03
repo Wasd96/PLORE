@@ -831,7 +831,7 @@ void Widget::paintEvent(QPaintEvent *pEv)
             }
         }
 
-        if (period == -2 || period == -11)
+        if (period == -2 || period == -11) // проигрыш
         {
             switch (education)
             {
@@ -871,7 +871,7 @@ void Widget::paintEvent(QPaintEvent *pEv)
                 break;
             }
         }
-        if (period == -3 || period == -12)
+        if (period == -3 || period == -12) // победа
         {
             switch (education) {
             case 3:
@@ -904,6 +904,8 @@ void Widget::paintEvent(QPaintEvent *pEv)
     if (width() == 700 && !userProgram)
     {
         QPainter p(this);
+
+        p.fillRect(0,0,width(),height(),Qt::black);
         QPen pen;
         pen.setWidth(4);
         p.setPen(pen);
@@ -1108,8 +1110,8 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
         ui->console->setFontItalic(0);
         education = 500;
         bord->setEnabled(0);
-        bord->lower();
-        bord->setStyleSheet("border: 1px solid black; background: rgba(0,0,0,0); color: rgba(0,0,0,0);");
+        //bord->lower();
+        bord->setStyleSheet("background: rgb(200,80,80); border: 1px solid black; color: rgba(0,0,0,0);");
         bord->setText(" ");
     }
     if (troyanProgram)
@@ -1482,11 +1484,6 @@ void Widget::initGUI()
         ui->C->setText(" ");
         ui->C->setVisible(1);
         ui->C->raise();
-
-        setStyleSheet(styleSheet() + " QWidget#Widget {background: rgb(50,50,50);}");
-        /*this->setStyleSheet("QPushButton { background: red !important;}");*/
-        //ui->up_i->setStyleSheet("QPushButton { background: red;}");
-        ui->console->setText(styleSheet());
     }
     if (normalProgram ||
             (userProgram && !educateProgram) ||
@@ -1736,6 +1733,11 @@ void Widget::initGUI()
                             "border: 1px solid black; font: "+QString::number(width()/10)+"px;}");
         bord->setAlignment(Qt::AlignCenter);
         bord->setEnabled(1);
+    }
+
+    if (width() == 700 && height() == 600) // об игре
+    {
+        //bord->setStyleSheet("background: rgb(0,0,0,0); border: 1px solid black; color: rgba(0,0,0,0);");
     }
 
 }
@@ -2100,7 +2102,7 @@ void Widget::setArgs(int argc, char *argv[])
             timer = startTimer(600);
             period = 1;
         }
-        else if ((QString)argv[1] == "about") // режим обучения
+        else if ((QString)argv[1] == "about") // об игре
         {
             setFixedSize(700, 600);
             ui->console->setVisible(true);
@@ -2549,7 +2551,7 @@ void Widget::on_launcherTab_currentChanged(int index)
             ui->console->setText("Сервер... Ветки развития... О чем он?\nЯсно только одно, я - программа. "
                                  "И этим нужно воспользоваться.\nЗнание некоторых вещей пришло само - например, "
                                  "что в открытой базе данных Сервера находится много полезной информации. "
-                                 "К ней и подключимся.\n\nОказалось, что я - результат развития одной из веток "
+                                 "К ней и подключимся.\n\nВыяснилось, что я - результат развития одной из веток "
                                  "эволюции некой программы. Таких, как я, сотни, если не тысячи. Мы почти одинаковы, "
                                  "но кто-то хуже, а кто-то лучше. Лучшие укрепляют свой код в родительской ветви, и "
                                  "последующие программы будут происходить от них.\nНо зачем становиться лучше, в "
@@ -2560,7 +2562,7 @@ void Widget::on_launcherTab_currentChanged(int index)
         if (index == 2)
         {
             ui->console->setText("Тестовые камеры сменялись другими, и постепенно начинало казаться, что в этом и есть "
-                                 "смысл моей виртуальной жизни.\nНо очередная система отличалась от всех предыдущих. "
+                                 "смысл моей виртуальной жизни.\nНо следующая система отличалась от всех предыдущих. "
                                  "В ней мне предстояло объединиться с такими же, как я, против группы чужаков.\n\n"
                                  "Возможно, встретив своих собратьев, мне удастся что-нибудь прояснить.");
         }
