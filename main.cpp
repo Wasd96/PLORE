@@ -1,4 +1,4 @@
-#include "widget.h"
+﻿#include "widget.h"
 #include <QApplication>
 
 int main(int argc, char *argv[])
@@ -7,9 +7,9 @@ int main(int argc, char *argv[])
     Widget w;
 
     // система подставных данных, для дебага
-    /*int argcChange = 5;
-    char* argvChange[] = {"plore.name", "bot", "3", "hidden", "silent"};*/
-    w.setArgs(argc, argv); //установка типа и параметров
+    int argcChange = 2;
+    char* argvChange[] = {"plore.name", "finish"};
+    w.setArgs(argcChange, argvChange); //установка типа и параметров
     w.show();
 
     return a.exec();

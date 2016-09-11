@@ -1,9 +1,8 @@
-#ifndef PARTICLES_H
+﻿#ifndef PARTICLES_H
 #define PARTICLES_H
 
 #include <cmath>
 #include <QList>
-#include <QDebug>
 
 class Parts
 {

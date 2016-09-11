@@ -14,14 +14,16 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         widget.cpp \
-    connection.cpp \
-    core.cpp \
-    particles.cpp
+        connection.cpp \
+        core.cpp \
+        particles.cpp \
+        life.cpp
 
 HEADERS  += widget.h \
-    connection.h \
-    core.h \
-    particles.h
+        connection.h \
+        core.h \
+        particles.h \
+        life.h
 
 FORMS    += widget.ui
 

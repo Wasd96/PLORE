@@ -16,6 +16,7 @@
 
 #include "core.h"
 #include "particles.h"
+#include "life.h"
 
 namespace Ui {
 class Widget;
@@ -112,6 +113,9 @@ private:
 
     QList <QTextEdit*> texts;
     QString someStr;
+
+
+    Life life;
 };
 
 #endif // WIDGET_H

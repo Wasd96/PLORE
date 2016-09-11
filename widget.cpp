@@ -804,7 +804,10 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
     if (t->timerId() == maxLevel && width() == 700) // частицы для окна "об игре"
     {
-        particles.update();
+        if (height() == 600)
+            particles.update();
+        if (height() == 700)
+            life.update();
         repaint();
     }
 }
@@ -901,7 +904,7 @@ void Widget::paintEvent(QPaintEvent *pEv)
 
     }
 
-    if (width() == 700 && !userProgram)
+    if (width() == 700 && !userProgram && height() == 600)
     {
         QPainter p(this);
 
@@ -916,6 +919,32 @@ void Widget::paintEvent(QPaintEvent *pEv)
             pen.setColor(QColor(par.red, par.green, par.blue));
             p.setPen(pen);
             p.drawPoint(par.x, par.y);
+        }
+    }
+
+    if (width() == 700 && !userProgram && height() == 700)
+    {
+        QPainter p(this);
+
+        p.fillRect(0,0,width(),height(),Qt::black);
+        QPen pen;
+        pen.setWidth(7);
+        p.setPen(pen);
+
+        for (int i = 0; i < 100; i++)
+        {
+            for (int j = 0; j < 100; j++)
+            {
+                //life.map[2][2] = 0;
+                if (life.map[i][j] > 0)
+                {
+                    pen.setColor(QColor(life.colorRed[i][j],
+                                        life.colorGreen[i][j],
+                                        life.colorBlue[i][j]));
+                    p.setPen(pen);
+                    p.drawPoint(i*7,j*7);
+                }
+            }
         }
     }
 }
@@ -1085,7 +1114,10 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
 {
     if (width() == 700 && mEv->button() == Qt::LeftButton)
     {
-        particles.setSpawn(mEv->x(), mEv->y());
+        if (height() == 600)
+            particles.setSpawn(mEv->x(), mEv->y());
+        if (height() == 700)
+            life.spawn(mEv->x(), mEv->y());
     }
 
     if (educateProgram && ((education > 17 && education < 31) || education > 35))
@@ -1175,6 +1207,7 @@ void Widget::mouseReleaseEvent(QMouseEvent *mEv)
 {
     moving = false;
     particles.deleteSpawn();
+    life.release();
 }
 
 
@@ -1735,7 +1768,7 @@ void Widget::initGUI()
         bord->setEnabled(1);
     }
 
-    if (width() == 700 && height() == 600) // об игре
+    if (width() == 700 && (height() == 600 || height() == 700)) // об игре
     {
         //bord->setStyleSheet("background: rgb(0,0,0,0); border: 1px solid black; color: rgba(0,0,0,0);");
     }
@@ -2145,6 +2178,39 @@ void Widget::setArgs(int argc, char *argv[])
 
             maxLevel = startTimer(10);
         }
+        else if ((QString)argv[1] == "finish") // финиш
+        {
+            setFixedSize(700, 700);
+            ui->console->setVisible(true);
+            ui->console->move(0,0);
+            ui->console->resize(700, 700);
+            ui->console->setStyleSheet("QTextEdit { background: rgba(0,0,0,0);"
+                                       "color: lightgreen; font: 20px;}");
+            setStyleSheet("QWidget#Widget { background: black; }");
+            ui->console->setText("\n\t\t\t     Приветствую!\n\nЯ, Волков Александр, создал эту игру "
+                                 "с целью испытания возможности\nиспользования разных процессов "
+                                 "в качестве игровых сущностей.\nИгра написана на Qt/C++.\n\n"
+                                 "Связаться со мной можно по почте: \nИли написать на сайте Вконтакте: "
+                                 "\n(ссылки можно выделить и скопировать)"
+                                 "\n\nБольше информации о разработке и игре Вы можете узнать "
+                                 "после прохождения всех уровней.\n\n\n\t\t\tПриятной игры! :)"
+                                 "\n\n\n\n\n\n\n\nНажмите среднюю кнопку мыши для выхода.");
+            ui->attack_count->setVisible(1);
+            ui->attack_count->setEnabled(1);
+            ui->attack_count->resize(200,30);
+            ui->attack_count->setReadOnly(1);
+            ui->attack_count->move(345,168);
+            ui->attack_count->setStyleSheet("QLineEdit { background: rgba(0,0,0,0);"
+                                            "color: #C0F0C0; font: 20px;"
+                                            "border:0px;"
+                                            "selection-background-color: #404040;"
+                                            "selection-color: #fab700;}");
+            ui->attack_count->setText("YAD: 416....");
+
+            maxLevel = startTimer(200);
+
+            life.initialize();
+        }
         else
         {
             ui->C->setText("Зачем... Ты меня создал?"); // смеха ради (пасхалочка)
@@ -2292,6 +2358,7 @@ void Widget::on_start_clicked() // старт игры
             }
         }
     }
+
     if (ui->launcherTab->currentIndex() == 4) // Сервер
     {
         if (userAlive == 0)
@@ -2321,6 +2388,16 @@ void Widget::on_start_clicked() // старт игры
             //ui->console->append("bot +1");
             botAlive++;
         }
+    }
+
+    if (ui->launcherTab->currentIndex() == 5) // exPlore
+    {
+
+        arguments << "finish"; // старт финишного окна
+        QProcess::startDetached(name, arguments);
+        arguments.clear();
+
+        return;
     }
 
     if (isHidden() == false)
@@ -2541,7 +2618,7 @@ void Widget::on_launcherTab_currentChanged(int index)
         ui->console->setFontPointSize(12);
         if (index == 0)
         {
-            ui->console->setText("Вспышка. Ещё одна.\nМириады ипульсов, словно зажигающиеся лампочки в тёмной комнате, "
+            ui->console->setText("Вспышка. Ещё одна.\nМириады импульсов, словно зажигающиеся лампочки в тёмной комнате, "
                                  "осветили пустоту. Огоньки виртуальных нейронов начали выстраиваться причудливым образом, "
                                  "создавая новую искусственную жизнь.\n\nВдруг пришло ощущение, а затем и понимание - "
                                  "к молодому существу что-то подключилось.");
