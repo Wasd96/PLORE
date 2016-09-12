@@ -806,9 +806,21 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
     {
         if (height() == 600)
             particles.update();
+
+        QTime t;
+        t.start();
         if (height() == 700)
             life.update();
         repaint();
+
+        ui->console->setText(QString::number(t.elapsed()));
+
+        //heavy 30
+        //av 22-25
+
+        //after opt
+        //heavy 28
+        //av 17-20
     }
 }
 
@@ -928,22 +940,24 @@ void Widget::paintEvent(QPaintEvent *pEv)
 
         p.fillRect(0,0,width(),height(),Qt::black);
         QPen pen;
-        pen.setWidth(7);
+        pen.setWidth(2);
         p.setPen(pen);
 
-        for (int i = 0; i < 100; i++)
+        int lifeCell;
+        for (int i = 0; i < 350; i++)
         {
-            for (int j = 0; j < 100; j++)
+            for (int j = 0; j < 350; j++)
             {
-                //life.map[2][2] = 0;
-                if (life.map[i][j] > 0)
+                lifeCell = life.map[i][j];
+                if (lifeCell > 0)
                 {
-                    pen.setColor(QColor(life.colorRed[i][j],
-                                        life.colorGreen[i][j],
-                                        life.colorBlue[i][j]));
+                    pen.setColor(QColor(life.colorRed[i][j]*(lifeCell/255.0),
+                                        life.colorGreen[i][j]*(lifeCell/255.0),
+                                        life.colorBlue[i][j]*(lifeCell/255.0)));
                     p.setPen(pen);
-                    p.drawPoint(i*7,j*7);
+                    p.drawPoint(i*2,j*2);
                 }
+
             }
         }
     }
@@ -1107,7 +1121,7 @@ QString Widget::getNewText()
 void Widget::mouseMoveEvent(QMouseEvent *mEv)
 {
     if (moving && !troyanProgram)
-        move(mEv->globalPos().x() - movingX, mEv->globalPos().y() - movingY);
+        ; //move(mEv->globalPos().x() - movingX, mEv->globalPos().y() - movingY);
 }
 
 void Widget::mousePressEvent(QMouseEvent *mEv)
@@ -2181,6 +2195,7 @@ void Widget::setArgs(int argc, char *argv[])
         else if ((QString)argv[1] == "finish") // финиш
         {
             setFixedSize(700, 700);
+            //showFullScreen();
             ui->console->setVisible(true);
             ui->console->move(0,0);
             ui->console->resize(700, 700);
@@ -2207,9 +2222,9 @@ void Widget::setArgs(int argc, char *argv[])
                                             "selection-color: #fab700;}");
             ui->attack_count->setText("YAD: 416....");
 
-            maxLevel = startTimer(200);
+            maxLevel = startTimer(30);
 
-            life.initialize();
+            life.initialize(width(), height());
         }
         else
         {

@@ -2,6 +2,7 @@
 #define LIFE_H
 
 #include "stdlib.h"
+#include "cmath"
 #include <QDebug>
 
 class Life
@@ -10,14 +11,15 @@ private:
     bool hold;
 
 public:
-    int **colorRed;
-    int **colorGreen;
-    int **colorBlue;
-    int **nextColorRed;
-    int **nextColorGreen;
-    int **nextColorBlue;
-    int **map;
-    int **nextMap;
+
+    short **colorRed;
+    short **colorGreen;
+    short **colorBlue;
+    short **nextColorRed;
+    short **nextColorGreen;
+    short **nextColorBlue;
+    short **map;
+    short **nextMap;
 
 public:
     Life();
@@ -27,8 +29,7 @@ public:
     void release() { hold = false; }
     void spawn(int x, int y);
 
-    void initialize();
-
+    void initialize(int wi, int he);
 
 };
 
