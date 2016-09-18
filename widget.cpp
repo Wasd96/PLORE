@@ -821,6 +821,14 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         //after opt
         //heavy 28
         //av 17-20
+
+        //after opt2
+        //heavy 25
+        //av 17-19
+
+        //finally, paintEvent changed
+        //heavy 9-10
+        //av 7-9
     }
 }
 
@@ -937,13 +945,10 @@ void Widget::paintEvent(QPaintEvent *pEv)
     if (width() == 700 && !userProgram && height() == 700)
     {
         QPainter p(this);
-
         p.fillRect(0,0,width(),height(),Qt::black);
-        QPen pen;
-        pen.setWidth(2);
-        p.setPen(pen);
-
-        int lifeCell;
+        double lifeCell;
+        double lifeRed = 0, lifeGreen = 0, lifeBlue = 0;
+        QColor color;
         for (int i = 0; i < 350; i++)
         {
             for (int j = 0; j < 350; j++)
@@ -951,13 +956,14 @@ void Widget::paintEvent(QPaintEvent *pEv)
                 lifeCell = life.map[i][j];
                 if (lifeCell > 0)
                 {
-                    pen.setColor(QColor(life.colorRed[i][j]*(lifeCell/255.0),
-                                        life.colorGreen[i][j]*(lifeCell/255.0),
-                                        life.colorBlue[i][j]*(lifeCell/255.0)));
-                    p.setPen(pen);
-                    p.drawPoint(i*2,j*2);
-                }
+                    lifeCell = lifeCell/255.0;
+                    lifeRed = life.colorRed[i][j]*lifeCell;
+                    lifeGreen = life.colorGreen[i][j]*lifeCell;
+                    lifeBlue = life.colorBlue[i][j]*lifeCell;
+                    color.setRgb(lifeRed, lifeGreen, lifeBlue);
 
+                    p.fillRect(i*2,j*2,2,2,color);
+                }
             }
         }
     }

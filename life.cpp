@@ -67,9 +67,9 @@ void Life::initialize(int wi, int he)
         int y = rand()%350;
         int radius = 20+rand()%30;
         int r,g,b;
-        r = 80+rand()%160;
-        g = 80+rand()%120;
-        b = 80+rand()%160;
+        r = 60+(rand()%3)*80;
+        g = 60+(rand()%3)*80;
+        b = 60+(rand()%3)*80;
 
         int difx;
         int dify;
@@ -104,29 +104,33 @@ void Life::initialize(int wi, int he)
     }
 }
 
+
 void Life::update()
 {
     size_t size = sizeof(short)*350;
     int neighboor = 0;
-    int avR = 0, avG = 0, avB = 0;
-    for (int i = 0; i < 350; i++)
+    //int avR = 0, avG = 0, avB = 0;
+    for (int i = 1; i < 349; i++)
     {
-        for (int j = 0; j < 350; j++)
+        for (int j = 1; j < 349; j++)
         {
-            neighboor = avR = avG = avB = 0;
+            neighboor = 0;
+            //avR = avG = avB = 0;
             for (int m = i-1; m <= i+1; m++)
             {
                 for (int n = j-1; n <= j+1; n++)
                 {
-                    if (m < 0 || m >= 350 || n < 0 || n >= 350 || (m == i && n == j))
+                    /*if (m < 0 || m >= 350 || n < 0 || n >= 350 || (m == i && n == j))
+                        continue;*/
+                    if (m == i && n == j)
                         continue;
 
                     if (map[m][n] > 0)
                     {
                         neighboor++;
-                        avR += colorRed[m][n];
+                        /*avR += colorRed[m][n];
                         avG += colorGreen[m][n];
-                        avB += colorBlue[m][n];
+                        avB += colorBlue[m][n];*/
                     }
                 }
             }
@@ -140,27 +144,35 @@ void Life::update()
 
             if ((neighboor == 2 || neighboor == 3) && map[i][j] > 0)
             {
-                /*nextColorRed[i][j] = colorRed[i][j];
-                nextColorGreen[i][j] = colorGreen[i][j];
-                nextColorBlue[i][j] = colorBlue[i][j];*/
                 nextMap[i][j] = map[i][j] - 1;
                 continue;
             }
 
             if (neighboor == 3 && map[i][j] == 0)
             {
-                /*avR = avR/neighboor;
-                avG = avG/neighboor;
-                avB = avB/neighboor;*/
-                /*if (avR < 50) avR = 50;
-                if (avG < 50) avG = 50;
-                if (avB < 50) avB = 50;*/
-
-
                 nextMap[i][j] = 255;
-                nextColorRed[i][j] = avR/3;
+                /*nextColorRed[i][j] = avR/3;
                 nextColorGreen[i][j] = avG/3;
-                nextColorBlue[i][j] = avB/3;
+                nextColorBlue[i][j] = avB/3;*/
+
+                nextColorRed[i][j] = 0;
+
+                for (int m = i-1; m <= i+1; m++)
+                {
+                    for (int n = j-1; n <= j+1; n++)
+                    {
+                        if (map[m][n] > 0)
+                        {
+                            if ((rand()%2 == 0 && nextColorRed[i][j] != 0) || nextColorRed[i][j] == 0)
+                            {
+                                nextColorRed[i][j] = colorRed[m][n];
+                                nextColorGreen[i][j] = colorGreen[m][n];
+                                nextColorBlue[i][j] = colorBlue[m][n];
+                            }
+                        }
+                    }
+                }
+
                 continue;
             }
 
@@ -172,8 +184,11 @@ void Life::update()
                     {
                         for (int n = j-1; n <= j+1; n++)
                         {
-                            if (m < 0 || m >= 350 || n < 0 || n >= 350 || (m == i && n == j))
-                                continue;
+                            //if (m < 0 || m >= 350 || n < 0 || n >= 350 || (m == i && n == j))
+                            //    continue;
+                            //if (m == i && n == j)
+                            //    continue;
+
                             if (map[m][n] > 0)
                             {
                                 nextColorRed[i][j] = colorRed[m][n];
@@ -201,24 +216,13 @@ void Life::update()
 
 
 
-    for (int i = 345; i < 350; i++)
+    for (int i = 344; i < 350; i++)
     {
         memcpy(map[i],nextMap[i],size);
         memcpy(colorRed[i],nextColorRed[i],size);
         memcpy(colorGreen[i],nextColorGreen[i],size);
         memcpy(colorBlue[i],nextColorBlue[i],size);
     }
-
-    /*for (int i = 0; i < 350; i++)
-    {
-        for (int j = 0; j < 350; j++)
-        {
-            map[i][j] = nextMap[i][j];
-            colorRed[i][j] = nextColorRed[i][j];
-            colorGreen[i][j] = nextColorGreen[i][j];
-            colorBlue[i][j] = nextColorBlue[i][j];
-        }
-    }*/
 }
 
 void Life::spawn(int x, int y)
@@ -229,24 +233,9 @@ void Life::spawn(int x, int y)
         y = y/2;
         int radius = 30+rand()%50;
         int r,g,b;
-        r = 80+rand()%160;
-        g = 80+rand()%100;
-        b = 80+rand()%160;
-        /*for (int i = x-radius; i < x+radius; i++)
-        {
-            for (int j = y-(radius-abs(x-i)); j < y+(radius-abs(x-i)); j++)
-            {
-                if (rand()%4 == 0)
-                {
-
-                    if (i < 0 || i >= 350 || j < 0 || j >= 350) continue;
-                    map[i][j] = 255;
-                    colorRed[i][j] = r;
-                    colorGreen[i][j] = g;
-                    colorBlue[i][j] = b;
-                }
-            }
-        }*/
+        r = 60+(rand()%3)*80;
+        g = 60+(rand()%3)*80;
+        b = 60+(rand()%3)*80;
         int difx;
         int dify;
         int far;
