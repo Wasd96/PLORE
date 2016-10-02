@@ -1,4 +1,4 @@
-#include "connection.h"
+﻿#include "connection.h"
 
 Connection::Connection(int port, int _temper, int _type, bool _silent) // создание модуля связи
 {
@@ -10,13 +10,15 @@ Connection::Connection(int port, int _temper, int _type, bool _silent) // соз
     silent = _silent;
 
     foundTable = new int[200];
-    for (int i = 0; i < 200; i++) foundTable[i] = 0;
+    for (int i = 10; i < 200; i++) foundTable[i] = 0;
 
     udpSocket = new QUdpSocket(this); // создание сокета
+    if (port < 50010 && port > 50000)
+        port = 50010+rand()%190;
     while (!udpSocket->bind(port, QUdpSocket::ShareAddress)) // инициализация
     {
        port++;
-       if (port >= 50200) port = 50000;
+       if (port >= 50200) port = 50010;
     }
     portRecieve = udpSocket->localPort(); // сохранение личного порта
 

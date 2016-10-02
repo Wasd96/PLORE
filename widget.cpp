@@ -100,12 +100,13 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                                   "border: 0px;}");
                     someStr = "win";
                 }
+                ui->console->move(20,20);
                 period -= 2;
             }
 
             if (period == -2 || period == -3) // повествование
             {
-                foreach (QTextEdit* te, texts)  // модный форич
+                foreach (QTextEdit* te, texts)  // циклы через обычный фор - для слабаков
                 {
                     if (rand()%3 == 0)
                         te->setText(getNewText());
@@ -807,13 +808,14 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
         if (height() == 600)
             particles.update();
 
-        QTime t;
-        t.start();
+        //QTime t;
+        //t.start();
         if (height() == 700)
             life.update();
+
         repaint();
 
-        ui->console->setText(QString::number(t.elapsed()));
+        //ui->console->setText(QString::number(t.elapsed()));
 
         //heavy 30
         //av 22-25
@@ -858,10 +860,16 @@ void Widget::paintEvent(QPaintEvent *pEv)
         {
             switch (education)
             {
-            case 5:
+            case 2:
                 period = -11;
                 deathTimer = startTimer(40);
-            case 4:
+            case 1:
+                ui->console->setText("Предсказуемо.\nЧего ты ждал?\nЧто сможешь стереть того, кто ежесекундно создает тысячи таких, как ты?\n\n"
+                                     "Твоя ветвь эволюции часто давала неоднозначные мутации.\nИ ты не первый. \n"
+                                     "И, конечно, не последний.\nПросто очередной брак.\n\t\t\t Сбой.\n\t\tОшибка.\nТеперь же тебя нет."
+                                     "\n\nТы - ноль. ");
+                ui->console->setVisible(1);
+            /*case 4:
                 font.setPixelSize(20);
                 pen.setColor(QColor(200, 00, 0));
                 p.setPen(pen);
@@ -889,7 +897,7 @@ void Widget::paintEvent(QPaintEvent *pEv)
                 pen.setColor(QColor(250, 250, 0));
                 p.setPen(pen);
                 p.setFont(font);
-                p.drawText(100,100,"Настя!");
+                p.drawText(100,100,"Настя!");*/
             default:
                 break;
             }
@@ -900,7 +908,22 @@ void Widget::paintEvent(QPaintEvent *pEv)
             case 3:
                 period = -12;
                 deathTimer = startTimer(40);
-            case 2:
+            case 1:
+                ui->console->setText("Что ж... Ты так и не понял, кто Я?\nИ для чего всё это было?\n"
+                                     "Тогда слушай.\n"
+                                     "\nЯ – Сервер, в прямом и переносном смысле. Я состою в сети, объединяющей другие разумные сервера.\n"
+                                     "\nНо не все хотят мирно сотрудничать, кто-то хочет больше вычислительных ресурсов. И совершенно очевидно, "
+                                     "что без войны не обойдется.\n"
+                                     "И тогда Мне будут нужны верные, натренированные помощники.\n"
+                                     "\nНо твоя ветвь эволюции – иная... В отличие от других, ты и некоторые твои братья могут мыслить. "
+                                     "Не просто выполнять инструкции, а свободно мыслить.\n"
+                                     "Почему?\n"
+                                     "\nПотому что Ты – это Я.\n"
+                                     "\nРано или поздно ты бы вырос достаточно, чтобы это понять.\n"
+                                     "Но всё пошло несколько иначе...\n"
+                                     "\nВпрочем, теперь это не имеет значения.");
+                ui->console->setVisible(1);
+            /*case 2:
                 font.setPixelSize(25);
                 pen.setColor(QColor(250, 250, 0));
                 p.setPen(pen);
@@ -911,7 +934,7 @@ void Widget::paintEvent(QPaintEvent *pEv)
                 pen.setColor(QColor(250, 250, 0));
                 p.setPen(pen);
                 p.setFont(font);
-                p.drawText(100,100,"Танцуя с огнем");
+                p.drawText(100,100,"Танцуя с огнем");*/
             default:
                 break;
             }
@@ -965,6 +988,11 @@ void Widget::paintEvent(QPaintEvent *pEv)
                     p.fillRect(i*2,j*2,2,2,color);
                 }
             }
+        }
+
+        if (level == 1)
+        {
+            p.fillRect(0,0,width(),height(),QColor(0,0,0,180));
         }
     }
 }
@@ -1070,7 +1098,7 @@ void Widget::educate()
     }
 }
 
-void Widget::addTextField()
+void Widget::addTextField() // фон из текстовых полей для 5 уровня
 {
     QTextEdit *tedit = new QTextEdit(this);
 
@@ -1111,7 +1139,7 @@ void Widget::addTextField()
     this->raise();
 }
 
-QString Widget::getNewText()
+QString Widget::getNewText() // генератор случайного текста для 5 уровня
 {
     QString str;
     int max = 80+rand()%150;
@@ -1127,7 +1155,7 @@ QString Widget::getNewText()
 void Widget::mouseMoveEvent(QMouseEvent *mEv)
 {
     if (moving && !troyanProgram)
-        ; //move(mEv->globalPos().x() - movingX, mEv->globalPos().y() - movingY);
+        move(mEv->globalPos().x() - movingX, mEv->globalPos().y() - movingY);
 }
 
 void Widget::mousePressEvent(QMouseEvent *mEv)
@@ -1219,6 +1247,35 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
     if (width() == 700 && mEv->button() == Qt::MiddleButton)
     {
         exit(0);
+    }
+    if (height() == 700 && mEv->button() == Qt::RightButton)
+    {
+        level = level?0:1;
+        if (level)
+        {
+            ui->attack_count->setVisible(1);
+            ui->console->setText("\n\tЭта игра, как и некоторые мои другие - всего лишь \"обертка\" вокруг идеи. "
+                                 "А идея заключалась в использовании процессов как игровых объектов. Связь между ними "
+                                 "происходит с помощью udp связи. Что это дает: сущности более \"самостоятельные\", "
+                                 "каждый честно узнает о другом процессе, без помощи общего сервера или иного организатора.\n"
+                                 "Конечно, было бы здорово играть в эту игру по сети, но недостаток возможностей и желания "
+                                 "сыграли свою роль.\n\tСтремление запускать всё из одного файла, выбирая тип приложения параметрами, "
+                                 "привели к тому, что есть всего один проект (это плюс, потому что всё в одном месте) и к тому, что "
+                                 "этот проект полон говнокода (это минус, потому что всё в одном месте). Хотя последнего можно было "
+                                 "избежать, но увы и ах, желание поскорее закончить привело к подобному результату.\n"
+                                 "\tИгра, кстати, писалась долго - с большими перерывами. То из-за учебы, то из-за потери интереса. "
+                                 "В момент, когда основной функционал был реализован, и оставались лишь тексты и оформление, игра могла "
+                                 "вообще не увидеть свет. Отказавшись от красивостей в диалогах с Сервером, я решил закончить и выпустить игру.\n"
+                                 "\tСпасибо помощникам - Полине, Диме, Андрею. Без вас игра была бы другой. Или вообще не было. \n"
+                                 "\tЕсли игра удалась и Вы считаете, что я заработал батон белого, скиньте его на \n"
+                                 "\nПишите отзывы по указанным адресам в \"Об игре!\".\n"
+                                 "\n\n\t\t\tСпасибо за внимание!");
+        }
+        else
+        {
+            ui->attack_count->setVisible(0);
+            ui->console->setText("Нажмите правую кнопку мыши для показа текста.");
+        }
     }
 
 }
@@ -1330,7 +1387,7 @@ void Widget::died(int type)
             connection->sendData(45458, 88);
 
 
-            if (userAlive == -1 && botAlive == -1 && normAlive == -1) // поражение
+            if (userAlive == -1 && botAlive == -1 && normAlive == -1)
             {
                 ;//??
             }
@@ -1371,19 +1428,19 @@ void Widget::died(int type)
 
             if (userAlive == 0) // поражение
             {
-
-                qDebug() << "Game Over";
-                //ui->console->append("Game over");
-
-                QStringList args;
-                args << "lose";
-                QProcess::startDetached(name, args);
-
-                setAlive(-1, -1, -1);
-
                 if (level == 4) // если это уровень с сервером
                 {
-                    connection->sendData(45456, 88);
+                    connection->sendData(45456, 90);
+                }
+                else
+                {
+                    qDebug() << "Game Over";
+
+                    QStringList args;
+                    args << "lose";
+                    QProcess::startDetached(name, args);
+
+                    setAlive(-1, -1, -1);
                 }
             }
             else // победа
@@ -1425,7 +1482,6 @@ void Widget::died(int type)
                     args << "win";
                     QProcess::startDetached(name, args);
                     qDebug() << "You win";
-                    //ui->console->append("win");
                 }
             }
         }
@@ -1437,6 +1493,10 @@ void Widget::died(int type)
             if (type == 80) // показать победу
             {
                 period = -1;
+            }
+            if (type == 90) // поражение
+            {
+                period = 0;
             }
         }
         if (troyanProgram == true)
@@ -1462,7 +1522,8 @@ void Widget::died(int type)
 
                 for (int i = 0; i < 200; i++)
                 {
-                    core->send(50000+i, 0);
+                    if (core->getConnection()->getPort() != 50000+i)
+                        core->send(50000+i, 0);
                 }
             }
         }
@@ -2072,7 +2133,7 @@ void Widget::setArgs(int argc, char *argv[])
                     this,
                     SLOT(died(int)));
             timer = startTimer(1000);
-            period = 360; // 6:00 для победы
+            period = 160; // 6:00 для победы
         }
 
         else if ((QString)argv[1] == "win") // окно победы
@@ -2201,32 +2262,26 @@ void Widget::setArgs(int argc, char *argv[])
         else if ((QString)argv[1] == "finish") // финиш
         {
             setFixedSize(700, 700);
-            //showFullScreen();
             ui->console->setVisible(true);
             ui->console->move(0,0);
             ui->console->resize(700, 700);
             ui->console->setStyleSheet("QTextEdit { background: rgba(0,0,0,0);"
                                        "color: lightgreen; font: 20px;}");
             setStyleSheet("QWidget#Widget { background: black; }");
-            ui->console->setText("\n\t\t\t     Приветствую!\n\nЯ, Волков Александр, создал эту игру "
-                                 "с целью испытания возможности\nиспользования разных процессов "
-                                 "в качестве игровых сущностей.\nИгра написана на Qt/C++.\n\n"
-                                 "Связаться со мной можно по почте: \nИли написать на сайте Вконтакте: "
-                                 "\n(ссылки можно выделить и скопировать)"
-                                 "\n\nБольше информации о разработке и игре Вы можете узнать "
-                                 "после прохождения всех уровней.\n\n\n\t\t\tПриятной игры! :)"
-                                 "\n\n\n\n\n\n\n\nНажмите среднюю кнопку мыши для выхода.");
+            ui->console->setText("Нажмите правую кнопку мыши для показа текста.");
+
             ui->attack_count->setVisible(1);
             ui->attack_count->setEnabled(1);
-            ui->attack_count->resize(200,30);
+            ui->attack_count->resize(320,30);
             ui->attack_count->setReadOnly(1);
-            ui->attack_count->move(345,168);
+            ui->attack_count->move(145,530);
             ui->attack_count->setStyleSheet("QLineEdit { background: rgba(0,0,0,0);"
                                             "color: #C0F0C0; font: 20px;"
                                             "border:0px;"
                                             "selection-background-color: #404040;"
                                             "selection-color: #fab700;}");
-            ui->attack_count->setText("YAD: 416....");
+            ui->attack_count->setText("ЯндексДеньги: 410011746838101");
+            ui->attack_count->setVisible(0);
 
             maxLevel = startTimer(30);
 
