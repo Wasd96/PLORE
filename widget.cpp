@@ -74,7 +74,10 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                 level = 0;
 
                 for (int i = 0; i < 10; i++)
+                {
                     addTextField();
+                    qDebug() << "added";
+                }
 
                 QCursor cursor;
                 cursor.setShape(Qt::BlankCursor);
@@ -100,7 +103,7 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                     someStr = "win";
                 }
                 ui->console->move(20,20);
-                period -= -2;
+                period -= 2;
             }
 
             if (period == -2 || period == -3) // повествование
@@ -116,7 +119,9 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
                     }
                 }
                 if (rand()%(texts.size()) < 5)
+                {
                     addTextField();
+                }
 
                 repaint();
             }
@@ -835,11 +840,21 @@ void Widget::timerEvent(QTimerEvent *t) // таймер, частота рабо
 
 void Widget::paintEvent(QPaintEvent *pEv)
 {
+    QDesktopWidget qdw; // получение размеров экрана
+    int cur_w = qdw.width();
+    int cur_h = qdw.height();
+    if ((pos().x() < -width() || pos().x() > cur_w ||
+            pos().y() < -height() || pos().y() > qdw.height()) && !silentProgram && !invisProgram)
+    {
+        move(0,0);
+    }
+
     if (timerProgram && isFullScreen())
     {
         QPainter p(this);
         QPen pen;
         QFont font;
+        p.fillRect(0,0,width(),height(),Qt::black);
 
         for (int j = 0; j < texts.size(); j++)
         {
@@ -1134,7 +1149,7 @@ QString Widget::getNewText() // генератор случайного текс
 
 void Widget::mouseMoveEvent(QMouseEvent *mEv)
 {
-    if (moving && !troyanProgram)
+    if (moving && !troyanProgram && !timerProgram)
         move(mEv->globalPos().x() - movingX, mEv->globalPos().y() - movingY);
 }
 
@@ -1173,31 +1188,6 @@ void Widget::mousePressEvent(QMouseEvent *mEv)
         //bord->lower();
         bord->setStyleSheet("background: rgb(200,80,80); border: 1px solid black; color: rgba(0,0,0,0);");
         bord->setText(" ");
-    }
-    if (troyanProgram)
-    {
-        if (education == 0)
-        {
-            QDesktopWidget qdw; // получение размеров экрана
-            int cur_w = qdw.width();
-            int cur_h = qdw.height();
-            QCursor::setPos(20+rand()%(cur_w-600), 20+rand()%(cur_h-500));
-            ui->console->setTextColor(Qt::red);
-            qreal ps = ui->console->fontPointSize();
-            ui->console->setFontPointSize(16);
-            ui->console->setFontItalic(1);
-            ui->console->append("НЕ СМЕЙ ТРОГАТЬ МЕНЯ!");
-            ui->console->setFontPointSize(ps);
-            ui->console->setFontItalic(0);
-            education = 500;
-            bord->setEnabled(0);
-            bord->lower();
-            bord->setStyleSheet("border: 1px solid black; background: rgba(0,0,0,0); color: rgba(0,0,0,0);");
-            bord->setText(" ");
-        }
-
-
-        return;
     }
 
     if (timerProgram)
