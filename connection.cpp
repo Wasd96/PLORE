@@ -15,7 +15,7 @@ Connection::Connection(int port, int _temper, int _type, bool _silent) // соз
     udpSocket = new QUdpSocket(this); // создание сокета
     if (port < 50010 && port > 50000)
         port = 50010+rand()%190;
-    while (!udpSocket->bind(port, QUdpSocket::ShareAddress)) // инициализация
+    while (!udpSocket->bind(port, QUdpSocket::DontShareAddress)) // инициализация
     {
        port++;
        if (port >= 50200) port = 50010;
@@ -34,7 +34,8 @@ Connection::~Connection()
 
 void Connection::rebindPort(int port) // попытка получить нужный порт
 {
-    while (udpSocket->localPort() != port) { // потенциально бесконечный цикл(
+    while (udpSocket->localPort() != port) { // потенциально бесконечный цикл :(
+        sendData(45454, 66);
         udpSocket->close();
         udpSocket->bind(port, QUdpSocket::DontShareAddress);
         portRecieve = port;
@@ -207,6 +208,11 @@ void Connection::readData() // прием данных
                 if (strList.first() == "88") // лаунчер сообщает, что пора умирать
                 {
                     emit died(88);
+                    break;
+                }
+                if (strList.first() == "66") // лаунчер сообщает, что пора точно умирать
+                {
+                    emit died(66);
                     break;
                 }
                 if (strList.first() == "80") // спавн червя / сервер идет искать

@@ -87,7 +87,6 @@ private:
     bool silentProgram;
     bool troyanProgram;
     bool wormProgram;
-    bool exploreProgram;
     bool launcher;
     bool timerProgram;
     bool educateProgram;
